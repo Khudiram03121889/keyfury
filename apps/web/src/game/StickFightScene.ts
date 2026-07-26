@@ -1165,94 +1165,110 @@ export class StickFightScene extends Phaser.Scene {
 
     // --- RENDER STICKMAN ---
 
+    // --- INDUSTRY-GRADE VECTOR SHADOW NINJA WARRIOR RENDERER ---
+
     // 1. REAR LIMBS (Layer 1 - Behind Torso)
-    g.lineStyle(6, bodyColor, 1);
-    g.beginPath();
-    // Rear Leg
-    g.lineBetween(lHipX, hipY, legL.joint.x, legL.joint.y);
-    g.lineBetween(legL.joint.x, legL.joint.y, legL.tip.x, legL.tip.y);
-    // Rear Arm
-    g.lineBetween(lShoulderX, lShoulderY, armL.joint.x, armL.joint.y);
-    g.lineBetween(armL.joint.x, armL.joint.y, armL.tip.x, armL.tip.y);
-    g.strokePath();
+    // Rear Leg (Thigh: 11px -> 8px, Shin: 8px -> 6px)
+    this.drawTaperedLimb(g, { x: lHipX, y: hipY }, legL.joint, 11, 8, bodyColor);
+    this.drawTaperedLimb(g, legL.joint, legL.tip, 8, 6, bodyColor);
 
-    // Joint Caps (Rear Knee & Elbow)
+    // Rear Tabi Boot
     g.fillStyle(bodyColor, 1);
-    g.fillCircle(legL.joint.x, legL.joint.y, 3);
-    g.fillCircle(armL.joint.x, armL.joint.y, 3);
+    g.beginPath();
+    g.moveTo(legL.tip.x - facing * 5, legL.tip.y);
+    g.lineTo(legL.tip.x + facing * 8, legL.tip.y);
+    g.lineTo(legL.tip.x + facing * 4, legL.tip.y - 4);
+    g.closePath();
+    g.fillPath();
 
-    // Rear Foot Sole & Glove Fist
-    g.lineStyle(4, bodyColor, 1);
-    g.lineBetween(legL.tip.x - facing * 4, legL.tip.y, legL.tip.x + facing * 6, legL.tip.y);
+    // Rear Arm (Upper Arm: 9px -> 7px, Forearm: 7px -> 5px)
+    this.drawTaperedLimb(g, { x: lShoulderX, y: lShoulderY }, armL.joint, 9, 7, bodyColor);
+    this.drawTaperedLimb(g, armL.joint, armL.tip, 7, 5, bodyColor);
 
+    // Rear Glove Fist / Gauntlet
     g.fillStyle(gloveColor, 1);
-    g.fillCircle(armL.tip.x, armL.tip.y, 6);
-    g.lineStyle(1.5, 0xffffff, 0.5);
-    g.strokeCircle(armL.tip.x, armL.tip.y, 6);
+    g.fillCircle(armL.tip.x, armL.tip.y, 6.5);
+    g.lineStyle(1.5, 0xffffff, 0.6);
+    g.strokeCircle(armL.tip.x, armL.tip.y, 6.5);
 
-    // 2. TORSO & HEAD (Layer 2)
-    // Spine
-    g.lineStyle(7, bodyColor, 1);
+    // 2. TORSO & V-TAPER CHEST (Layer 2)
+    // V-Taper Athletic Chest Polygon (Shoulders: 16px wide, Waist: 10px wide)
+    const neckL = { x: finalNeckX - facing * 7, y: finalNeckY };
+    const neckR = { x: finalNeckX + facing * 7, y: finalNeckY };
+    const hipL = { x: finalHipX - facing * 4, y: finalHipY };
+    const hipR = { x: finalHipX + facing * 4, y: finalHipY };
+
+    g.fillStyle(bodyColor, 1);
     g.beginPath();
-    g.lineBetween(finalNeckX, finalNeckY, finalHipX, finalHipY);
+    g.moveTo(neckL.x, neckL.y);
+    g.lineTo(neckR.x, neckR.y);
+    g.lineTo(hipR.x, hipR.y);
+    g.lineTo(hipL.x, hipL.y);
+    g.closePath();
+    g.fillPath();
+
+    // Martial Obi Waist Belt & Flowing Tails
+    g.fillStyle(gloveColor, 1);
+    g.fillRect(finalHipX - 5, finalHipY - 3, 10, 5);
+
+    const obiWave = Math.sin(time / 100) * 3;
+    g.lineStyle(2.5, gloveColor, 1);
+    g.beginPath();
+    g.moveTo(finalHipX - facing * 4, finalHipY);
+    g.lineTo(finalHipX - facing * 12, finalHipY + 10 + obiWave);
     g.strokePath();
 
-    // Shoulder & Hip Joint Caps
-    g.fillStyle(bodyColor, 1);
-    g.fillCircle(finalNeckX, finalNeckY, 3.5);
-    g.fillCircle(finalHipX, finalHipY, 3.5);
-
-    // Head (Solid 16px radius circle)
+    // Ninja Mask & Head (Solid 16px circle)
     const headRadius = 16;
     g.fillStyle(bodyColor, 1);
     g.fillCircle(finalHeadX, finalHeadY, headRadius);
 
-    // Eye Slit
+    // Glowing Neon Eye Visor Slit
     if (state !== 'knockdown') {
       const eyeX = finalHeadX + facing * 6;
       const eyeY = finalHeadY - 2;
       g.fillStyle(eyeColor, 1);
-      g.fillCircle(eyeX, eyeY, 3);
+      g.fillCircle(eyeX, eyeY, 3.5);
       g.fillCircle(eyeX + facing * 4, eyeY, 2.5);
     }
 
-    // Headband Accent
+    // Flowing Dual-Segment Ninja Scarf
     if (state !== 'knockdown') {
       const bandX = finalHeadX - facing * 14;
       const bandY = finalHeadY - 4;
-      const wave = Math.sin(time / 120) * 4;
+      const scarfWave = Math.sin(time / 120) * 5;
 
-      g.lineStyle(3, gloveColor, 1);
+      g.lineStyle(3.5, gloveColor, 1);
       g.beginPath();
       g.moveTo(bandX, bandY);
-      g.lineTo(bandX - facing * 14, bandY + 4 + wave);
+      g.lineTo(bandX - facing * 14, bandY + 4 + scarfWave);
+      g.lineTo(bandX - facing * 24, bandY + 12 + scarfWave * 1.5);
       g.strokePath();
     }
 
     // 3. FRONT LIMBS (Layer 3 - In Front of Torso)
-    g.lineStyle(6, bodyColor, 1);
-    g.beginPath();
-    // Lead Leg
-    g.lineBetween(rHipX, hipY, legR.joint.x, legR.joint.y);
-    g.lineBetween(legR.joint.x, legR.joint.y, legR.tip.x, legR.tip.y);
-    // Lead Arm
-    g.lineBetween(rShoulderX, rShoulderY, armR.joint.x, armR.joint.y);
-    g.lineBetween(armR.joint.x, armR.joint.y, armR.tip.x, armR.tip.y);
-    g.strokePath();
+    // Lead Leg (Thigh: 11px -> 8px, Shin: 8px -> 6px)
+    this.drawTaperedLimb(g, { x: rHipX, y: hipY }, legR.joint, 11, 8, bodyColor);
+    this.drawTaperedLimb(g, legR.joint, legR.tip, 8, 6, bodyColor);
 
-    // Joint Caps (Lead Knee & Elbow)
+    // Lead Tabi Boot
     g.fillStyle(bodyColor, 1);
-    g.fillCircle(legR.joint.x, legR.joint.y, 3);
-    g.fillCircle(armR.joint.x, armR.joint.y, 3);
+    g.beginPath();
+    g.moveTo(legR.tip.x - facing * 5, legR.tip.y);
+    g.lineTo(legR.tip.x + facing * 10, legR.tip.y);
+    g.lineTo(legR.tip.x + facing * 5, legR.tip.y - 4);
+    g.closePath();
+    g.fillPath();
 
-    // Lead Foot Sole & Glove Fist
-    g.lineStyle(4, bodyColor, 1);
-    g.lineBetween(legR.tip.x - facing * 4, legR.tip.y, legR.tip.x + facing * 8, legR.tip.y);
+    // Lead Arm (Upper Arm: 9px -> 7px, Forearm: 7px -> 5px)
+    this.drawTaperedLimb(g, { x: rShoulderX, y: rShoulderY }, armR.joint, 9, 7, bodyColor);
+    this.drawTaperedLimb(g, armR.joint, armR.tip, 7, 5, bodyColor);
 
+    // Lead Strike Gauntlet / Glove
     g.fillStyle(gloveColor, 1);
-    g.fillCircle(armR.tip.x, armR.tip.y, 7);
-    g.lineStyle(1.5, 0xffffff, 0.7);
-    g.strokeCircle(armR.tip.x, armR.tip.y, 7);
+    g.fillCircle(armR.tip.x, armR.tip.y, 7.5);
+    g.lineStyle(2, 0xffffff, 0.85);
+    g.strokeCircle(armR.tip.x, armR.tip.y, 7.5);
 
     // 4. Knockdown Dazed Stars
     if (state === 'knockdown') {
