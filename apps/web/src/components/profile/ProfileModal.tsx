@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, User, Trophy, Zap, Target, Flame, Palette, Edit2, Check, LogOut, History, Shield, Sparkles, Award, Lock, CheckCircle2, Download } from 'lucide-react';
 import { UserProfile, MatchHistoryItem, updateUserProfile, getRecentGuestMatches, signOut, getUserAchievements, UserAchievement, DEFAULT_ACHIEVEMENTS, Achievement } from '../../lib/supabase';
 import { RankBadge } from '../ranked/RankBadge';
+import { RankTiersModal } from '../ranked/RankTiersModal';
 import { downloadMatchCard } from '../../lib/downloadMatchCard';
 
 interface ProfileModalProps {
@@ -48,6 +49,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [matchHistory, setMatchHistory] = useState<MatchHistoryItem[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showRankTiersModal, setShowRankTiersModal] = useState(false);
 
   // Edit fields
   const [isEditing, setIsEditing] = useState(false);
@@ -234,8 +236,30 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </p>
             </div>
 
-            {/* Rank Badge */}
-            <div>
+            {/* Rank Badge Header (Clickable to view all Rank Tiers & Progression) */}
+            <div
+              onClick={() => setShowRankTiersModal(true)}
+              title="Click to view all Rank Tiers & Progression"
+              style={{
+                cursor: 'pointer',
+                padding: '6px 12px',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(56, 189, 248, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              }}
+            >
               <RankBadge
                 tier={userProfile.rankTier}
                 rating={userProfile.mmr}
@@ -841,6 +865,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </button>
         </div>
       </div>
+
+      <RankTiersModal
+        isOpen={showRankTiersModal}
+        onClose={() => setShowRankTiersModal(false)}
+        userMmr={userProfile.mmr}
+        userTier={userProfile.rankTier}
+      />
     </div>
   );
 };
