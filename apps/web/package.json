@@ -1,0 +1,31 @@
+{
+  "name": "@keyfury/web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@keyfury/content": "workspace:*",
+    "@keyfury/game-core": "workspace:*",
+    "@keyfury/protocol": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
+    "colyseus.js": "^0.15.0",
+    "lucide-react": "^0.469.0",
+    "phaser": "^3.87.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

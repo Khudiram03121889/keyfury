@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: keyfury-game-server
+    env: node
+    buildCommand: pnpm --filter @keyfury/game-server build
+    startCommand: pnpm --filter @keyfury/game-server start
+    envVars:
+      - key: PORT
+        value: 2567
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
