@@ -48,7 +48,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
           borderRadius: '999px',
           background: 'rgba(99, 102, 241, 0.15)',
           border: '1px solid rgba(99, 102, 241, 0.3)',
-          color: '#818cf8',
+          color: 'var(--accent-purple)',
           fontSize: '0.9rem',
           fontWeight: 700,
           marginBottom: '24px'
@@ -61,14 +61,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
           fontWeight: 900,
           lineHeight: 1.1,
           marginBottom: '20px',
-          background: 'linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%)',
+          background: 'var(--hero-gradient)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
-          Type words. Land hits. <br /><span style={{ color: '#38bdf8' }}>Win the duel.</span>
+          Type words. Land hits. <br /><span style={{ color: 'var(--accent-cyan)' }}>Win the duel.</span>
         </h2>
 
-        <p style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '650px', margin: '0 auto 36px' }}>
+        <p style={{ fontSize: '1.25rem', color: 'var(--text-muted)', maxWidth: '650px', margin: '0 auto 36px' }}>
           Enter a fast 90-second typing battle against another player. Correct keys trigger attacks in real-time.
         </p>
 
@@ -83,7 +83,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
           >
             <Swords size={24} /> Play a Duel <span className="kbd-badge">Enter</span>
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: '#64748b', fontSize: '0.88rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
             <span><Keyboard size={14} style={{ verticalAlign: 'middle' }} /> Physical QWERTY Desktop Required</span>
             <span>•</span>
             <span>Instant Guest Mode</span>
@@ -93,7 +93,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
 
       {/* How It Works Section */}
       <section style={{ marginBottom: '80px' }}>
-        <h3 style={{ textAlign: 'center', fontSize: '1.6rem', fontWeight: 800, marginBottom: '32px' }}>
+        <h3 style={{ textAlign: 'center', fontSize: '1.6rem', fontWeight: 800, marginBottom: '32px', color: 'var(--text-heading)' }}>
           How It Works
         </h3>
 
@@ -101,12 +101,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
           <div className="glass-panel" style={{ padding: '28px', textAlign: 'center' }}>
             <div style={{
               width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(56, 189, 248, 0.15)',
-              color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+              color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
             }}>
               <Keyboard size={28} />
             </div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '10px' }}>1. Type Correct Words</h4>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '10px', color: 'var(--text-heading)' }}>1. Type Correct Words</h4>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
               Both fighters receive the same versioned, seeded word deck. Type your active word accurately to advance.
             </p>
           </div>
@@ -114,12 +114,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
           <div className="glass-panel" style={{ padding: '28px', textAlign: 'center' }}>
             <div style={{
               width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(244, 63, 94, 0.15)',
-              color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+              color: 'var(--accent-pink)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
             }}>
               <Zap size={28} />
             </div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '10px' }}>2. Complete Words to Attack</h4>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '10px', color: 'var(--text-heading)' }}>2. Complete Words to Attack</h4>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
               Short words trigger fast Jabs (5 dmg), medium words deliver Kicks (8 dmg), and long words strike Heavy (12 dmg)!
             </p>
           </div>
@@ -127,12 +127,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
           <div className="glass-panel" style={{ padding: '28px', textAlign: 'center' }}>
             <div style={{
               width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(52, 211, 153, 0.15)',
-              color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
+              color: 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px'
             }}>
               <Award size={28} />
             </div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '10px' }}>3. Highest Health Wins</h4>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '10px', color: 'var(--text-heading)' }}>3. Highest Health Wins</h4>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
               Land continuous combos for extra bonus damage (+1 to +4). Deplete your opponent's health or lead at 90 seconds!
             </p>
           </div>
@@ -141,9 +141,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
 
       {/* Privacy Guarantee Note */}
       <footer className="glass-panel" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <ShieldCheck size={28} color="#34d399" style={{ flexShrink: 0 }} />
-        <p style={{ fontSize: '0.88rem', color: '#94a3b8' }}>
-          <strong style={{ color: '#f8fafc' }}>Privacy Guarantee:</strong> KeyFury reads only expected match characters while a duel is active. It does not record or transmit general keyboard activity or private data outside active matches.
+        <ShieldCheck size={28} color="var(--accent-green)" style={{ flexShrink: 0 }} />
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+          <strong style={{ color: 'var(--text-main)' }}>Privacy Guarantee:</strong> KeyFury reads only expected match characters while a duel is active. It does not record or transmit general keyboard activity or private data outside active matches.
         </p>
       </footer>
     </div>

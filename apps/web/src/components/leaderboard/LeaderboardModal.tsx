@@ -141,11 +141,11 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%',
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  backgroundColor: 'var(--btn-sec-bg)',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '10px',
                   padding: '8px 12px 8px 38px',
-                  color: '#f8fafc',
+                  color: 'var(--text-main)',
                   fontSize: '0.85rem',
                   outline: 'none'
                 }}
@@ -159,9 +159,9 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                   key={t}
                   onClick={() => setSelectedTier(t)}
                   style={{
-                    backgroundColor: selectedTier === t ? '#fbbf24' : 'rgba(255, 255, 255, 0.06)',
-                    color: selectedTier === t ? '#090d16' : '#94a3b8',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: selectedTier === t ? 'var(--accent-amber)' : 'var(--btn-sec-bg)',
+                    color: selectedTier === t ? '#090d16' : 'var(--text-muted)',
+                    border: '1px solid var(--border-card)',
                     borderRadius: '8px',
                     padding: '6px 10px',
                     fontSize: '0.75rem',

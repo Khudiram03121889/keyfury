@@ -22,13 +22,19 @@ const PRESET_AVATARS = [
 ];
 
 const THEME_OPTIONS = [
-  { id: 'cyberpunk', name: 'Cyberpunk Neon', color: '#00ffcc' },
-  { id: 'default', name: 'Classic Dark', color: '#818cf8' },
-  { id: 'neon', name: 'Hot Pink Neon', color: '#f43f5e' },
-  { id: 'matrix', name: 'Terminal Green', color: '#00ff66' },
-  { id: 'synthwave', name: 'Synthwave 80s', color: '#a855f7' },
-  { id: 'dracula', name: 'Dracula Dark', color: '#bd93f9' },
-  { id: 'gold', name: 'Champion Gold', color: '#fbbf24' }
+  // Top 5 Dark Themes
+  { id: 'cyberpunk', name: 'Cyberpunk Neon', color: '#00ffcc', mode: 'dark' },
+  { id: 'default', name: 'Classic Dark', color: '#818cf8', mode: 'dark' },
+  { id: 'matrix', name: 'Terminal Green', color: '#00ff66', mode: 'dark' },
+  { id: 'synthwave', name: 'Synthwave 80s', color: '#a855f7', mode: 'dark' },
+  { id: 'dracula', name: 'Dracula Dark', color: '#bd93f9', mode: 'dark' },
+
+  // Top 5 Light Themes
+  { id: 'light_paper', name: 'Classic Light', color: '#2563eb', mode: 'light' },
+  { id: 'light_nordic', name: 'Nordic Frost', color: '#0891b2', mode: 'light' },
+  { id: 'light_sakura', name: 'Sakura Blossom', color: '#db2777', mode: 'light' },
+  { id: 'light_latte', name: 'Matcha Latte', color: '#15803d', mode: 'light' },
+  { id: 'light_sunset', name: 'Solar Sunset', color: '#ea580c', mode: 'light' }
 ];
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -401,77 +407,77 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               {/* Stats Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '20px' }}>
                 <div style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  backgroundColor: 'var(--pill-bg)',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '12px',
                   padding: '14px',
                   textAlign: 'center'
                 }}>
-                  <Zap size={20} color="#fbbf24" style={{ marginBottom: '4px' }} />
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f8fafc' }}>
+                  <Zap size={20} color="var(--accent-amber)" style={{ marginBottom: '4px' }} />
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {userProfile.avgWpm}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>AVG WPM</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>AVG WPM</div>
                 </div>
 
                 <div style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  backgroundColor: 'var(--pill-bg)',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '12px',
                   padding: '14px',
                   textAlign: 'center'
                 }}>
-                  <Flame size={20} color="#f43f5e" style={{ marginBottom: '4px' }} />
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f8fafc' }}>
+                  <Flame size={20} color="var(--accent-pink)" style={{ marginBottom: '4px' }} />
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {userProfile.peakWpm}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>PEAK WPM</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>PEAK WPM</div>
                 </div>
 
                 <div style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  backgroundColor: 'var(--pill-bg)',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '12px',
                   padding: '14px',
                   textAlign: 'center'
                 }}>
-                  <Target size={20} color="#34d399" style={{ marginBottom: '4px' }} />
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f8fafc' }}>
+                  <Target size={20} color="var(--accent-green)" style={{ marginBottom: '4px' }} />
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {userProfile.accuracy}%
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>ACCURACY</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>ACCURACY</div>
                 </div>
 
                 <div style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  backgroundColor: 'var(--pill-bg)',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '12px',
                   padding: '14px',
                   textAlign: 'center'
                 }}>
-                  <Trophy size={20} color="#818cf8" style={{ marginBottom: '4px' }} />
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f8fafc' }}>
+                  <Trophy size={20} color="var(--accent-purple)" style={{ marginBottom: '4px' }} />
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {winRate}%
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>WIN RATE</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>WIN RATE</div>
                 </div>
               </div>
 
               {/* Combat Record Card */}
               <div style={{
-                backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'var(--pill-bg)',
+                border: '1px solid var(--border-card)',
                 borderRadius: '14px',
                 padding: '16px'
               }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '12px', color: '#94a3b8', letterSpacing: '1px' }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '12px', color: 'var(--text-muted)', letterSpacing: '1px' }}>
                   MATCH RECORD & DISTRIBUTION
                 </h4>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                     <div>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Total Matches: </span>
-                      <strong style={{ color: '#f8fafc' }}>{userProfile.matchesPlayed}</strong>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total Matches: </span>
+                      <strong style={{ color: 'var(--text-main)' }}>{userProfile.matchesPlayed}</strong>
                     </div>
                     <div>
                       <span style={{ fontSize: '0.8rem', color: '#34d399' }}>Wins: </span>
@@ -512,15 +518,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     <div
                       key={ach.id}
                       style={{
-                        backgroundColor: isUnlocked ? 'rgba(15, 23, 42, 0.9)' : 'rgba(15, 23, 42, 0.4)',
-                        border: isUnlocked ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
-                        boxShadow: isUnlocked ? '0 0 20px rgba(56, 189, 248, 0.15)' : 'none',
+                        backgroundColor: isUnlocked ? 'var(--pill-bg)' : 'var(--btn-sec-bg)',
+                        border: isUnlocked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-card)',
+                        boxShadow: isUnlocked ? '0 0 16px var(--card-shadow)' : 'none',
                         borderRadius: '12px',
                         padding: '12px 14px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '14px',
-                        opacity: isUnlocked ? 1 : 0.65,
                         transition: 'all 0.2s ease'
                       }}
                     >
@@ -529,19 +534,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         width: '46px',
                         height: '46px',
                         borderRadius: '12px',
-                        backgroundColor: isUnlocked ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                        backgroundColor: isUnlocked ? 'rgba(56, 189, 248, 0.15)' : 'var(--pill-bg)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        border: isUnlocked ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)',
-                        flexShrink: 0
+                        border: isUnlocked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-card)',
+                        flexShrink: 0,
+                        opacity: isUnlocked ? 1 : 0.7
                       }}>
                         {ach.icon}
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: isUnlocked ? '#f8fafc' : '#94a3b8' }}>
+                          <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-main)' }}>
                             {ach.title}
                           </h4>
                           {isUnlocked ? (
@@ -563,7 +569,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             <span style={{
                               fontSize: '0.7rem',
                               fontWeight: 800,
-                              color: '#94a3b8',
+                              color: 'var(--text-muted)',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '4px',
@@ -574,7 +580,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                           )}
                         </div>
 
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                           {ach.description}
                         </p>
 
@@ -582,7 +588,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                           <div style={{
                             width: '100%',
                             height: '5px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            backgroundColor: 'var(--border-card)',
                             borderRadius: '3px',
                             marginTop: '8px',
                             overflow: 'hidden'
@@ -590,9 +596,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             <div style={{
                               width: `${pct}%`,
                               height: '100%',
-                              backgroundColor: '#38bdf8',
-                              borderRadius: '3px',
-                              transition: 'width 0.3s ease'
+                              backgroundColor: 'var(--accent-cyan)',
+                              borderRadius: '3px'
                             }} />
                           </div>
                         )}
@@ -631,17 +636,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 ))}
               </div>
 
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '10px', color: '#f8fafc' }}>
-                SELECT KEYCAP & COMBAT THEME
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '10px', color: 'var(--accent-cyan)', letterSpacing: '0.5px' }}>
+                🌙 DARK THEMES (TOP 5)
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-                {THEME_OPTIONS.map((theme) => (
+                {THEME_OPTIONS.filter(t => t.mode === 'dark').map((theme) => (
                   <div
                     key={theme.id}
                     onClick={() => setSelectedTheme(theme.id)}
                     style={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                      border: selectedTheme === theme.id ? `2px solid ${theme.color}` : '1px solid rgba(255, 255, 255, 0.08)',
+                      backgroundColor: 'var(--pill-bg)',
+                      border: selectedTheme === theme.id ? `2px solid ${theme.color}` : '1px solid var(--border-card)',
                       borderRadius: '12px',
                       padding: '12px',
                       cursor: 'pointer',
@@ -653,7 +658,34 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }}
                   >
                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: theme.color, flexShrink: 0 }} />
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#f8fafc' }}>{theme.name}</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>{theme.name}</span>
+                  </div>
+                ))}
+              </div>
+
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '10px', color: 'var(--accent-amber)', letterSpacing: '0.5px' }}>
+                ☀️ LIGHT THEMES (TOP 5)
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                {THEME_OPTIONS.filter(t => t.mode === 'light').map((theme) => (
+                  <div
+                    key={theme.id}
+                    onClick={() => setSelectedTheme(theme.id)}
+                    style={{
+                      backgroundColor: 'var(--pill-bg)',
+                      border: selectedTheme === theme.id ? `2px solid ${theme.color}` : '1px solid var(--border-card)',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      boxShadow: selectedTheme === theme.id ? `0 0 16px ${theme.color}40` : 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: theme.color, flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>{theme.name}</span>
                   </div>
                 ))}
               </div>

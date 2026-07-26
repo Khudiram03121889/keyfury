@@ -420,18 +420,18 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         {/* Top-Left: Left Fighter Health & Name */}
         <div style={{
           position: 'absolute', top: '20px', left: '24px', width: '280px', zIndex: 10,
-          background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)',
-          padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)'
+          background: 'var(--pill-bg)', backdropFilter: 'blur(8px)',
+          padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-card)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontWeight: 900, color: '#ffffff', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+            <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
               🎩 {leftPlayer?.displayName || 'PLAYER 1'}
             </span>
             <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: '0.85rem' }}>
               {leftHealth} / 200
             </span>
           </div>
-          <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.4)', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
             <div style={{
               width: `${Math.max(0, Math.min(100, (leftHealth / 200) * 100))}%`, height: '100%',
               background: 'linear-gradient(90deg, #22c55e, #4ade80)', transition: 'width 0.2s ease',
@@ -443,15 +443,14 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         {/* Top-Center: Digital Match Timer */}
         <div style={{
           position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10,
-          background: 'rgba(21, 67, 43, 0.85)', backdropFilter: 'blur(10px)',
-          border: '2px solid rgba(134, 187, 155, 0.5)', borderRadius: '14px',
+          background: 'var(--pill-bg)', backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border-card)', borderRadius: '14px',
           padding: '6px 22px', display: 'flex', alignItems: 'center', gap: '12px',
-          boxShadow: '0 6px 20px rgba(0,0,0,0.5)'
+          boxShadow: '0 6px 20px var(--card-shadow)'
         }}>
           <span style={{
             fontSize: '2.4rem', fontWeight: 900, fontFamily: 'var(--font-mono)',
-            color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1,
-            textShadow: '0 2px 8px rgba(0,0,0,0.6)'
+            color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
           }}>
             {remainingTime}
           </span>
@@ -460,26 +459,25 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               const newMuted = soundManager.toggleMuted();
               setMuted(newMuted);
             }}
-            style={{ padding: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex' }}
-            title={muted ? 'Unmute' : 'Mute'}
+            style={{
+              background: 'none', border: 'none', color: muted ? '#f43f5e' : '#34d399',
+              cursor: 'pointer', display: 'flex', alignItems: 'center'
+            }}
+            title={muted ? 'Unmute Audio' : 'Mute Audio'}
           >
-            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </button>
-
-          {/* AI Bot Mode: Small Pause/Play Button */}
           {isBotMode && (
             <button
               onClick={handleTogglePause}
               style={{
-                padding: '6px 12px', borderRadius: '10px',
-                background: isPaused ? '#eab308' : 'rgba(255,255,255,0.15)',
-                border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer',
-                color: isPaused ? '#0f172a' : '#fff',
-                display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 800
+                background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
+                color: '#eab308', borderRadius: '8px', padding: '4px 10px',
+                fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
               }}
-              title={isPaused ? 'Resume Match (Esc)' : 'Pause Match (Esc)'}
+              title={isPaused ? 'Resume' : 'Pause'}
             >
-              {isPaused ? <Play size={15} fill="#0f172a" /> : <Pause size={15} />}
+              {isPaused ? <Play size={15} /> : <Pause size={15} />}
               <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
             </button>
           )}
@@ -489,11 +487,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
             <button
               onClick={() => setShowLeaveConfirmModal(true)}
               style={{
-                padding: '6px 12px', borderRadius: '10px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid rgba(239, 68, 68, 0.4)', cursor: 'pointer', color: '#f87171',
-                display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 800,
-                transition: 'all 0.2s ease'
+                background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444', borderRadius: '8px', padding: '4px 10px',
+                fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
               }}
               title="Leave Match (Forfeit Loss)"
             >
@@ -506,18 +502,18 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         {/* Top-Right: Right Fighter Health & Name */}
         <div style={{
           position: 'absolute', top: '20px', right: '24px', width: '280px', zIndex: 10,
-          background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(8px)',
-          padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)'
+          background: 'var(--pill-bg)', backdropFilter: 'blur(8px)',
+          padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-card)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontWeight: 900, color: '#ffffff', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+            <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
               👓 {rightPlayer?.displayName || 'PLAYER 2'}
             </span>
             <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: '0.85rem' }}>
               {rightHealth} / 200
             </span>
           </div>
-          <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.4)', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
             <div style={{
               width: `${Math.max(0, Math.min(100, (rightHealth / 200) * 100))}%`, height: '100%',
               background: 'linear-gradient(90deg, #ef4444, #f87171)', transition: 'width 0.2s ease',
@@ -550,14 +546,14 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
             {/* --- TRANSLUCENT 2-LINE STATIC TYPING STRIP BANNER --- */}
             <div style={{
               width: '100%',
-              background: 'rgba(15, 23, 42, 0.88)',
+              background: 'var(--bg-card)',
               backdropFilter: 'blur(16px)',
-              border: isErrorFlash ? '2px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.18)',
+              border: isErrorFlash ? '2px solid #ef4444' : '1px solid var(--border-card)',
               borderRadius: '16px',
               padding: '14px 24px',
               boxShadow: isErrorFlash
                 ? '0 0 30px rgba(239, 68, 68, 0.65)'
-                : '0 8px 32px rgba(0, 0, 0, 0.65)',
+                : '0 8px 32px var(--card-shadow)',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
@@ -595,7 +591,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                       <span
                         key={`line1-char-${charIdx}`}
                         style={{
-                          color: isPast ? '#4ade80' : isCurrent ? (isErrorFlash ? '#ffffff' : '#0f172a') : '#cbd5e1',
+                          color: isPast ? '#4ade80' : isCurrent ? (isErrorFlash ? '#ffffff' : '#0f172a') : 'var(--text-main)',
                           background: isCurrent ? (isErrorFlash ? '#ef4444' : '#eab308') : 'transparent',
                           fontWeight: isCurrent ? 800 : isPast ? 700 : 500,
                           borderRadius: isCurrent ? '2px' : '0px'
@@ -615,9 +611,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 overflow: 'hidden',
                 fontSize: '1.2rem',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
-                color: '#64748b',
-                opacity: 0.5,
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                color: 'var(--text-muted)',
+                opacity: 0.7,
+                borderTop: '1px solid var(--border-card)',
                 paddingTop: '6px',
                 letterSpacing: '0px'
               }}>

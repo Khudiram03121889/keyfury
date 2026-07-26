@@ -92,7 +92,7 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
             right: '20px',
             background: 'none',
             border: 'none',
-            color: '#94a3b8',
+            color: 'var(--text-muted)',
             cursor: 'pointer',
             padding: '6px',
             borderRadius: '8px',
@@ -102,8 +102,8 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
             transition: 'all 0.2s ease',
             zIndex: 10
           }}
-          onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
-          onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-main)'; e.currentTarget.style.backgroundColor = 'var(--btn-sec-hover)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
           title="Close Modal"
         >
           <X size={20} />
@@ -145,11 +145,11 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
             <ShieldAlert size={14} /> Queue Timeout (20s)
           </div>
 
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.5px', color: '#f8fafc', margin: 0 }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.5px', color: 'var(--text-heading)', margin: 0 }}>
             No Players Found
           </h2>
 
-          <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '8px', lineHeight: '1.45' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '8px', lineHeight: '1.45' }}>
             We searched for a live human opponent for 20 seconds, but no players are currently available in your skill range.
           </p>
         </div>
@@ -160,7 +160,7 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
             display: 'block',
             fontSize: '0.8rem',
             fontWeight: 800,
-            color: '#38bdf8',
+            color: 'var(--accent-cyan)',
             letterSpacing: '1px',
             textTransform: 'uppercase',
             marginBottom: '10px'
@@ -179,11 +179,11 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
                     padding: '12px 16px',
                     borderRadius: '12px',
                     border: isSelected
-                      ? '1px solid #4ade80'
-                      : '1px solid rgba(255, 255, 255, 0.1)',
+                      ? '2px solid #4ade80'
+                      : '1px solid var(--border-card)',
                     backgroundColor: isSelected
-                      ? 'rgba(74, 222, 128, 0.12)'
-                      : 'rgba(15, 23, 42, 0.6)',
+                      ? 'rgba(74, 222, 128, 0.15)'
+                      : 'var(--btn-sec-bg)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     display: 'flex',
@@ -202,7 +202,7 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
                     />
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.92rem', color: isSelected ? '#4ade80' : '#f8fafc' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.92rem', color: isSelected ? '#4ade80' : 'var(--text-main)' }}>
                           {option.label}
                         </span>
                         <span style={{
@@ -210,14 +210,14 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
                           fontWeight: 800,
                           padding: '2px 8px',
                           borderRadius: '6px',
-                          backgroundColor: isSelected ? 'rgba(74, 222, 128, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                          color: isSelected ? '#4ade80' : '#94a3b8',
+                          backgroundColor: isSelected ? 'rgba(74, 222, 128, 0.25)' : 'var(--pill-bg)',
+                          color: isSelected ? '#4ade80' : 'var(--text-muted)',
                           letterSpacing: '0.5px'
                         }}>
                           {option.badge}
                         </span>
                       </div>
-                      <p style={{ color: '#94a3b8', fontSize: '0.78rem', marginTop: '2px', margin: 0 }}>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '2px', margin: 0 }}>
                         {option.description}
                       </p>
                     </div>
@@ -267,8 +267,8 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              borderColor: 'rgba(56, 189, 248, 0.4)',
-              color: '#38bdf8'
+              borderColor: 'var(--accent-cyan)',
+              color: 'var(--accent-cyan)'
             }}
           >
             <RefreshCw size={16} /> Re-queue Quick Duel
@@ -282,7 +282,7 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
               width: '100%',
               background: 'none',
               border: 'none',
-              color: '#94a3b8',
+              color: 'var(--text-muted)',
               padding: '8px',
               fontSize: '0.85rem',
               fontWeight: 600,
@@ -293,8 +293,8 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
               gap: '6px',
               transition: 'color 0.2s ease'
             }}
-            onMouseOver={(e) => { e.currentTarget.style.color = '#f8fafc'; }}
-            onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; }}
+            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
             <ArrowLeft size={15} /> Back to Lobby
           </button>

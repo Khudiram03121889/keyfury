@@ -365,21 +365,21 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       <div className="glass-panel" style={{ padding: '36px', textAlign: 'center' }}>
         {mode === 'select' && (
           <div>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px' }}>Choose Duel Mode</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Select live human 1v1 duel, practice vs AI Bot, or challenge a friend.</p>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>Choose Duel Mode</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Select live human 1v1 duel, practice vs AI Bot, or challenge a friend.</p>
 
             {/* Mode Badge Banner */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              backgroundColor: 'var(--pill-bg)',
               padding: '8px 20px',
               borderRadius: '12px',
               marginBottom: '28px',
               border: '1px solid rgba(236, 72, 153, 0.4)',
               background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%)',
-              color: '#ffffff',
+              color: 'var(--text-main)',
               fontWeight: 800,
               fontSize: '0.9rem'
             }}>
@@ -404,7 +404,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <LogIn size={15} /> Ranked Mode Requires an Account
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                     Create your account in 5 seconds to earn MMR rating, rank badges, & leaderboard placement.
                   </div>
                 </div>
@@ -433,12 +433,12 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               >
                 <div style={{
                   width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(56, 189, 248, 0.15)',
-                  color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px'
+                  color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px'
                 }}>
                   <Users size={28} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px' }}>Quick Duel <span className="kbd-badge">Enter</span></h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Match with earliest waiting human player</p>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-heading)' }}>Quick Duel <span className="kbd-badge">Enter</span></h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Match with earliest waiting human player</p>
               </button>
 
               <div
@@ -446,7 +446,6 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 style={{
                   padding: '24px 18px',
                   border: '1px solid rgba(74, 222, 128, 0.4)',
-                  background: 'linear-gradient(180deg, rgba(74, 222, 128, 0.08) 0%, rgba(15, 23, 42, 0.4) 100%)',
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -461,7 +460,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                     <Bot size={28} />
                   </div>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px', color: '#4ade80' }}>Practice vs AI Bot</h3>
-                  <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '14px' }}>Adaptive AI scales speed to your WPM</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '14px' }}>Adaptive AI scales speed to your WPM</p>
                 </div>
 
                 <div>
@@ -481,9 +480,9 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                           fontSize: '0.75rem',
                           fontWeight: 600,
                           cursor: 'pointer',
-                          border: botDifficulty === item.id ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.1)',
-                          background: botDifficulty === item.id ? 'rgba(74, 222, 128, 0.25)' : 'rgba(0,0,0,0.3)',
-                          color: botDifficulty === item.id ? '#4ade80' : '#94a3b8',
+                          border: botDifficulty === item.id ? '1px solid #4ade80' : '1px solid var(--border-card)',
+                          background: botDifficulty === item.id ? 'rgba(74, 222, 128, 0.25)' : 'var(--btn-sec-bg)',
+                          color: botDifficulty === item.id ? '#4ade80' : 'var(--text-muted)',
                           transition: 'all 0.15s ease'
                         }}
                       >
@@ -520,15 +519,15 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 }}>
                   <Link size={28} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px' }}>Challenge a Friend</h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Create a private room link & invite someone</p>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-heading)' }}>Challenge a Friend</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Create a private room link & invite someone</p>
               </button>
             </div>
 
             {/* Manual Join Section */}
-            <div style={{ paddingTop: '28px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px' }}>Have a Challenge Link or Room Code?</h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Paste the challenge link or room ID below to join your opponent.</p>
+            <div style={{ paddingTop: '28px', borderTop: '1px solid var(--border-card)' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-heading)' }}>Have a Challenge Link or Room Code?</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>Paste the challenge link or room ID below to join your opponent.</p>
               <div style={{ display: 'flex', gap: '10px', maxWidth: '540px', margin: '0 auto' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                   <img
@@ -553,8 +552,8 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                     onChange={(e) => setInputCode(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleJoinSubmittedCode(); }}
                     style={{
-                      width: '100%', padding: '12px 16px 12px 42px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid rgba(56, 189, 248, 0.3)', color: '#fff', fontSize: '0.9rem', outline: 'none'
+                      width: '100%', padding: '12px 16px 12px 42px', borderRadius: '10px', background: 'var(--btn-sec-bg)',
+                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none'
                     }}
                   />
                 </div>
@@ -582,7 +581,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
         {mode === 'quick' && !serverWarming && (
           <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>
               {queueType === 'ranked' ? 'Ranked Competitive Matchmaking' : 'Casual Quick Duel'}
             </h2>
 
@@ -592,19 +591,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               maxWidth: '480px',
               padding: '24px',
               borderRadius: '16px',
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              boxShadow: '0 0 35px rgba(56, 189, 248, 0.15)',
+              backgroundColor: 'var(--pill-bg)',
+              border: '1px solid var(--border-card)',
+              boxShadow: '0 0 35px var(--card-shadow)',
               position: 'relative'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '10px' }}>
-                <RefreshCw size={24} className="spin" color="#38bdf8" />
-                <span style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>
+                <RefreshCw size={24} className="spin" color="var(--accent-cyan)" />
+                <span style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
                   {String(Math.floor(queueElapsed / 60)).padStart(2, '0')}:{String(queueElapsed % 60).padStart(2, '0')}
                 </span>
               </div>
 
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '14px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '14px' }}>
                 {`Searching for live human opponent... (${Math.max(0, 20 - queueElapsed)}s remaining)`}
               </p>
 
@@ -621,7 +620,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   borderRadius: '10px',
                   padding: '8px 14px',
                   fontSize: '0.8rem',
-                  color: '#38bdf8',
+                  color: 'var(--accent-cyan)',
                   fontWeight: 800,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -637,7 +636,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   borderRadius: '10px',
                   padding: '8px 14px',
                   fontSize: '0.8rem',
-                  color: '#c084fc',
+                  color: 'var(--accent-purple)',
                   fontWeight: 800,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -650,7 +649,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               <div style={{
                 marginTop: '12px',
                 fontSize: '0.75rem',
-                color: '#64748b',
+                color: 'var(--text-muted)',
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '1px'
@@ -667,7 +666,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
             {queueElapsed >= 30 && !opponentName && (
               <div style={{ margin: '24px 0', padding: '16px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '12px' }}>
-                <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '12px' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '12px' }}>
                   No player paired yet. Create a challenge link to play with a friend.
                 </p>
                 <button className="btn-primary" onClick={handleCreateChallenge}>
@@ -693,19 +692,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
         {mode === 'challenge' && !serverWarming && (
           <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>Private Challenge Room</h2>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>Private Challenge Room</h2>
 
             {roomCode && (
               <div style={{ margin: '24px 0' }}>
-                <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Share room link or Room ID with your opponent:</span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Share room link or Room ID with your opponent:</span>
                 <div style={{ display: 'flex', gap: '10px', maxWidth: '520px', margin: '10px auto' }}>
                   <input
                     type="text"
                     readOnly
                     value={`${window.location.origin}/?room=${roomCode}`}
                     style={{
-                      flex: 1, padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)',
-                      border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.9rem'
+                      flex: 1, padding: '10px 14px', borderRadius: '8px', background: 'var(--btn-sec-bg)',
+                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.9rem'
                     }}
                   />
                   <button className="btn-secondary" onClick={copyChallengeUrl}>
@@ -724,7 +723,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 </button>
               </div>
             ) : (
-              <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: '24px 0' }}>
+              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '24px 0' }}>
                 Waiting for your opponent to open the link or enter the Room ID...
               </p>
             )}
@@ -737,7 +736,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
         {mode === 'bot' && !serverWarming && (
           <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>Solo Practice vs AI Bot</h2>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>Solo Practice vs AI Bot</h2>
             <p style={{ color: '#4ade80', fontSize: '1.1rem', margin: '16px 0' }}>
               Opponent Ready: Highland Bot AI
             </p>

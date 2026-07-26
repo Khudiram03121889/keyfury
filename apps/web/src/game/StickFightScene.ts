@@ -1021,12 +1021,6 @@ export class StickFightScene extends Phaser.Scene {
     const gloveColor = isP1 ? 0x0284c7 : 0xdc2626; // Cyan for P1, Crimson for P2
     const eyeColor = isP1 ? 0x38bdf8 : 0xf87171;
 
-    // Glowing combo aura ring
-    if (comboStreak >= 2) {
-      fxG.lineStyle(4, gloveColor, 0.85);
-      fxG.strokeCircle(x, y - 60, 64 + Math.sin(time / 100) * 6);
-    }
-
     // 1. Core Anatomy Parameters
     // Platform surface: y. Hips at y - 52. Neck at y - 106. Head at y - 128.
     let hipX = x - facing * 2;

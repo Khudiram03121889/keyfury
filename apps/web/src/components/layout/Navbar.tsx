@@ -47,10 +47,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
         />
         <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1 }}>
-            KEY<span style={{ color: '#38bdf8' }}>FURY</span>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1, color: 'var(--text-heading)' }}>
+            KEY<span style={{ color: 'var(--accent-cyan)' }}>FURY</span>
           </h1>
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
             ESPORTS 1V1
           </span>
         </div>
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="btn-secondary"
           style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: '10px' }}
         >
-          <Trophy size={16} color="#fbbf24" /> Leaderboard
+          <Trophy size={16} color="var(--accent-amber)" /> Leaderboard
         </button>
 
         {/* Profile Card & Explicit Auth Buttons */}
@@ -90,9 +90,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              backgroundColor: 'rgba(15, 23, 42, 0.8)',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              boxShadow: '0 0 15px rgba(56, 189, 248, 0.2)',
+              backgroundColor: 'var(--pill-bg)',
+              border: '1px solid var(--border-card)',
+              boxShadow: '0 4px 14px var(--card-shadow)',
               borderRadius: '12px',
               padding: '6px 14px',
               cursor: 'pointer',
@@ -115,10 +115,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   height: '28px',
                   borderRadius: '8px',
                   objectFit: 'cover',
-                  border: '1px solid #38bdf8'
+                  border: '1px solid var(--accent-cyan)'
                 }}
               />
-              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#f8fafc' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 {userProfile.displayName}
               </span>
             </div>
@@ -132,16 +132,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  backgroundColor: 'var(--pill-bg)',
+                  border: '1px solid var(--border-card)',
                   borderRadius: '10px',
                   padding: '6px 10px',
                   cursor: 'pointer',
                   fontSize: '0.8rem',
-                  color: '#94a3b8'
+                  color: 'var(--text-muted)'
                 }}
               >
-                <User size={14} /> Guest: <strong style={{ color: '#f8fafc' }}>{userProfile.displayName}</strong>
+                <User size={14} /> Guest: <strong style={{ color: 'var(--text-main)' }}>{userProfile.displayName}</strong>
               </div>
             )}
             <button
