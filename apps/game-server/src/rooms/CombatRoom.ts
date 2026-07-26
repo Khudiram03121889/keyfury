@@ -164,8 +164,11 @@ export class CombatRoom extends Room<CombatRoomState> {
       if (p.mmr > maxMmr) maxMmr = p.mmr;
     });
 
-    if (maxMmr >= 1600) return 'expert';
+    // Platinum Tier (2000+ MMR) & above unlock symbols and punctuation prompts
+    if (maxMmr >= 2000) return 'expert';
+    // Silver & Gold Tiers (1200-1999 MMR) get harder/longer English vocabulary words (NO symbols)
     if (maxMmr >= 1200) return 'advanced';
+    // Bronze Tier (< 1200 MMR) gets standard words
     return 'normal';
   }
 

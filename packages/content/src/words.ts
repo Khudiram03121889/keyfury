@@ -84,17 +84,23 @@ export const WORD_DECK_RAW: string[] = [
   'epicenter', 'escalate', 'fortress', 'frontier', 'guardian', 'horizon'
 ];
 
+// --- Silver & Gold Tiers (1200-1999 MMR): Harder/Longer English Vocabulary (NO Symbols) ---
 export const ADVANCED_WORD_DECK: string[] = [
-  'Flame!', 'Strike?', 'Thunder!', 'Quick-step', 'Overdrive.', 'Highland:', 'Apex-1', 'Shield-up',
-  'Danger!', 'Victory!', 'Blade-run', 'Fury-5', 'Clash!', 'Battle-cry', 'Impact!', 'Honor-bound',
-  'Warrior!', 'Cross-blade', 'Sky-fall', 'Shock-wave', 'Unsheathe!', 'Power-up!', 'Vanguard:',
-  'Steel-core', 'Storm-run', 'Iron-will', 'Flash-cut', 'Counter!', 'Revenge!', 'Break-thru'
+  'breakthrough', 'perseverance', 'architecture', 'philosophy', 'orchestration', 'equilibrium',
+  'metamorphosis', 'constellation', 'transformation', 'infrastructure', 'reconnaissance',
+  'synchronization', 'cryptography', 'cybernetics', 'extraordinary', 'jurisdiction',
+  'multiplication', 'qualification', 'spontaneous', 'telecommunication', 'vulnerability',
+  'unprecedented', 'kaleidoscope', 'illumination', 'bureaucracy', 'revolutionary'
 ];
 
+// --- Platinum+ Tiers (2000+ MMR / Pro Bot): Symbols, Punctuation & Shift Prompts ---
 export const EXPERT_WORD_DECK: string[] = [
+  'Flame!', 'Strike?', 'Thunder!', 'Quick-step', 'Overdrive.', 'Highland:', 'Apex-1', 'Shield-up',
+  'Danger!', 'Victory!', 'Blade-run', 'Fury-5', 'Clash!', 'Battle-cry', 'Impact!', 'Honor-bound',
   'strike()', 'combo#1', 'power:99', 'critical!', 'vector<int>', 'key:val', 'master-class!',
   'hyper-drive#9', 'fire(100)', 'voidmain()', 'run(fast)', 'damage*2', 'hit:999', 'ctrl+alt',
   'slash/dash', 'shield[100]', 'heavy#slam', 'ultra!kill', 'override()', 'alpha&omega',
   'max-power!', 'fast=>strike', 'lock&load', 'status:ready', 'input(key)', 'fatal!hit'
 ];
+
 

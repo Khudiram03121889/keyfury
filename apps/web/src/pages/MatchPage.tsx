@@ -326,11 +326,11 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     let char = event.key;
     if (char === 'Spacebar' || char === ' ') {
       char = ' ';
-    } else {
-      char = char.toLowerCase();
     }
 
-    if (!/^[a-z0-9 ?,.!'\"]$/i.test(char)) return;
+    // Allow all single printable ASCII characters (letters, numbers, space, hyphens '-', and symbols)
+    if (char.length !== 1 || !/^[ -~]$/.test(char)) return;
+
 
     event.preventDefault();
     keySeqRef.current++;

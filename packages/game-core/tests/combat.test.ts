@@ -25,13 +25,13 @@ describe('Deck Generation', () => {
     expect(deck1).not.toEqual(deck2);
   });
 
-  it('includes symbols and capitalization in advanced and expert difficulty tiers', () => {
+  it('keeps Silver & Gold decks symbol-free and unlocks symbols starting at Platinum (expert)', () => {
     const normalDeck = generateSeededDeck('tier-seed-99', 50, 'normal');
     const advancedDeck = generateSeededDeck('tier-seed-99', 50, 'advanced');
     const expertDeck = generateSeededDeck('tier-seed-99', 50, 'expert');
 
     expect(normalDeck.some((w) => /[^a-z ]/.test(w))).toBe(false);
-    expect(advancedDeck.some((w) => /[^a-z ]/.test(w))).toBe(true);
+    expect(advancedDeck.some((w) => /[^a-z ]/.test(w))).toBe(false);
     expect(expertDeck.some((w) => /[^a-z ]/.test(w))).toBe(true);
   });
 });

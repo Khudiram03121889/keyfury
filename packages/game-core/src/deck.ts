@@ -57,21 +57,22 @@ export function generateSeededDeck(
   }
 
   let uniqueWords: string[];
-  if (difficulty === 'normal') {
-    uniqueWords = Array.from(
-      new Set(
-        rawPool
-          .map((w) => w.toLowerCase().replace(/[^a-z]/g, ''))
-          .filter((w) => w.length >= 3 && w.length <= 9)
-      )
-    );
-  } else {
-    // Preserve symbols, capitalization, and numbers for advanced & expert tiers
+  if (difficulty === 'expert') {
+    // Preserve symbols, capitalization, hyphens, and numbers for Platinum+ / Expert tier
     uniqueWords = Array.from(
       new Set(
         rawPool
           .map((w) => w.trim())
-          .filter((w) => w.length >= 3 && w.length <= 14)
+          .filter((w) => w.length >= 3 && w.length <= 16)
+      )
+    );
+  } else {
+    // Normal (Bronze) & Advanced (Silver/Gold): Clean lowercase English words (NO symbols)
+    uniqueWords = Array.from(
+      new Set(
+        rawPool
+          .map((w) => w.toLowerCase().replace(/[^a-z]/g, ''))
+          .filter((w) => w.length >= 3 && w.length <= 16)
       )
     );
   }

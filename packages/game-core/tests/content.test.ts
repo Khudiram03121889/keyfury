@@ -19,14 +19,14 @@ describe('Word Deck Content Validation', () => {
     });
   });
 
-  it('contains valid advanced and expert tier word decks with symbols and capitalization', () => {
+  it('contains valid advanced (symbol-free) and expert (symbol-enabled) tier word decks', () => {
     expect(ADVANCED_WORD_DECK.length).toBeGreaterThan(0);
     expect(EXPERT_WORD_DECK.length).toBeGreaterThan(0);
 
     const hasSymbolAdvanced = ADVANCED_WORD_DECK.some((w) => /[^a-z]/.test(w));
     const hasSymbolExpert = EXPERT_WORD_DECK.some((w) => /[^a-z]/.test(w));
 
-    expect(hasSymbolAdvanced).toBe(true);
+    expect(hasSymbolAdvanced).toBe(false);
     expect(hasSymbolExpert).toBe(true);
   });
 });
