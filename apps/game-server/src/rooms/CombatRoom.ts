@@ -65,7 +65,7 @@ export function calculateElo(
   ratingB: number,
   scoreA: number,
   isPlacement: boolean = false
-): EloResult {
+): EloResult & { deltaA: number; deltaB: number; newRatingA: number; newRatingB: number } {
   const kFactor = isPlacement ? 64 : 32;
   const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
   const expectedB = 1 / (1 + Math.pow(10, (ratingA - ratingB) / 400));
@@ -74,11 +74,19 @@ export function calculateElo(
   const deltaA = Math.round(kFactor * (scoreA - expectedA));
   const deltaB = Math.round(kFactor * (scoreB - expectedB));
 
+  const newRatingA = Math.max(0, ratingA + deltaA);
+  const newRatingB = Math.max(0, ratingB + deltaB);
+
+  const isAWinner = scoreA >= 0.5;
   return {
-    winnerRating: Math.max(0, ratingA + deltaA),
-    loserRating: Math.max(0, ratingB + deltaB),
-    winnerDelta: deltaA,
-    loserDelta: deltaB,
+    deltaA,
+    deltaB,
+    newRatingA,
+    newRatingB,
+    winnerRating: isAWinner ? newRatingA : newRatingB,
+    loserRating: isAWinner ? newRatingB : newRatingA,
+    winnerDelta: isAWinner ? deltaA : deltaB,
+    loserDelta: isAWinner ? deltaB : deltaA,
     kFactor
   };
 }
@@ -731,10 +739,10 @@ export class CombatRoom extends Room<CombatRoomState> {
       const isPlacement = p1.state.matchesPlayed < 10 || p2.state.matchesPlayed < 10;
       const elo = calculateElo(p1.state.mmr, p2.state.mmr, score1, isPlacement);
 
-      mmrDeltas[p1.sessionId] = { delta: elo.winnerDelta, newMmr: elo.winnerRating };
-      mmrDeltas[p2.sessionId] = { delta: elo.loserDelta, newMmr: elo.loserRating };
-      p1.state.mmr = elo.winnerRating;
-      p2.state.mmr = elo.loserRating;
+      mmrDeltas[p1.sessionId] = { delta: elo.deltaA, newMmr: elo.newRatingA };
+      mmrDeltas[p2.sessionId] = { delta: elo.deltaB, newMmr: elo.newRatingB };
+      p1.state.mmr = elo.newRatingA;
+      p2.state.mmr = elo.newRatingB;
     } else if (playersList.length === 1) {
       const p = playersList[0];
       mmrDeltas[p.sessionId] = { delta: 0, newMmr: p.state.mmr };
@@ -760,10 +768,6 @@ export class CombatRoom extends Room<CombatRoomState> {
         mmr_delta: eloInfo.delta,
         new_mmr: eloInfo.newMmr
       });
-
-      if (!p.profileId.startsWith('guest-') && !p.profileId.startsWith('bot-')) {
-        updatePlayerProfileMmr(p.profileId, eloInfo.delta, eloInfo.newMmr, isWinner);
-      }
     });
 
     const winnerProfileId = winnerSessionId ? this.state.players.get(winnerSessionId)?.profileId : undefined;

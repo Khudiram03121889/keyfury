@@ -24,37 +24,37 @@ DECLARE
   v_tier TEXT;
   v_division TEXT;
 BEGIN
-  IF p_mmr < 800 THEN
+  IF p_mmr < 400 THEN
     v_tier := 'Bronze'; v_division := 'III';
-  ELSIF p_mmr < 1000 THEN
+  ELSIF p_mmr < 800 THEN
     v_tier := 'Bronze'; v_division := 'II';
   ELSIF p_mmr < 1200 THEN
     v_tier := 'Bronze'; v_division := 'I';
-  ELSIF p_mmr < 1400 THEN
+  ELSIF p_mmr < 1334 THEN
     v_tier := 'Silver'; v_division := 'III';
-  ELSIF p_mmr < 1600 THEN
+  ELSIF p_mmr < 1467 THEN
     v_tier := 'Silver'; v_division := 'II';
-  ELSIF p_mmr < 1800 THEN
+  ELSIF p_mmr < 1600 THEN
     v_tier := 'Silver'; v_division := 'I';
-  ELSIF p_mmr < 2000 THEN
+  ELSIF p_mmr < 1734 THEN
     v_tier := 'Gold'; v_division := 'III';
-  ELSIF p_mmr < 2200 THEN
+  ELSIF p_mmr < 1867 THEN
     v_tier := 'Gold'; v_division := 'II';
-  ELSIF p_mmr < 2400 THEN
+  ELSIF p_mmr < 2000 THEN
     v_tier := 'Gold'; v_division := 'I';
-  ELSIF p_mmr < 2600 THEN
+  ELSIF p_mmr < 2134 THEN
     v_tier := 'Platinum'; v_division := 'III';
-  ELSIF p_mmr < 2800 THEN
+  ELSIF p_mmr < 2267 THEN
     v_tier := 'Platinum'; v_division := 'II';
-  ELSIF p_mmr < 3000 THEN
+  ELSIF p_mmr < 2400 THEN
     v_tier := 'Platinum'; v_division := 'I';
-  ELSIF p_mmr < 3300 THEN
+  ELSIF p_mmr < 2534 THEN
     v_tier := 'Diamond'; v_division := 'III';
-  ELSIF p_mmr < 3600 THEN
+  ELSIF p_mmr < 2667 THEN
     v_tier := 'Diamond'; v_division := 'II';
-  ELSIF p_mmr < 4000 THEN
+  ELSIF p_mmr < 2800 THEN
     v_tier := 'Diamond'; v_division := 'I';
-  ELSIF p_mmr < 4500 THEN
+  ELSIF p_mmr < 3200 THEN
     v_tier := 'Master'; v_division := 'I';
   ELSE
     v_tier := 'Grandmaster'; v_division := 'I';
@@ -129,9 +129,13 @@ BEGIN
         v_is_win := (p_elem->>'result' = 'win') OR (p_match->>'winner_profile_id' IS NOT NULL AND (p_match->>'winner_profile_id')::uuid = v_profile_id);
         v_is_loss := (p_elem->>'result' = 'loss') OR (p_match->>'winner_profile_id' IS NOT NULL AND (p_match->>'winner_profile_id')::uuid != v_profile_id AND NOT v_is_win);
 
-        SELECT GREATEST(0, mmr + v_elo_delta) INTO v_new_mmr FROM profiles WHERE id = v_profile_id;
-        IF v_new_mmr IS NULL THEN
-          v_new_mmr := GREATEST(0, 1000 + v_elo_delta);
+        IF (p_elem->>'new_mmr') IS NOT NULL THEN
+          v_new_mmr := GREATEST(0, (p_elem->>'new_mmr')::int);
+        ELSE
+          SELECT GREATEST(0, mmr + v_elo_delta) INTO v_new_mmr FROM profiles WHERE id = v_profile_id;
+          IF v_new_mmr IS NULL THEN
+            v_new_mmr := GREATEST(0, 1000 + v_elo_delta);
+          END IF;
         END IF;
 
         v_rank := calculate_rank_tier(v_new_mmr);

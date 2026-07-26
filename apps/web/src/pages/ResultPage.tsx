@@ -41,12 +41,17 @@ export const ResultPage: React.FC<ResultPageProps> = ({
   }
 
   let calculatedMmrDelta = 0;
+  let calculatedNewMmr: number | undefined = undefined;
+
   if (matchResult?.mmrDeltas && matchResult.mmrDeltas[room.sessionId]) {
     calculatedMmrDelta = matchResult.mmrDeltas[room.sessionId].delta;
-  } else if (myRawStats?.mmrDelta !== undefined) {
-    calculatedMmrDelta = myRawStats.mmrDelta;
-  } else if (myRawStats?.elo_delta !== undefined) {
-    calculatedMmrDelta = myRawStats.elo_delta;
+    calculatedNewMmr = matchResult.mmrDeltas[room.sessionId].newMmr;
+  } else if (myRawStats?.mmrDelta !== undefined || myRawStats?.mmr_delta !== undefined) {
+    calculatedMmrDelta = myRawStats?.mmrDelta ?? myRawStats?.mmr_delta ?? (isWinner ? 24 : -16);
+    calculatedNewMmr = myRawStats?.newMmr ?? myRawStats?.new_mmr ?? myRawStats?.mmr;
+  } else if (myRawStats?.mmr !== undefined) {
+    calculatedNewMmr = myRawStats.mmr;
+    calculatedMmrDelta = isWinner ? 24 : -16;
   } else {
     calculatedMmrDelta = isWinner ? 24 : -16;
   }
@@ -59,7 +64,8 @@ export const ResultPage: React.FC<ResultPageProps> = ({
     maxCombo: myRawStats?.highestCombo ?? myRawStats?.highest_combo ?? 0,
     finalHealth: myRawStats?.health ?? myRawStats?.final_health ?? (isWinner ? 100 : 0),
     wordsCompleted: myRawStats?.wordsCompleted ?? myRawStats?.words_completed ?? 0,
-    mmrDelta: calculatedMmrDelta
+    mmrDelta: calculatedMmrDelta,
+    newMmr: calculatedNewMmr
   };
 
   const opponentStats: MatchPlayerStats = {

@@ -14,6 +14,7 @@ export interface MatchPlayerStats {
   finalHealth: number;
   wordsCompleted: number;
   mmrDelta?: number;
+  newMmr?: number;
 }
 
 export interface PostMatchScreenProps {
@@ -36,7 +37,8 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
   onViewProfile
 }) => {
   const mmrDelta = playerStats.mmrDelta ?? (isWinner ? 24 : -16);
-  const initialMmr = (userProfile?.mmr ?? 1000) - mmrDelta;
+  const finalMmr = playerStats.newMmr ?? Math.max(0, (userProfile?.mmr ?? 1000));
+  const initialMmr = Math.max(0, finalMmr - mmrDelta);
   
   // Animated MMR delta counting effect
   const [displayedDelta, setDisplayedDelta] = useState(0);
@@ -79,14 +81,15 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
         finalHealth: playerStats.finalHealth,
         wordsCompleted: playerStats.wordsCompleted,
         opponentName: opponentStats.displayName,
-        mmrDelta
+        mmrDelta,
+        finalMmr
       }).then(({ newAchievements }) => {
         if (newAchievements && newAchievements.length > 0) {
           setUnlockedAchievements(newAchievements);
         }
       });
     }
-  }, [userProfile?.id, isWinner, playerStats, opponentStats, mmrDelta]);
+  }, [userProfile?.id, isWinner, playerStats, opponentStats, mmrDelta, finalMmr]);
 
   const initialTier = getRankTier(initialMmr);
   const currentTier = getRankTier(currentMmr);

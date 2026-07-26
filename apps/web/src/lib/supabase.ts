@@ -465,11 +465,31 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
         .single();
 
       if (!error && data) {
-        // ponytail: merge localStorage cosmetic overrides so profile changes appear immediately
+        // ponytail: merge localStorage cosmetic & MMR overrides so profile changes appear immediately
         // even if Supabase update was slow or RLS blocked the anonymous write
         const localAvatar = localStorage.getItem('keyfury_avatar');
         const localTheme = localStorage.getItem('keyfury_theme');
         const localName = localStorage.getItem('keyfury_guest_name');
+        const savedProfileStr = localStorage.getItem(`keyfury_profile_${targetId}`);
+        const gMmrStr = localStorage.getItem('keyfury_guest_mmr');
+
+        let mmr = data.mmr ?? 1000;
+        let matchesPlayed = data.matches_played ?? 0;
+        let wins = data.wins ?? 0;
+        let losses = data.losses ?? 0;
+
+        if (savedProfileStr) {
+          try {
+            const p = JSON.parse(savedProfileStr);
+            if (typeof p.mmr === 'number' && p.mmr > mmr) mmr = p.mmr;
+            if (typeof p.matchesPlayed === 'number' && p.matchesPlayed > matchesPlayed) matchesPlayed = p.matchesPlayed;
+            if (typeof p.wins === 'number' && p.wins > wins) wins = p.wins;
+            if (typeof p.losses === 'number' && p.losses > losses) losses = p.losses;
+          } catch (_e) {}
+        } else if (gMmrStr) {
+          const parsed = parseInt(gMmrStr, 10);
+          if (!isNaN(parsed) && parsed > mmr) mmr = parsed;
+        }
 
         return {
           id: data.id,
@@ -479,17 +499,17 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           bio: data.bio || '',
           keycapTheme: localTheme || data.keycap_theme || 'cyberpunk',
           accentColor: data.accent_color || '#00ffcc',
-          mmr: data.mmr ?? 1000,
-          rankTier: (data.rank_tier as RankTier) || getRankTier(data.mmr ?? 1000),
+          mmr,
+          rankTier: getRankTier(mmr),
           rankDivision: data.rank_division || 'I',
-          matchesPlayed: data.matches_played ?? 0,
-          wins: data.wins ?? 0,
-          losses: data.losses ?? 0,
+          matchesPlayed,
+          wins,
+          losses,
           placementRemaining: data.placement_remaining ?? 5,
           avgWpm: data.avg_wpm ? Number(data.avg_wpm) : 75,
           peakWpm: data.peak_wpm ? Number(data.peak_wpm) : 110,
           accuracy: data.accuracy ? Number(data.accuracy) : 95.0,
-          isGuest: false,
+          isGuest: data.is_guest ?? false,
           createdAt: data.created_at
         };
       }
@@ -749,6 +769,7 @@ export async function saveMatchStats(
     opponentName?: string;
     mode?: string;
     mmrDelta?: number;
+    finalMmr?: number;
   }
 ): Promise<{ newAchievements: Achievement[] }> {
   // 1. Save match item to user local/remote history
@@ -813,7 +834,9 @@ export async function saveMatchStats(
     const updatedAcc = Number(
       (((currentProfile.accuracy || 95) * (updatedMatches - 1) + stats.accuracy) / updatedMatches).toFixed(1)
     );
-    const newMmr = Math.max(100, (currentProfile.mmr || 1000) + (stats.mmrDelta || (stats.result === 'WIN' ? 25 : -15)));
+    const newMmr = stats.finalMmr !== undefined
+      ? Math.max(0, stats.finalMmr)
+      : Math.max(0, (currentProfile.mmr || 1000) + (stats.mmrDelta || (stats.result === 'WIN' ? 25 : -15)));
     const newTier = getRankTier(newMmr);
 
     const updatedProfile: UserProfile = {
@@ -829,8 +852,10 @@ export async function saveMatchStats(
     };
     localStorage.setItem(`keyfury_profile_${userId}`, JSON.stringify(updatedProfile));
     localStorage.setItem('keyfury_guest_mmr', String(newMmr));
-    if (!currentProfile.isGuest) {
+    try {
       await updateUserProfile(updatedProfile);
+    } catch (_e) {
+      // Fallback to local storage persistence
     }
   }
 
