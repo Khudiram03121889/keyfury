@@ -24,7 +24,18 @@ describe('Deck Generation', () => {
     const deck2 = generateSeededDeck('seed-b', 50);
     expect(deck1).not.toEqual(deck2);
   });
+
+  it('includes symbols and capitalization in advanced and expert difficulty tiers', () => {
+    const normalDeck = generateSeededDeck('tier-seed-99', 50, 'normal');
+    const advancedDeck = generateSeededDeck('tier-seed-99', 50, 'advanced');
+    const expertDeck = generateSeededDeck('tier-seed-99', 50, 'expert');
+
+    expect(normalDeck.some((w) => /[^a-z ]/.test(w))).toBe(false);
+    expect(advancedDeck.some((w) => /[^a-z ]/.test(w))).toBe(true);
+    expect(expertDeck.some((w) => /[^a-z ]/.test(w))).toBe(true);
+  });
 });
+
 
 describe('Combat Logic & Sequence Validation', () => {
   it('correctly maps word length to attack kinds and base damage', () => {

@@ -144,8 +144,7 @@ export class CombatRoom extends Room<CombatRoomState> {
       }, 10 * 60 * 1000);
     }
 
-    this.words = generateSeededDeck(this.state.deckSeed, 100);
-    this.words.forEach((w) => this.state.words.push(w));
+    this.generateRoomDeck();
 
     this.onMessage('ready', (client, message) => this.handleClientMessage(client, 'ready', message));
     this.onMessage('key_intent', (client, message) => this.handleClientMessage(client, 'key_intent', message));
@@ -154,6 +153,42 @@ export class CombatRoom extends Room<CombatRoomState> {
     this.onMessage('toggle_pause', (client, message) => this.handleClientMessage(client, 'toggle_pause', message));
 
     console.log(`[CombatRoom] Created room ${this.roomId} (challenge=${this.state.isChallenge}, bot=${this.hasBotOpponent})`);
+  }
+
+  private getDeckDifficulty(): 'normal' | 'advanced' | 'expert' {
+    if (this.botDifficulty === 'pro') return 'expert';
+    if (this.botDifficulty === 'fighter') return 'advanced';
+
+    let maxMmr = 1000;
+    this.state.players.forEach((p) => {
+      if (p.mmr > maxMmr) maxMmr = p.mmr;
+    });
+
+    if (maxMmr >= 1600) return 'expert';
+    if (maxMmr >= 1200) return 'advanced';
+    return 'normal';
+  }
+
+  private generateRoomDeck() {
+    const difficulty = this.getDeckDifficulty();
+    this.state.words.clear();
+    this.words = generateSeededDeck(this.state.deckSeed, 100, difficulty);
+    this.words.forEach((w) => this.state.words.push(w));
+    console.log(`[CombatRoom] Generated deck for room ${this.roomId} (seed=${this.state.deckSeed}, tier=${difficulty})`);
+  }
+
+  private startCountdown() {
+    this.generateRoomDeck();
+    this.state.status = 'countdown';
+    this.state.countdownSeconds = 3;
+
+    this.countdownInterval = setInterval(() => {
+      this.state.countdownSeconds--;
+      if (this.state.countdownSeconds <= 0) {
+        if (this.countdownInterval) clearInterval(this.countdownInterval);
+        this.startMatch();
+      }
+    }, 1000);
   }
 
   onJoin(client: Client, options: { profileId?: string; displayName?: string; withBot?: boolean; botDifficulty?: BotDifficulty; mmr?: number; level?: number; matchesPlayed?: number }) {
@@ -407,19 +442,6 @@ export class CombatRoom extends Room<CombatRoomState> {
     if (allReady) {
       this.startCountdown();
     }
-  }
-
-  private startCountdown() {
-    this.state.status = 'countdown';
-    this.state.countdownSeconds = 3;
-
-    this.countdownInterval = setInterval(() => {
-      this.state.countdownSeconds--;
-      if (this.state.countdownSeconds <= 0) {
-        clearInterval(this.countdownInterval);
-        this.startMatch();
-      }
-    }, 1000);
   }
 
   private startMatch() {
@@ -790,9 +812,7 @@ export class CombatRoom extends Room<CombatRoomState> {
       this.state.status = 'waiting';
       this.state.deckSeed = `deck-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
-      this.state.words.clear();
-      this.words = generateSeededDeck(this.state.deckSeed, 100);
-      this.words.forEach((w) => this.state.words.push(w));
+      this.generateRoomDeck();
 
       this.state.winnerSessionId = '';
       this.state.endReason = '';
