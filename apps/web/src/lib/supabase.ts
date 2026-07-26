@@ -81,15 +81,39 @@ export interface UserAchievement {
 }
 
 export const DEFAULT_ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_blood', title: 'First Blood', description: 'Complete your first 1v1 typing match.', icon: '🥊', category: 'combat', maxProgress: 1, rewardXp: 50 },
-  { id: 'speed_demon', title: 'Speed Demon', description: 'Reach 100+ WPM in a live match.', icon: '⚡', category: 'speed', maxProgress: 1, rewardXp: 100 },
-  { id: 'hyper_typist', title: 'Hyper Typist', description: 'Reach 130+ WPM in a live match.', icon: '🚀', category: 'speed', maxProgress: 1, rewardXp: 200 },
-  { id: 'combo_master', title: 'Combo Master', description: 'Achieve a 20+ combo streak in live combat.', icon: '🔥', category: 'combat', maxProgress: 1, rewardXp: 150 },
-  { id: 'first_victory', title: 'First Victory', description: 'Win your first Ranked 1v1 match.', icon: '🏆', category: 'ranked', maxProgress: 1, rewardXp: 100 },
-  { id: 'veteran_warrior', title: 'Veteran Warrior', description: 'Win 10 Ranked 1v1 matches.', icon: '🥇', category: 'ranked', maxProgress: 10, rewardXp: 300 },
+  // --- Beginner Tier (Easy & Onboarding) ---
+  { id: 'first_blood', title: 'First Blood', description: 'Complete your first 1v1 typing duel.', icon: '🥊', category: 'combat', maxProgress: 1, rewardXp: 50 },
+  { id: 'first_victory', title: 'First Victory', description: 'Win your first Ranked or Quick Duel match.', icon: '🏆', category: 'ranked', maxProgress: 1, rewardXp: 100 },
+  { id: 'warmup', title: 'Warmup Specialist', description: 'Reach 40+ WPM in a live match.', icon: '⚡', category: 'speed', maxProgress: 1, rewardXp: 50 },
+  { id: 'steady_fingers', title: 'Steady Fingers', description: 'Complete a match with 90%+ typing accuracy.', icon: '🎯', category: 'skill', maxProgress: 1, rewardXp: 50 },
+  { id: 'combo_starter', title: 'Combo Starter', description: 'Achieve a 5x combo streak in live combat.', icon: '🔥', category: 'combat', maxProgress: 1, rewardXp: 50 },
+  { id: 'clean_fight', title: 'Flawless Victory', description: 'Win a match with 90%+ final health remaining.', icon: '🛡️', category: 'combat', maxProgress: 1, rewardXp: 100 },
+  { id: 'bot_slayer', title: 'Bot Crusher', description: 'Defeat an AI Bot opponent in practice mode.', icon: '🤖', category: 'combat', maxProgress: 1, rewardXp: 75 },
+
+  // --- Intermediate Tier (Medium Challenge) ---
+  { id: 'speed_demon', title: 'Speed Demon', description: 'Reach 80+ WPM in a live match.', icon: '⚡', category: 'speed', maxProgress: 1, rewardXp: 100 },
+  { id: 'century_club', title: 'Century Club', description: 'Reach 100+ WPM in a live match.', icon: '💯', category: 'speed', maxProgress: 1, rewardXp: 150 },
+  { id: 'combo_master', title: 'Combo Master', description: 'Achieve a 20x combo streak in live combat.', icon: '🔥', category: 'combat', maxProgress: 1, rewardXp: 150 },
   { id: 'sharpshooter', title: 'Sharpshooter', description: 'Complete a match with 98%+ typing accuracy.', icon: '🎯', category: 'skill', maxProgress: 1, rewardXp: 150 },
+  { id: 'veteran_warrior', title: 'Veteran Warrior', description: 'Win 10 Ranked 1v1 matches.', icon: '🥇', category: 'ranked', maxProgress: 10, rewardXp: 300 },
+  { id: 'silver_warrior', title: 'Silver Gladiator', description: 'Reach 1200+ MMR rating (Silver Tier).', icon: '⚔️', category: 'ranked', maxProgress: 1, rewardXp: 200 },
+  { id: 'gold_champion', title: 'Gold Champion', description: 'Reach 1600+ MMR rating (Gold Tier).', icon: '🎖️', category: 'ranked', maxProgress: 1, rewardXp: 300 },
+  { id: 'marathon_runner', title: 'Marathon Typist', description: 'Type 500 total words across all matches.', icon: '🏃', category: 'skill', maxProgress: 500, rewardXp: 250 },
+  { id: 'comeback_kid', title: 'Comeback Kid', description: 'Win a match after dropping below 25% health.', icon: '💖', category: 'combat', maxProgress: 1, rewardXp: 200 },
+  { id: 'bot_master', title: 'AI Dominator', description: 'Defeat a Pro or Adaptive AI Bot.', icon: '🧠', category: 'combat', maxProgress: 1, rewardXp: 150 },
+
+  // --- High Level & Elite Tier (Advanced & Hardcore) ---
+  { id: 'hyper_typist', title: 'Hyper Typist', description: 'Reach 130+ WPM in a live match.', icon: '🚀', category: 'speed', maxProgress: 1, rewardXp: 250 },
+  { id: 'lightning_strike', title: 'Lightning Velocity', description: 'Reach 150+ WPM in a live match.', icon: '⚡', category: 'speed', maxProgress: 1, rewardXp: 500 },
+  { id: 'perfectionist', title: 'Pure Perfection', description: 'Win a 1v1 match with 100% typing accuracy.', icon: '✨', category: 'skill', maxProgress: 1, rewardXp: 300 },
+  { id: 'unbreakable', title: 'Unbreakable Combo', description: 'Achieve a 50x combo streak in a live duel.', icon: '💥', category: 'combat', maxProgress: 1, rewardXp: 350 },
+  { id: 'platinum_elite', title: 'Platinum Elite', description: 'Reach 2000+ MMR rating (Platinum Tier).', icon: '💠', category: 'ranked', maxProgress: 1, rewardXp: 400 },
   { id: 'diamond_ascendant', title: 'Diamond Ascendant', description: 'Reach 2400+ MMR rating (Diamond Tier).', icon: '💎', category: 'ranked', maxProgress: 1, rewardXp: 500 },
-  { id: 'keyboard_god', title: 'Keyboard God', description: 'Win 25 Ranked 1v1 matches.', icon: '👑', category: 'ranked', maxProgress: 25, rewardXp: 1000 }
+  { id: 'master_realm', title: 'Master Realm', description: 'Reach 2800+ MMR rating (Master Tier).', icon: '⚡', category: 'ranked', maxProgress: 1, rewardXp: 750 },
+  { id: 'grandmaster_god', title: 'Grandmaster Deity', description: 'Reach 3200+ MMR rating (Grandmaster Tier).', icon: '👑', category: 'ranked', maxProgress: 1, rewardXp: 1000 },
+  { id: 'keyboard_god', title: 'Keyboard God', description: 'Win 25 Ranked 1v1 matches.', icon: '👑', category: 'ranked', maxProgress: 25, rewardXp: 500 },
+  { id: 'legendary_warrior', title: 'Legendary Century', description: 'Win 100 Ranked 1v1 matches.', icon: '⚔️', category: 'ranked', maxProgress: 100, rewardXp: 1500 },
+  { id: 'wordsmith_master', title: 'Word Titan', description: 'Type 2,500 total words across all matches.', icon: '📚', category: 'skill', maxProgress: 2500, rewardXp: 800 }
 ];
 
 // Fallback profiles array for offline or fallback global leaderboard
@@ -820,34 +844,62 @@ export async function saveMatchStats(
     let unlocked = existing ? existing.unlocked : false;
 
     if (!unlocked) {
-      if (ach.id === 'first_blood') {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'speed_demon' && stats.wpm >= 100) {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'hyper_typist' && stats.wpm >= 130) {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'combo_master' && stats.maxCombo >= 20) {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'first_victory' && stats.result === 'WIN') {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'veteran_warrior') {
-        progress = Math.min(10, progress + (stats.result === 'WIN' ? 1 : 0));
+      const userMmr = currentProfile?.mmr || 1000;
+
+      // Speed milestones
+      if (ach.id === 'warmup' && stats.wpm >= 40) { progress = 1; unlocked = true; }
+      else if (ach.id === 'speed_demon' && stats.wpm >= 80) { progress = 1; unlocked = true; }
+      else if (ach.id === 'century_club' && stats.wpm >= 100) { progress = 1; unlocked = true; }
+      else if (ach.id === 'hyper_typist' && stats.wpm >= 130) { progress = 1; unlocked = true; }
+      else if (ach.id === 'lightning_strike' && stats.wpm >= 150) { progress = 1; unlocked = true; }
+
+      // Accuracy & Skill
+      else if (ach.id === 'steady_fingers' && stats.accuracy >= 90) { progress = 1; unlocked = true; }
+      else if (ach.id === 'sharpshooter' && stats.accuracy >= 98) { progress = 1; unlocked = true; }
+      else if (ach.id === 'perfectionist' && stats.accuracy >= 100 && stats.result === 'WIN') { progress = 1; unlocked = true; }
+
+      // Combo streaks
+      else if (ach.id === 'combo_starter' && stats.maxCombo >= 5) { progress = 1; unlocked = true; }
+      else if (ach.id === 'combo_master' && stats.maxCombo >= 20) { progress = 1; unlocked = true; }
+      else if (ach.id === 'unbreakable' && stats.maxCombo >= 50) { progress = 1; unlocked = true; }
+
+      // Combat & Health
+      else if (ach.id === 'first_blood') { progress = 1; unlocked = true; }
+      else if (ach.id === 'first_victory' && stats.result === 'WIN') { progress = 1; unlocked = true; }
+      else if (ach.id === 'clean_fight' && stats.result === 'WIN' && stats.finalHealth >= 90) { progress = 1; unlocked = true; }
+      else if (ach.id === 'comeback_kid' && stats.result === 'WIN' && stats.finalHealth <= 25 && stats.finalHealth > 0) { progress = 1; unlocked = true; }
+      else if (ach.id === 'bot_slayer' && stats.result === 'WIN' && stats.opponentName?.toLowerCase().includes('bot')) { progress = 1; unlocked = true; }
+      else if (ach.id === 'bot_master' && stats.result === 'WIN' && (stats.opponentName?.toLowerCase().includes('pro') || stats.opponentName?.toLowerCase().includes('adaptive'))) { progress = 1; unlocked = true; }
+
+      // Cumulative Match Wins & Words
+      else if (ach.id === 'veteran_warrior') {
+        progress = Math.min(10, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
         if (progress >= 10) unlocked = true;
-      } else if (ach.id === 'sharpshooter' && stats.accuracy >= 98) {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'diamond_ascendant' && (currentProfile?.mmr || 1000) >= 2400) {
-        progress = 1;
-        unlocked = true;
-      } else if (ach.id === 'keyboard_god') {
-        progress = Math.min(25, progress + (stats.result === 'WIN' ? 1 : 0));
+      }
+      else if (ach.id === 'keyboard_god') {
+        progress = Math.min(25, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
         if (progress >= 25) unlocked = true;
       }
+      else if (ach.id === 'legendary_warrior') {
+        progress = Math.min(100, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
+        if (progress >= 100) unlocked = true;
+      }
+      else if (ach.id === 'marathon_runner') {
+        progress = Math.min(500, (existing?.progress || 0) + (stats.wordsCompleted || 0));
+        if (progress >= 500) unlocked = true;
+      }
+      else if (ach.id === 'wordsmith_master') {
+        progress = Math.min(2500, (existing?.progress || 0) + (stats.wordsCompleted || 0));
+        if (progress >= 2500) unlocked = true;
+      }
+
+      // Competitive Rank Tiers & MMR
+      else if (ach.id === 'silver_warrior' && userMmr >= 1200) { progress = 1; unlocked = true; }
+      else if (ach.id === 'gold_champion' && userMmr >= 1600) { progress = 1; unlocked = true; }
+      else if (ach.id === 'platinum_elite' && userMmr >= 2000) { progress = 1; unlocked = true; }
+      else if (ach.id === 'diamond_ascendant' && userMmr >= 2400) { progress = 1; unlocked = true; }
+      else if (ach.id === 'master_realm' && userMmr >= 2800) { progress = 1; unlocked = true; }
+      else if (ach.id === 'grandmaster_god' && userMmr >= 3200) { progress = 1; unlocked = true; }
 
       if (unlocked && (!existing || !existing.unlocked)) {
         newlyUnlocked.push(ach);

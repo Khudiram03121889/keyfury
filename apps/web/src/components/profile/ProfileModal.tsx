@@ -50,6 +50,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showRankTiersModal, setShowRankTiersModal] = useState(false);
+  const [achCategoryFilter, setAchCategoryFilter] = useState<'all' | 'combat' | 'speed' | 'ranked' | 'skill'>('all');
 
   // Edit fields
   const [isEditing, setIsEditing] = useState(false);
@@ -531,104 +532,159 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {/* TAB: ACHIEVEMENTS */}
           {activeTab === 'achievements' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '10px' }}>
-                {DEFAULT_ACHIEVEMENTS.map((ach) => {
-                  const ua = userAchievements.find((a) => a.achievementId === ach.id);
-                  const isUnlocked = ua ? ua.unlocked : false;
-                  const progress = ua ? ua.progress : 0;
-                  const pct = Math.min(100, Math.round((progress / ach.maxProgress) * 100));
-
+              {/* Category Filter Pills */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'all', label: 'All', icon: '🌟' },
+                  { id: 'combat', label: 'Combat', icon: '🥊' },
+                  { id: 'speed', label: 'Speed', icon: '⚡' },
+                  { id: 'ranked', label: 'Ranked', icon: '🏆' },
+                  { id: 'skill', label: 'Skill', icon: '🎯' }
+                ].map((cat) => {
+                  const count = cat.id === 'all' 
+                    ? DEFAULT_ACHIEVEMENTS.length 
+                    : DEFAULT_ACHIEVEMENTS.filter((a) => a.category === cat.id).length;
+                  const isActive = achCategoryFilter === cat.id;
                   return (
-                    <div
-                      key={ach.id}
+                    <button
+                      key={cat.id}
+                      onClick={() => setAchCategoryFilter(cat.id as any)}
                       style={{
-                        backgroundColor: isUnlocked ? 'var(--pill-bg)' : 'var(--btn-sec-bg)',
-                        border: isUnlocked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-card)',
-                        boxShadow: isUnlocked ? '0 0 16px var(--card-shadow)' : 'none',
-                        borderRadius: '12px',
-                        padding: '12px 14px',
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        border: isActive ? '1px solid #38bdf8' : '1px solid var(--border-card)',
+                        background: isActive ? 'rgba(56, 189, 248, 0.2)' : 'var(--btn-sec-bg)',
+                        color: isActive ? '#38bdf8' : 'var(--text-muted)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '14px',
-                        transition: 'all 0.2s ease'
+                        gap: '6px',
+                        transition: 'all 0.15s ease'
                       }}
                     >
-                      <div style={{
-                        fontSize: '1.6rem',
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: '12px',
-                        backgroundColor: isUnlocked ? 'rgba(56, 189, 248, 0.15)' : 'var(--pill-bg)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: isUnlocked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-card)',
-                        flexShrink: 0,
-                        opacity: isUnlocked ? 1 : 0.7
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                      <span style={{
+                        fontSize: '0.7rem',
+                        opacity: 0.75,
+                        backgroundColor: isActive ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255,255,255,0.08)',
+                        padding: '1px 6px',
+                        borderRadius: '10px'
                       }}>
-                        {ach.icon}
-                      </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-main)' }}>
-                            {ach.title}
-                          </h4>
-                          {isUnlocked ? (
-                            <span style={{
-                              fontSize: '0.7rem',
-                              fontWeight: 800,
-                              color: '#34d399',
-                              backgroundColor: 'rgba(52, 211, 153, 0.15)',
-                              padding: '2px 6px',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              flexShrink: 0
-                            }}>
-                              <CheckCircle2 size={12} /> UNLOCKED
-                            </span>
-                          ) : (
-                            <span style={{
-                              fontSize: '0.7rem',
-                              fontWeight: 800,
-                              color: 'var(--text-muted)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              flexShrink: 0
-                            }}>
-                              <Lock size={12} /> {progress} / {ach.maxProgress}
-                            </span>
-                          )}
-                        </div>
-
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {ach.description}
-                        </p>
-
-                        {!isUnlocked && (
-                          <div style={{
-                            width: '100%',
-                            height: '5px',
-                            backgroundColor: 'var(--border-card)',
-                            borderRadius: '3px',
-                            marginTop: '8px',
-                            overflow: 'hidden'
-                          }}>
-                            <div style={{
-                              width: `${pct}%`,
-                              height: '100%',
-                              backgroundColor: 'var(--accent-cyan)',
-                              borderRadius: '3px'
-                            }} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                        {count}
+                      </span>
+                    </button>
                   );
                 })}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '10px' }}>
+                {DEFAULT_ACHIEVEMENTS
+                  .filter((ach) => achCategoryFilter === 'all' || ach.category === achCategoryFilter)
+                  .map((ach) => {
+                    const ua = userAchievements.find((a) => a.achievementId === ach.id);
+                    const isUnlocked = ua ? ua.unlocked : false;
+                    const progress = ua ? ua.progress : 0;
+                    const pct = Math.min(100, Math.round((progress / ach.maxProgress) * 100));
+
+                    return (
+                      <div
+                        key={ach.id}
+                        style={{
+                          backgroundColor: isUnlocked ? 'var(--pill-bg)' : 'var(--btn-sec-bg)',
+                          border: isUnlocked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-card)',
+                          boxShadow: isUnlocked ? '0 0 16px var(--card-shadow)' : 'none',
+                          borderRadius: '12px',
+                          padding: '12px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '14px',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{
+                          fontSize: '1.6rem',
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '12px',
+                          backgroundColor: isUnlocked ? 'rgba(56, 189, 248, 0.15)' : 'var(--pill-bg)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: isUnlocked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-card)',
+                          flexShrink: 0,
+                          opacity: isUnlocked ? 1 : 0.7
+                        }}>
+                          {ach.icon}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                                {ach.title}
+                              </h4>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
+                                +{ach.rewardXp} XP
+                              </span>
+                            </div>
+                            {isUnlocked ? (
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                color: '#34d399',
+                                backgroundColor: 'rgba(52, 211, 153, 0.15)',
+                                padding: '2px 6px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                flexShrink: 0
+                              }}>
+                                <CheckCircle2 size={12} /> UNLOCKED
+                              </span>
+                            ) : (
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                color: 'var(--text-muted)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                flexShrink: 0
+                              }}>
+                                <Lock size={12} /> {progress} / {ach.maxProgress}
+                              </span>
+                            )}
+                          </div>
+
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {ach.description}
+                          </p>
+
+                          {!isUnlocked && (
+                            <div style={{
+                              width: '100%',
+                              height: '5px',
+                              backgroundColor: 'var(--border-card)',
+                              borderRadius: '3px',
+                              marginTop: '8px',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                width: `${pct}%`,
+                                height: '100%',
+                                backgroundColor: 'var(--accent-cyan)',
+                                borderRadius: '3px'
+                              }} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}
