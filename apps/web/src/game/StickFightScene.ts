@@ -216,18 +216,49 @@ export class StickFightScene extends Phaser.Scene {
   }
 
   /**
+   * ponytail: Calculates actual on-screen X positions for P1 & P2, enforcing arena bounds and pushbox separation.
+   */
+  public getFighterPositions(): { p1X: number; p2X: number } {
+    const width = Math.max(this.cameras.main?.width || 1024, (this.sys.game?.config?.width as number) || 1024);
+    const MIN_GAP = 65;
+    const minX = width * 0.08;
+    const maxX = width * 0.92;
+
+    let p1BaseX = width * 0.34 + this.p1DashOffset + this.p1TypingProgressOffset;
+    let p2BaseX = width * 0.66 + this.p2DashOffset + this.p2TypingProgressOffset;
+
+    const currentGap = p2BaseX - p1BaseX;
+    if (currentGap < MIN_GAP) {
+      const overlap = MIN_GAP - currentGap;
+      p1BaseX -= overlap / 2;
+      p2BaseX += overlap / 2;
+    }
+
+    p1BaseX = Math.max(minX, Math.min(maxX - MIN_GAP, p1BaseX));
+    p2BaseX = Math.max(minX + MIN_GAP, Math.min(maxX, p2BaseX));
+
+    if (p2BaseX - p1BaseX < MIN_GAP) {
+      if (p1BaseX === minX) {
+        p2BaseX = minX + MIN_GAP;
+      } else if (p2BaseX === maxX) {
+        p1BaseX = maxX - MIN_GAP;
+      }
+    }
+
+    return { p1X: p1BaseX, p2X: p2BaseX };
+  }
+
+  /**
    * Spatial hash grid broadphase query & OBB hitbox collision checks.
    */
   private updateSpatialCollisions(): void {
     this.spatialHashGrid.clear();
     this.hitboxManager.clearAll();
 
-    const width = Math.max(this.cameras.main?.width || 1024, 1024);
     const height = Math.max(this.cameras.main?.height || 580, 580);
     const platformY = height * 0.64;
 
-    const p1BaseX = width * 0.34 + this.p1DashOffset + this.p1TypingProgressOffset;
-    const p2BaseX = width * 0.66 + this.p2DashOffset + this.p2TypingProgressOffset;
+    const { p1X: p1BaseX, p2X: p2BaseX } = this.getFighterPositions();
 
     // Defender Hurtboxes (Head circle & Torso capsule)
     const p1HeadCircle: CircleHurtbox = { center: { x: p1BaseX, y: platformY + this.p1JumpY - 148 }, radius: 22 };
@@ -318,38 +349,11 @@ export class StickFightScene extends Phaser.Scene {
     // Tick the fixed-timestep RenderPipeline (16.666ms accumulators)
     const { alpha } = this.renderPipeline.tick(delta);
 
-    const width = Math.max(this.cameras.main.width, (this.sys.game.config.width as number) || 1024);
     const height = Math.max(this.cameras.main.height, (this.sys.game.config.height as number) || 580);
 
     // Platform surface Y coordinate aligned with stone platform in highland_bg
     const platformY = height * 0.64;
-    let p1BaseX = width * 0.34 + this.p1DashOffset + this.p1TypingProgressOffset;
-    let p2BaseX = width * 0.66 + this.p2DashOffset + this.p2TypingProgressOffset;
-
-    // 1D Pushbox collision separation (prevents fighters from passing through each other)
-    const MIN_GAP = 65; // minimum physical gap between stickmen hips
-    const currentGap = p2BaseX - p1BaseX;
-
-    if (currentGap < MIN_GAP) {
-      const overlap = MIN_GAP - currentGap;
-      p1BaseX -= overlap / 2;
-      p2BaseX += overlap / 2;
-    }
-
-    // Keep fighters within arena platform boundaries (8% to 92% screen width)
-    const minX = width * 0.08;
-    const maxX = width * 0.92;
-
-    p1BaseX = Math.max(minX, Math.min(maxX - MIN_GAP, p1BaseX));
-    p2BaseX = Math.max(minX + MIN_GAP, Math.min(maxX, p2BaseX));
-
-    if (p2BaseX - p1BaseX < MIN_GAP) {
-      if (p1BaseX === minX) {
-        p2BaseX = minX + MIN_GAP;
-      } else if (p2BaseX === maxX) {
-        p1BaseX = maxX - MIN_GAP;
-      }
-    }
+    const { p1X: p1BaseX, p2X: p2BaseX } = this.getFighterPositions();
 
     // Z-Index Depth Layering: active attacker renders in front of defender
     if (this.p1State !== 'idle' && this.p1State !== 'hit' && (this.p2State === 'idle' || this.p2State === 'hit')) {
@@ -577,8 +581,7 @@ export class StickFightScene extends Phaser.Scene {
     const duration = moveState === 'knockdown' ? 1400 : isAerial ? 750 : 500;
 
     // Calculate current positions of both fighters to determine dynamic strike reach and impact FX coordinates
-    const currentP1X = width * 0.34 + this.p1TypingProgressOffset;
-    const currentP2X = width * 0.66 + this.p2TypingProgressOffset;
+    const { p1X: currentP1X, p2X: currentP2X } = this.getFighterPositions();
     const currentGap = Math.max(70, currentP2X - currentP1X);
 
     // Dynamic dash reach stops attacker right in front of defender (leaving a 60px strike distance)
@@ -688,7 +691,11 @@ export class StickFightScene extends Phaser.Scene {
     const isHeavyMove = (attackKind as string) === 'heavy' || moveState === 'heavy' || moveState === 'uppercut';
 
     // Trigger ImpactFeedbackManager hitstop & screen shake
-    const defenderX = isLeft ? Math.min(width * 0.92, currentP2X + knockbackDist) : Math.max(width * 0.08, currentP1X - knockbackDist);
+    const minX = width * 0.08;
+    const maxX = width * 0.92;
+    const defenderX = isLeft
+      ? Math.max(minX, Math.min(maxX, currentP2X))
+      : Math.max(minX, Math.min(maxX, currentP1X));
     const targetY = (this.cameras.main.height || 580) * 0.64 - (isAerial ? 120 : 140);
     const comboLabel = comboStreak >= 6 ? ` 🔥 COMBO x${comboStreak}!` : '';
     const labelText = `${moveTitle} -${damage}${comboLabel}`;
@@ -721,10 +728,10 @@ export class StickFightScene extends Phaser.Scene {
    * Triggers micro visual particle burst using ObjectPool.
    */
   triggerKeystrokeJuice(side: 'left' | 'right', _charIndex: number, _totalChars: number, comboStreak: number = 0, wpm?: number) {
-    const width = this.cameras.main.width || 1024;
     const height = this.cameras.main.height || 580;
     const isLeft = side === 'left';
-    const handX = isLeft ? width * 0.34 + this.p1TypingProgressOffset + 25 : width * 0.66 + this.p2TypingProgressOffset - 25;
+    const { p1X, p2X } = this.getFighterPositions();
+    const handX = isLeft ? p1X + 25 : p2X - 25;
     const handY = height * 0.64 - 100;
     const color = isLeft ? '#38bdf8' : '#f43f5e';
 
@@ -746,9 +753,9 @@ export class StickFightScene extends Phaser.Scene {
    */
   triggerStun(side: 'left' | 'right') {
     const isLeft = side === 'left';
-    const width = this.cameras.main.width || 1024;
     const height = this.cameras.main.height || 580;
-    const posX = isLeft ? width * 0.34 : width * 0.66;
+    const { p1X, p2X } = this.getFighterPositions();
+    const posX = isLeft ? p1X : p2X;
     const posY = height * 0.64 - 110;
 
     if (isLeft) {
@@ -1316,9 +1323,8 @@ export class StickFightScene extends Phaser.Scene {
     const width = this.cameras.main.width || 1024;
     const height = this.cameras.main.height || 580;
 
-    const loserX = isLeftLoser
-      ? width * 0.34 + this.p1DashOffset + this.p1TypingProgressOffset
-      : width * 0.66 + this.p2DashOffset + this.p2TypingProgressOffset;
+    const { p1X, p2X } = this.getFighterPositions();
+    const loserX = isLeftLoser ? p1X : p2X;
     const platformY = height * 0.64;
 
     // Phase 1: Freeze Frame (Hitstop) & Camera Punch-In
