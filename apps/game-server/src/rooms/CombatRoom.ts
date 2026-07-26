@@ -71,14 +71,14 @@ export function calculateElo(
   const expectedB = 1 / (1 + Math.pow(10, (ratingA - ratingB) / 400));
 
   const scoreB = 1 - scoreA;
-  const winnerDelta = Math.round(kFactor * (scoreA - expectedA));
-  const loserDelta = Math.round(kFactor * (scoreB - expectedB));
+  const deltaA = Math.round(kFactor * (scoreA - expectedA));
+  const deltaB = Math.round(kFactor * (scoreB - expectedB));
 
   return {
-    winnerRating: Math.max(0, ratingA + winnerDelta),
-    loserRating: Math.max(0, ratingB + loserDelta),
-    winnerDelta,
-    loserDelta,
+    winnerRating: Math.max(0, ratingA + deltaA),
+    loserRating: Math.max(0, ratingB + deltaB),
+    winnerDelta: deltaA,
+    loserDelta: deltaB,
     kFactor
   };
 }
@@ -708,6 +708,8 @@ export class CombatRoom extends Room<CombatRoomState> {
 
       mmrDeltas[p1.sessionId] = { delta: elo.winnerDelta, newMmr: elo.winnerRating };
       mmrDeltas[p2.sessionId] = { delta: elo.loserDelta, newMmr: elo.loserRating };
+      p1.state.mmr = elo.winnerRating;
+      p2.state.mmr = elo.loserRating;
     } else if (playersList.length === 1) {
       const p = playersList[0];
       mmrDeltas[p.sessionId] = { delta: 0, newMmr: p.state.mmr };
@@ -718,6 +720,7 @@ export class CombatRoom extends Room<CombatRoomState> {
       const isWinner = winnerSessionId === sId;
       const isDraw = !winnerSessionId;
       const eloInfo = mmrDeltas[sId] || { delta: 0, newMmr: p.mmr };
+      p.mmr = eloInfo.newMmr;
 
       playersPayload.push({
         profile_id: p.profileId,
@@ -766,8 +769,9 @@ export class CombatRoom extends Room<CombatRoomState> {
       type: 'match_end',
       winnerSessionId,
       reason,
-      summary: this.state.toJSON() as any
-    } as ServerEvent);
+      summary: this.state.toJSON() as any,
+      mmrDeltas
+    } as any);
   }
 
   private handleRematchVote(client: Client, accepted: boolean) {

@@ -83,3 +83,18 @@ export const WORD_DECK_RAW: string[] = [
   'dynamite', 'eclipse', 'element', 'elephant', 'elevator', 'empower', 'endurance', 'engineer',
   'epicenter', 'escalate', 'fortress', 'frontier', 'guardian', 'horizon'
 ];
+
+export const ADVANCED_WORD_DECK: string[] = [
+  'Flame!', 'Strike?', 'Thunder!', 'Quick-step', 'Overdrive.', 'Highland:', 'Apex-1', 'Shield-up',
+  'Danger!', 'Victory!', 'Blade-run', 'Fury-5', 'Clash!', 'Battle-cry', 'Impact!', 'Honor-bound',
+  'Warrior!', 'Cross-blade', 'Sky-fall', 'Shock-wave', 'Unsheathe!', 'Power-up!', 'Vanguard:',
+  'Steel-core', 'Storm-run', 'Iron-will', 'Flash-cut', 'Counter!', 'Revenge!', 'Break-thru'
+];
+
+export const EXPERT_WORD_DECK: string[] = [
+  'strike()', 'combo#1', 'power:99', 'critical!', 'vector<int>', 'key:val', 'master-class!',
+  'hyper-drive#9', 'fire(100)', 'voidmain()', 'run(fast)', 'damage*2', 'hit:999', 'ctrl+alt',
+  'slash/dash', 'shield[100]', 'heavy#slam', 'ultra!kill', 'override()', 'alpha&omega',
+  'max-power!', 'fast=>strike', 'lock&load', 'status:ready', 'input(key)', 'fatal!hit'
+];
+

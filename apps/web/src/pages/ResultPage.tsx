@@ -40,6 +40,17 @@ export const ResultPage: React.FC<ResultPageProps> = ({
     }
   }
 
+  let calculatedMmrDelta = 0;
+  if (matchResult?.mmrDeltas && matchResult.mmrDeltas[room.sessionId]) {
+    calculatedMmrDelta = matchResult.mmrDeltas[room.sessionId].delta;
+  } else if (myRawStats?.mmrDelta !== undefined) {
+    calculatedMmrDelta = myRawStats.mmrDelta;
+  } else if (myRawStats?.elo_delta !== undefined) {
+    calculatedMmrDelta = myRawStats.elo_delta;
+  } else {
+    calculatedMmrDelta = isWinner ? 24 : -16;
+  }
+
   const playerStats: MatchPlayerStats = {
     displayName: userProfile?.displayName || guest.displayName,
     avatarUrl: userProfile?.avatarUrl || guest.avatarUrl,
@@ -48,7 +59,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
     maxCombo: myRawStats?.highestCombo ?? myRawStats?.highest_combo ?? 0,
     finalHealth: myRawStats?.health ?? myRawStats?.final_health ?? (isWinner ? 100 : 0),
     wordsCompleted: myRawStats?.wordsCompleted ?? myRawStats?.words_completed ?? 0,
-    mmrDelta: myRawStats?.mmrDelta ?? myRawStats?.elo_delta ?? (userProfile && !userProfile.isGuest ? (isWinner ? 25 : -15) : 0)
+    mmrDelta: calculatedMmrDelta
   };
 
   const opponentStats: MatchPlayerStats = {
@@ -72,7 +83,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
       isWinner={isWinner}
       playerStats={playerStats}
       opponentStats={opponentStats}
-      userProfile={userProfile}
+      userProfile={userProfile || (guest as any)}
       onPlayAgain={handleRematch}
       onReturnToLobby={onReturnToLobby}
       onViewProfile={onOpenProfile}

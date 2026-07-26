@@ -102,13 +102,25 @@ export async function ensureGuestSession(): Promise<GuestProfile> {
   const localAvatar = localStorage.getItem('keyfury_avatar') || '';
 
   if (localId && localName) {
+    const savedProfile = localStorage.getItem(`keyfury_profile_${localId}`);
+    let savedMmr = 1000;
+    if (savedProfile) {
+      try {
+        const parsed = JSON.parse(savedProfile);
+        if (typeof parsed?.mmr === 'number') savedMmr = parsed.mmr;
+      } catch (_e) {}
+    } else {
+      const gMmr = localStorage.getItem('keyfury_guest_mmr');
+      if (gMmr) savedMmr = parseInt(gMmr, 10) || 1000;
+    }
+
     return {
       id: localId,
       displayName: localName,
       keycapTheme: localTheme,
       avatarUrl: localAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${localName}`,
-      mmr: 1000,
-      rankTier: 'Bronze',
+      mmr: savedMmr,
+      rankTier: getRankTier(savedMmr),
       rankDivision: 'I',
       isGuest: true
     };
@@ -472,6 +484,7 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
   }
 
   const localName = localStorage.getItem('keyfury_guest_name') || 'Swift Falcon';
+  const gMmr = parseInt(localStorage.getItem('keyfury_guest_mmr') || '1000', 10) || 1000;
   return {
     id: targetId,
     displayName: localName,
@@ -479,8 +492,8 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
     bio: 'Competitive typing stick-fighter.',
     keycapTheme: localStorage.getItem('keyfury_theme') || 'cyberpunk',
     accentColor: '#00ffcc',
-    mmr: 1000,
-    rankTier: 'Bronze',
+    mmr: gMmr,
+    rankTier: getRankTier(gMmr),
     rankDivision: 'I',
     matchesPlayed: 0,
     wins: 0,
@@ -763,9 +776,9 @@ export async function saveMatchStats(
     }
   }
 
-  // Update profile metrics locally & remotely only for registered non-guest accounts
+  // Update profile metrics locally & remotely for all accounts
   const currentProfile = await getUserProfile(userId);
-  if (currentProfile && !currentProfile.isGuest) {
+  if (currentProfile) {
     const updatedMatches = (currentProfile.matchesPlayed || 0) + 1;
     const updatedWins = (currentProfile.wins || 0) + (stats.result === 'WIN' ? 1 : 0);
     const updatedLosses = (currentProfile.losses || 0) + (stats.result === 'LOSS' ? 1 : 0);
@@ -791,7 +804,10 @@ export async function saveMatchStats(
       rankTier: newTier
     };
     localStorage.setItem(`keyfury_profile_${userId}`, JSON.stringify(updatedProfile));
-    await updateUserProfile(updatedProfile);
+    localStorage.setItem('keyfury_guest_mmr', String(newMmr));
+    if (!currentProfile.isGuest) {
+      await updateUserProfile(updatedProfile);
+    }
   }
 
   // 2. Evaluate Achievements

@@ -104,7 +104,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName);
+      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -119,7 +119,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -135,7 +135,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr);
       setServerWarming(false);
       attachRoomListeners(rm);
       rm.send('ready', {});
@@ -168,7 +168,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName);
+      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr);
       setServerWarming(false);
       setRoomCode(rm.id);
       attachRoomListeners(rm);
@@ -190,7 +190,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await joinChallengeRoom(cleanCode, activeUser.id, activeUser.displayName);
+      const rm = await joinChallengeRoom(cleanCode, activeUser.id, activeUser.displayName, activeUser.mmr);
       setServerWarming(false);
       setRoomCode(cleanCode);
       attachRoomListeners(rm);

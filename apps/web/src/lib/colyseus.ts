@@ -4,33 +4,37 @@ const serverUrl = import.meta.env.VITE_GAME_SERVER_URL || 'ws://localhost:2567';
 
 export const colyseusClient = new ColyseusClient(serverUrl);
 
-export async function joinQuickQueue(profileId: string, displayName: string): Promise<Room> {
+export async function joinQuickQueue(profileId: string, displayName: string, mmr?: number): Promise<Room> {
   return await colyseusClient.joinOrCreate('duel_room', {
     profileId,
     displayName,
+    mmr,
     isChallenge: false
   });
 }
 
-export async function createChallengeRoom(profileId: string, displayName: string): Promise<Room> {
+export async function createChallengeRoom(profileId: string, displayName: string, mmr?: number): Promise<Room> {
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
+    mmr,
     isChallenge: true
   });
 }
 
-export async function joinChallengeRoom(roomId: string, profileId: string, displayName: string): Promise<Room> {
+export async function joinChallengeRoom(roomId: string, profileId: string, displayName: string, mmr?: number): Promise<Room> {
   return await colyseusClient.joinById(roomId, {
     profileId,
-    displayName
+    displayName,
+    mmr
   });
 }
 
-export async function startBotDuel(profileId: string, displayName: string, botDifficulty: 'novice' | 'fighter' | 'pro' | 'adaptive' = 'adaptive'): Promise<Room> {
+export async function startBotDuel(profileId: string, displayName: string, botDifficulty: 'novice' | 'fighter' | 'pro' | 'adaptive' = 'adaptive', mmr?: number): Promise<Room> {
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
+    mmr,
     isChallenge: false,
     withBot: true,
     botDifficulty

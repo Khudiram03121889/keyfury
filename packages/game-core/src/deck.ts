@@ -1,4 +1,4 @@
-import { SENTENCE_SERIES, WORD_DECK_RAW } from '@keyfury/content';
+import { ADVANCED_WORD_DECK, EXPERT_WORD_DECK, SENTENCE_SERIES, WORD_DECK_RAW } from '@keyfury/content';
 
 /**
  * Mulberry32 PRNG for deterministic deck generation.
@@ -19,32 +19,67 @@ function createPrng(seedString: string) {
   };
 }
 
+export type DeckDifficulty = 'normal' | 'advanced' | 'expert';
+
 /**
  * Generate a deterministic list of 100 balanced individual words from a seed string.
- * Splits full sentences into single word prompts so every completed word delivers an immediate hit & HP damage!
+ * Supports tier-based difficulty ('normal', 'advanced', 'expert') to include symbols, punctuation,
+ * and capitalization for high MMR / high difficulty matches.
  * Each word includes a trailing space so the player explicitly types space to transition between words.
  */
-export function generateSeededDeck(seed: string, count: number = 100): string[] {
+export function generateSeededDeck(
+  seed: string,
+  count: number = 100,
+  difficulty: DeckDifficulty = 'normal'
+): string[] {
   const prng = createPrng(seed);
 
-  // Combine words from sentences and raw dictionary into a single unique pool
-  const rawPool = [
-    ...SENTENCE_SERIES.flatMap((sentence) => sentence.split(/\s+/)),
-    ...WORD_DECK_RAW
-  ];
+  let rawPool: string[] = [];
 
-  const uniqueWords = Array.from(
-    new Set(
-      rawPool
-        .map((w) => w.toLowerCase().replace(/[^a-z]/g, ''))
-        .filter((w) => w.length >= 3 && w.length <= 9)
-    )
-  );
+  if (difficulty === 'expert') {
+    rawPool = [
+      ...SENTENCE_SERIES.flatMap((sentence) => sentence.split(/\s+/)),
+      ...WORD_DECK_RAW,
+      ...ADVANCED_WORD_DECK,
+      ...EXPERT_WORD_DECK
+    ];
+  } else if (difficulty === 'advanced') {
+    rawPool = [
+      ...SENTENCE_SERIES.flatMap((sentence) => sentence.split(/\s+/)),
+      ...WORD_DECK_RAW,
+      ...ADVANCED_WORD_DECK
+    ];
+  } else {
+    rawPool = [
+      ...SENTENCE_SERIES.flatMap((sentence) => sentence.split(/\s+/)),
+      ...WORD_DECK_RAW
+    ];
+  }
 
-  // Group into length buckets (jabs: 3-4, kicks: 5-7, heavies: 8-9)
+  let uniqueWords: string[];
+  if (difficulty === 'normal') {
+    uniqueWords = Array.from(
+      new Set(
+        rawPool
+          .map((w) => w.toLowerCase().replace(/[^a-z]/g, ''))
+          .filter((w) => w.length >= 3 && w.length <= 9)
+      )
+    );
+  } else {
+    // Preserve symbols, capitalization, and numbers for advanced & expert tiers
+    uniqueWords = Array.from(
+      new Set(
+        rawPool
+          .map((w) => w.trim())
+          .filter((w) => w.length >= 3 && w.length <= 14)
+      )
+    );
+  }
+
+  // Group into length buckets (jabs: 3-4, kicks: 5-7, heavies: 8+)
   const jabWords = uniqueWords.filter((w) => w.length >= 3 && w.length <= 4);
   const kickWords = uniqueWords.filter((w) => w.length >= 5 && w.length <= 7);
-  const heavyWords = uniqueWords.filter((w) => w.length >= 8 && w.length <= 9);
+  const heavyWords = uniqueWords.filter((w) => w.length >= 8);
 
   function shuffle<T>(array: T[]): T[] {
     const res = [...array];
@@ -55,9 +90,9 @@ export function generateSeededDeck(seed: string, count: number = 100): string[] 
     return res;
   }
 
-  const sJab = shuffle(jabWords);
-  const sKick = shuffle(kickWords);
-  const sHeavy = shuffle(heavyWords);
+  const sJab = shuffle(jabWords.length > 0 ? jabWords : uniqueWords);
+  const sKick = shuffle(kickWords.length > 0 ? kickWords : uniqueWords);
+  const sHeavy = shuffle(heavyWords.length > 0 ? heavyWords : uniqueWords);
 
   const deck: string[] = [];
   let jIdx = 0, kIdx = 0, hIdx = 0;
@@ -82,3 +117,4 @@ export function generateSeededDeck(seed: string, count: number = 100): string[] 
 
   return deck;
 }
+
