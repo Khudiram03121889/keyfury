@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Swords, Keyboard, ShieldCheck, Zap, Award, Sparkles } from 'lucide-react';
+import { Swords, Keyboard, ShieldCheck, Zap, Award, Sparkles, Youtube, Instagram } from 'lucide-react';
 import { GuestProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 
@@ -139,12 +139,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
         </div>
       </section>
 
-      {/* Privacy Guarantee Note */}
-      <footer className="glass-panel" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <ShieldCheck size={28} color="var(--accent-green)" style={{ flexShrink: 0 }} />
-        <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-          <strong style={{ color: 'var(--text-main)' }}>Privacy Guarantee:</strong> KeyFury reads only expected match characters while a duel is active. It does not record or transmit general keyboard activity or private data outside active matches.
-        </p>
+      {/* Footer with Social Links & Privacy Guarantee */}
+      <footer className="glass-panel" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
+          <ShieldCheck size={28} color="var(--accent-green)" style={{ flexShrink: 0 }} />
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--text-main)' }}>Privacy Guarantee:</strong> KeyFury reads only expected match characters while a duel is active. It does not record or transmit general keyboard activity or private data outside active matches.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <a
+            href="https://www.youtube.com/@keyfurytype"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="KeyFury YouTube Channel"
+            aria-label="KeyFury YouTube Channel"
+            className="btn-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}
+          >
+            <Youtube size={18} /> YouTube
+          </a>
+          <a
+            href="https://www.instagram.com/keyfury.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="KeyFury Instagram Profile"
+            aria-label="KeyFury Instagram Profile"
+            className="btn-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ec4899' }}
+          >
+            <Instagram size={18} /> Instagram
+          </a>
+        </div>
       </footer>
     </div>
   );

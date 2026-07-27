@@ -1,5 +1,5 @@
 import React from 'react';
-import { Swords, Trophy, User, LogIn, Swords as RankedIcon, Sparkles } from 'lucide-react';
+import { Swords, Trophy, User, LogIn, Swords as RankedIcon, Sparkles, Youtube, Instagram } from 'lucide-react';
 import { UserProfile } from '../../lib/supabase';
 import { RankBadge } from '../ranked/RankBadge';
 
@@ -58,6 +58,46 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Action Navigation Buttons & Profile Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Social Links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
+          <a
+            href="https://www.youtube.com/@keyfurytype"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="KeyFury YouTube Channel"
+            aria-label="KeyFury YouTube Channel"
+            className="btn-secondary"
+            style={{
+              padding: '8px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ef4444'
+            }}
+          >
+            <Youtube size={18} />
+          </a>
+          <a
+            href="https://www.instagram.com/keyfury.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="KeyFury Instagram Profile"
+            aria-label="KeyFury Instagram Profile"
+            className="btn-secondary"
+            style={{
+              padding: '8px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ec4899'
+            }}
+          >
+            <Instagram size={18} />
+          </a>
+        </div>
+
         {/* Ranked Match Queue Button */}
         <button
           onClick={onQueueRankedMatch}

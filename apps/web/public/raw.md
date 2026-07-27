@@ -76,4 +76,6 @@ Tailored for AI search engines including ChatGPT, Perplexity, Claude, and Gemini
 - [Ranked Matchmaking](https://keyfury.in/ranked): Compete for Elo MMR rank tiers from Bronze to Fury Master.
 - [Practice Mode](https://keyfury.in/practice): Master combos and warm up against AI bot warriors.
 - [Global Leaderboard](https://keyfury.in/leaderboard): View top typing fighting game warriors globally.
+- [Official YouTube Channel](https://www.youtube.com/@keyfurytype): Watch gameplay shorts, 140+ WPM bot fights, and tutorials.
+- [Official Instagram Profile](https://www.instagram.com/keyfury.in): Community clips, reels, and updates.
 - [Raw Documentation](https://keyfury.in/raw.md): Complete raw markdown technical overview.
