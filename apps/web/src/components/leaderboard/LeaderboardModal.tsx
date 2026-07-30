@@ -36,11 +36,15 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
     if (isOpen) {
       setLoading(true);
       getGlobalLeaderboard(100).then((data) => {
-        setLeaderboard(data);
+        const list = [...data];
+        if (currentUserProfile && !list.some((p) => p.id === currentUserProfile.id)) {
+          list.push(currentUserProfile);
+        }
+        setLeaderboard(list);
         setLoading(false);
       });
     }
-  }, [isOpen]);
+  }, [isOpen, currentUserProfile]);
 
   if (!isOpen) return null;
 
@@ -48,7 +52,8 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
 
   const sortedLeaderboard = [...leaderboard].sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
   const filteredLeaderboard = sortedLeaderboard.filter((player) => {
-    if (player.isGuest) return false;
+    const isCurrent = currentUserProfile?.id === player.id;
+    if (player.isGuest && !isCurrent) return false;
     const matchesName = player.displayName.toLowerCase().includes(searchQuery.toLowerCase());
     const derivedTier = getRankTier(player.mmr ?? 1000);
     const matchesTier = selectedTier === 'All' || player.rankTier === selectedTier || derivedTier === selectedTier;
@@ -296,13 +301,20 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                             <div style={{ fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {player.displayName}
                               {isCurrent && (
-                                <span style={{ backgroundColor: '#38bdf8', color: '#090d16', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', fontWeight: 900 }}>
-                                  YOU
+                                <span style={{
+                                  backgroundColor: player.isGuest ? '#fbbf24' : '#38bdf8',
+                                  color: '#090d16',
+                                  fontSize: '0.65rem',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  fontWeight: 900
+                                }}>
+                                  {player.isGuest ? 'YOU (UNRANKED)' : 'YOU'}
                                 </span>
                               )}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                              {player.bio || 'Warrior'}
+                              {player.bio || (player.isGuest ? 'Guest Warrior (Unranked)' : 'Warrior')}
                             </div>
                           </div>
                         </div>
@@ -331,12 +343,12 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
 
                       {/* Avg WPM */}
                       <td style={{ padding: '10px 12px', fontWeight: 900, color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
-                        {player.avgWpm && player.avgWpm > 0 ? `${Math.round(player.avgWpm)} WPM` : '—'}
+                        {player.avgWpm !== undefined && player.avgWpm >= 0 ? `${Math.round(player.avgWpm)} WPM` : '0 WPM'}
                       </td>
 
                       {/* Accuracy */}
                       <td style={{ padding: '10px 12px', fontWeight: 800, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>
-                        {player.accuracy && player.accuracy > 0 ? `${Number(player.accuracy).toFixed(1)}%` : '—'}
+                        {player.accuracy !== undefined && player.accuracy >= 0 ? `${Number(player.accuracy).toFixed(1)}%` : '0%'}
                       </td>
                     </tr>
                   );
