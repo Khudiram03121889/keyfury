@@ -474,24 +474,27 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
         const localTheme = localStorage.getItem('keyfury_theme');
         const localName = localStorage.getItem('keyfury_guest_name');
         const savedProfileStr = localStorage.getItem(`keyfury_profile_${targetId}`);
-        const gMmrStr = localStorage.getItem('keyfury_guest_mmr');
+        let savedProfileObj: any = null;
+        if (savedProfileStr) {
+          try { savedProfileObj = JSON.parse(savedProfileStr); } catch (_e) {}
+        }
 
         let mmr = data.mmr ?? 1000;
         let matchesPlayed = data.matches_played ?? 0;
         let wins = data.wins ?? 0;
         let losses = data.losses ?? 0;
+        let avgWpm = data.avg_wpm ? Number(data.avg_wpm) : 0;
+        let peakWpm = data.peak_wpm ? Number(data.peak_wpm) : 0;
+        let accuracy = data.accuracy ? Number(data.accuracy) : 0;
 
-        if (savedProfileStr) {
-          try {
-            const p = JSON.parse(savedProfileStr);
-            if (typeof p.mmr === 'number' && p.mmr > mmr) mmr = p.mmr;
-            if (typeof p.matchesPlayed === 'number' && p.matchesPlayed > matchesPlayed) matchesPlayed = p.matchesPlayed;
-            if (typeof p.wins === 'number' && p.wins > wins) wins = p.wins;
-            if (typeof p.losses === 'number' && p.losses > losses) losses = p.losses;
-          } catch (_e) {}
-        } else if (gMmrStr) {
-          const parsed = parseInt(gMmrStr, 10);
-          if (!isNaN(parsed) && parsed > mmr) mmr = parsed;
+        if (savedProfileObj) {
+          if (typeof savedProfileObj.mmr === 'number' && savedProfileObj.mmr > mmr) mmr = savedProfileObj.mmr;
+          if (typeof savedProfileObj.matchesPlayed === 'number' && savedProfileObj.matchesPlayed > matchesPlayed) matchesPlayed = savedProfileObj.matchesPlayed;
+          if (typeof savedProfileObj.wins === 'number' && savedProfileObj.wins > wins) wins = savedProfileObj.wins;
+          if (typeof savedProfileObj.losses === 'number' && savedProfileObj.losses > losses) losses = savedProfileObj.losses;
+          if (typeof savedProfileObj.avgWpm === 'number' && savedProfileObj.avgWpm > 0 && (avgWpm === 0 || savedProfileObj.avgWpm > avgWpm)) avgWpm = savedProfileObj.avgWpm;
+          if (typeof savedProfileObj.peakWpm === 'number' && savedProfileObj.peakWpm > peakWpm) peakWpm = savedProfileObj.peakWpm;
+          if (typeof savedProfileObj.accuracy === 'number' && savedProfileObj.accuracy > 0 && (accuracy === 0 || savedProfileObj.accuracy > accuracy)) accuracy = savedProfileObj.accuracy;
         }
 
         const isGuestUser = data.is_guest ?? false;
@@ -519,9 +522,9 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           wins,
           losses,
           placementRemaining: data.placement_remaining ?? 5,
-          avgWpm: data.avg_wpm ? Number(data.avg_wpm) : 75,
-          peakWpm: data.peak_wpm ? Number(data.peak_wpm) : 110,
-          accuracy: data.accuracy ? Number(data.accuracy) : 95.0,
+          avgWpm,
+          peakWpm,
+          accuracy,
           isGuest: isGuestUser,
           createdAt: data.created_at
         };
@@ -640,27 +643,43 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
         .range(offset, offset + limit - 1);
 
       if (!error && data && data.length > 0) {
-        const mapped = data.map((row) => ({
-          id: row.id,
-          displayName: row.display_name || 'Anonymous Warrior',
-          avatarUrl: row.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${row.display_name}`,
-          bio: row.bio || '',
-          keycapTheme: row.keycap_theme || 'cyberpunk',
-          accentColor: row.accent_color || '#00ffcc',
-          mmr: row.mmr ?? 1000,
-          rankTier: (row.rank_tier as RankTier) || getRankTier(row.mmr ?? 1000),
-          rankDivision: row.rank_division || 'I',
-          matchesPlayed: row.matches_played ?? 0,
-          wins: row.wins ?? 0,
-          losses: row.losses ?? 0,
-          placementRemaining: row.placement_remaining ?? 5,
-          avgWpm: row.avg_wpm ? Number(row.avg_wpm) : 0,
-          peakWpm: row.peak_wpm ? Number(row.peak_wpm) : 0,
-          accuracy: row.accuracy ? Number(row.accuracy) : 0,
-          isGuest: false
-        }));
+        const mapped = data.map((row) => {
+          let localP: any = null;
+          const localStr = localStorage.getItem(`keyfury_profile_${row.id}`);
+          if (localStr) {
+            try { localP = JSON.parse(localStr); } catch (_e) {}
+          }
 
-        mapped.sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
+          const mmr = localP?.mmr && localP.mmr > (row.mmr ?? 1000) ? localP.mmr : (row.mmr ?? 1000);
+          const matchesPlayed = localP?.matchesPlayed && localP.matchesPlayed > (row.matches_played ?? 0) ? localP.matchesPlayed : (row.matches_played ?? 0);
+          const wins = localP?.wins && localP.wins > (row.wins ?? 0) ? localP.wins : (row.wins ?? 0);
+          const losses = localP?.losses && localP.losses > (row.losses ?? 0) ? localP.losses : (row.losses ?? 0);
+          const avgWpm = row.avg_wpm ? Number(row.avg_wpm) : (localP?.avgWpm ? Number(localP.avgWpm) : 0);
+          const peakWpm = row.peak_wpm ? Number(row.peak_wpm) : (localP?.peakWpm ? Number(localP.peakWpm) : 0);
+          const accuracy = row.accuracy ? Number(row.accuracy) : (localP?.accuracy ? Number(localP.accuracy) : 0);
+
+          return {
+            id: row.id,
+            displayName: row.display_name || 'Anonymous Warrior',
+            avatarUrl: row.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${row.display_name}`,
+            bio: row.bio || '',
+            keycapTheme: row.keycap_theme || 'cyberpunk',
+            accentColor: row.accent_color || '#00ffcc',
+            mmr,
+            rankTier: (row.rank_tier as RankTier) || getRankTier(mmr),
+            rankDivision: row.rank_division || 'I',
+            matchesPlayed,
+            wins,
+            losses,
+            placementRemaining: row.placement_remaining ?? 5,
+            avgWpm,
+            peakWpm,
+            accuracy,
+            isGuest: false
+          };
+        });
+
+        mapped.sort((a, b) => b.mmr - a.mmr);
         return mapped;
       }
     } catch (_err) {

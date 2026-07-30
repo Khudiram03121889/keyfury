@@ -322,7 +322,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                       {/* Record W / L */}
                       <td style={{ padding: '10px 12px' }}>
                         <div style={{ fontWeight: 700, color: '#f8fafc' }}>
-                          {player.wins}W - {player.losses}L
+                          {player.wins || 0}W - {player.losses || 0}L
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#34d399' }}>
                           {winRate}% Win Rate
@@ -331,12 +331,12 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
 
                       {/* Avg WPM */}
                       <td style={{ padding: '10px 12px', fontWeight: 900, color: '#fbbf24', fontFamily: 'var(--font-mono)' }}>
-                        {player.avgWpm} WPM
+                        {player.avgWpm && player.avgWpm > 0 ? `${Math.round(player.avgWpm)} WPM` : '—'}
                       </td>
 
                       {/* Accuracy */}
                       <td style={{ padding: '10px 12px', fontWeight: 800, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>
-                        {player.accuracy}%
+                        {player.accuracy && player.accuracy > 0 ? `${Number(player.accuracy).toFixed(1)}%` : '—'}
                       </td>
                     </tr>
                   );
