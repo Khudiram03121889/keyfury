@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Crown, RefreshCw } from 'lucide-react';
+import { X, Search, Crown, RefreshCw, UserPlus, Sparkles } from 'lucide-react';
 import { UserProfile, getGlobalLeaderboard } from '../../lib/supabase';
 import { RankBadge, RankTier, getRankTier } from '../ranked/RankBadge';
 
@@ -7,6 +7,7 @@ interface LeaderboardModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserProfile?: UserProfile | null;
+  onOpenAuth?: (mode?: 'login' | 'register') => void;
 }
 
 const TIER_FILTERS: Array<'All' | RankTier> = [
@@ -23,7 +24,8 @@ const TIER_FILTERS: Array<'All' | RankTier> = [
 export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
   isOpen,
   onClose,
-  currentUserProfile
+  currentUserProfile,
+  onOpenAuth
 }) => {
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,11 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
 
   if (!isOpen) return null;
 
-  const filteredLeaderboard = leaderboard.filter((player) => {
+  const isCurrentUserGuest = !currentUserProfile || currentUserProfile.isGuest;
+
+  const sortedLeaderboard = [...leaderboard].sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
+  const filteredLeaderboard = sortedLeaderboard.filter((player) => {
+    if (player.isGuest) return false;
     const matchesName = player.displayName.toLowerCase().includes(searchQuery.toLowerCase());
     const derivedTier = getRankTier(player.mmr ?? 1000);
     const matchesTier = selectedTier === 'All' || player.rankTier === selectedTier || derivedTier === selectedTier;
@@ -180,6 +186,43 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
 
         {/* Modal Table Container */}
         <div style={{ padding: '16px 24px', overflowY: 'auto', flex: 1, overflowX: 'auto' }}>
+          {isCurrentUserGuest && (
+            <div style={{
+              margin: '0 0 16px 0',
+              padding: '14px 18px',
+              borderRadius: '12px',
+              backgroundColor: 'rgba(251, 191, 36, 0.12)',
+              border: '1px solid rgba(251, 191, 36, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              boxShadow: '0 0 20px rgba(251, 191, 36, 0.15)'
+            }}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <UserPlus size={16} /> Unranked Player Notice
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '2px' }}>
+                  You are playing as an unranked guest. Unranked guest names are not listed on the public leaderboard. Create a registered account to claim your rank and get listed!
+                </div>
+              </div>
+              {onOpenAuth && (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuth('register');
+                  }}
+                  style={{ padding: '8px 16px', fontSize: '0.82rem', whiteSpace: 'nowrap', backgroundColor: '#fbbf24', color: '#090d16', fontWeight: 900 }}
+                >
+                  Create a Registered Account
+                </button>
+              )}
+            </div>
+          )}
+
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
               <RefreshCw size={24} className="spin" style={{ marginBottom: '12px' }} />

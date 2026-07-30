@@ -450,6 +450,9 @@ export async function signOut(): Promise<void> {
   }
   localStorage.removeItem('keyfury_guest_id');
   localStorage.removeItem('keyfury_guest_name');
+  localStorage.removeItem('keyfury_avatar');
+  localStorage.removeItem('keyfury_theme');
+  localStorage.removeItem('keyfury_guest_mmr');
 }
 
 export async function getUserProfile(userId?: string): Promise<UserProfile | null> {
@@ -491,11 +494,21 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           if (!isNaN(parsed) && parsed > mmr) mmr = parsed;
         }
 
+        const isGuestUser = data.is_guest ?? false;
+        // For registered users, data.display_name from DB is the primary source of truth
+        const displayName = (!isGuestUser && data.display_name)
+          ? data.display_name
+          : (localName || data.display_name || 'Warrior');
+
+        if (!isGuestUser && data.display_name) {
+          localStorage.setItem('keyfury_guest_name', data.display_name);
+        }
+
         return {
           id: data.id,
-          displayName: localName || data.display_name || 'Warrior',
+          displayName: displayName,
           email: data.email || undefined,
-          avatarUrl: localAvatar || data.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${data.display_name}`,
+          avatarUrl: localAvatar || data.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${displayName}`,
           bio: data.bio || '',
           keycapTheme: localTheme || data.keycap_theme || 'cyberpunk',
           accentColor: data.accent_color || '#00ffcc',
@@ -509,7 +522,7 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           avgWpm: data.avg_wpm ? Number(data.avg_wpm) : 75,
           peakWpm: data.peak_wpm ? Number(data.peak_wpm) : 110,
           accuracy: data.accuracy ? Number(data.accuracy) : 95.0,
-          isGuest: data.is_guest ?? false,
+          isGuest: isGuestUser,
           createdAt: data.created_at
         };
       }
@@ -586,7 +599,7 @@ export async function updateUserProfile(
   if (!userId || !supabase) return true;
 
   try {
-    const payload: any = {};
+    const payload: any = { id: userId };
     if (updates.displayName !== undefined) payload.display_name = updates.displayName;
     if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
     if (updates.bio !== undefined) payload.bio = updates.bio;
@@ -599,10 +612,19 @@ export async function updateUserProfile(
     if (updates.wins !== undefined) payload.wins = updates.wins;
     if (updates.losses !== undefined) payload.losses = updates.losses;
     if (updates.placementRemaining !== undefined) payload.placement_remaining = updates.placementRemaining;
+    if (updates.isGuest !== undefined) payload.is_guest = updates.isGuest;
+    if (updates.avgWpm !== undefined) payload.avg_wpm = updates.avgWpm;
+    if (updates.peakWpm !== undefined) payload.peak_wpm = updates.peakWpm;
+    if (updates.accuracy !== undefined) payload.accuracy = updates.accuracy;
 
-    const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
-    return !error;
-  } catch (_err) {
+    const { error } = await supabase.from('profiles').upsert([payload]);
+    if (error) {
+      console.warn('[updateUserProfile] Supabase upsert error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[updateUserProfile] Exception in updateUserProfile:', err);
     return false;
   }
 }
@@ -613,11 +635,12 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .eq('is_guest', false)
         .order('mmr', { ascending: false })
         .range(offset, offset + limit - 1);
 
       if (!error && data && data.length > 0) {
-        return data.map((row) => ({
+        const mapped = data.map((row) => ({
           id: row.id,
           displayName: row.display_name || 'Anonymous Warrior',
           avatarUrl: row.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${row.display_name}`,
@@ -636,6 +659,9 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
           accuracy: row.accuracy ? Number(row.accuracy) : 0,
           isGuest: false
         }));
+
+        mapped.sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
+        return mapped;
       }
     } catch (_err) {
       // Fallback below
@@ -650,7 +676,8 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
     const saved = localStorage.getItem(`keyfury_profile_${acc.id}`);
     if (saved) {
       try {
-        profiles.push(JSON.parse(saved));
+        const p = JSON.parse(saved);
+        if (!p.isGuest) profiles.push(p);
       } catch (_e) {}
     } else {
       profiles.push({
@@ -675,14 +702,7 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
     }
   }
 
-  // Include current active profile if available
-  const currentId = localStorage.getItem('keyfury_guest_id');
-  if (currentId && !profiles.some((p) => p.id === currentId)) {
-    const p = await getUserProfile(currentId);
-    if (p) profiles.push(p);
-  }
-
-  profiles.sort((a, b) => b.mmr - a.mmr);
+  profiles.sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
   return profiles.slice(offset, offset + limit);
 }
 

@@ -208,6 +208,7 @@ export const App: React.FC = () => {
         isOpen={leaderboardModalOpen}
         onClose={() => setLeaderboardModalOpen(false)}
         currentUserProfile={userProfile}
+        onOpenAuth={(mode) => openAuthWithMode(mode || 'register')}
       />
     </div>
   );
