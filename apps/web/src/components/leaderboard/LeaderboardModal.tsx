@@ -36,15 +36,11 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
     if (isOpen) {
       setLoading(true);
       getGlobalLeaderboard(100).then((data) => {
-        const list = [...data];
-        if (currentUserProfile && !list.some((p) => p.id === currentUserProfile.id)) {
-          list.push(currentUserProfile);
-        }
-        setLeaderboard(list);
+        setLeaderboard(data);
         setLoading(false);
       });
     }
-  }, [isOpen, currentUserProfile]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -52,8 +48,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
 
   const sortedLeaderboard = [...leaderboard].sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
   const filteredLeaderboard = sortedLeaderboard.filter((player) => {
-    const isCurrent = currentUserProfile?.id === player.id;
-    if (player.isGuest && !isCurrent) return false;
+    if (player.isGuest) return false;
     const matchesName = player.displayName.toLowerCase().includes(searchQuery.toLowerCase());
     const derivedTier = getRankTier(player.mmr ?? 1000);
     const matchesTier = selectedTier === 'All' || player.rankTier === selectedTier || derivedTier === selectedTier;
