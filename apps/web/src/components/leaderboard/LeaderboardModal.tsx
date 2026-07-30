@@ -248,8 +248,9 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                 {filteredLeaderboard.map((player, idx) => {
                   const rank = idx + 1;
                   const isCurrent = currentUserProfile?.id === player.id;
-                  const winRate = player.matchesPlayed > 0
-                    ? Math.round((player.wins / player.matchesPlayed) * 100)
+                  const totalPlayed = (player.wins || 0) + (player.losses || 0) || player.matchesPlayed || 0;
+                  const winRate = totalPlayed > 0
+                    ? Math.round(((player.wins || 0) / totalPlayed) * 100)
                     : 0;
 
                   return (

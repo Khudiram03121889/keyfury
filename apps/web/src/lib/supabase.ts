@@ -644,19 +644,13 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
 
       if (!error && data && data.length > 0) {
         const mapped = data.map((row) => {
-          let localP: any = null;
-          const localStr = localStorage.getItem(`keyfury_profile_${row.id}`);
-          if (localStr) {
-            try { localP = JSON.parse(localStr); } catch (_e) {}
-          }
-
-          const mmr = localP?.mmr && localP.mmr > (row.mmr ?? 1000) ? localP.mmr : (row.mmr ?? 1000);
-          const matchesPlayed = localP?.matchesPlayed && localP.matchesPlayed > (row.matches_played ?? 0) ? localP.matchesPlayed : (row.matches_played ?? 0);
-          const wins = localP?.wins && localP.wins > (row.wins ?? 0) ? localP.wins : (row.wins ?? 0);
-          const losses = localP?.losses && localP.losses > (row.losses ?? 0) ? localP.losses : (row.losses ?? 0);
-          const avgWpm = row.avg_wpm ? Number(row.avg_wpm) : (localP?.avgWpm ? Number(localP.avgWpm) : 0);
-          const peakWpm = row.peak_wpm ? Number(row.peak_wpm) : (localP?.peakWpm ? Number(localP.peakWpm) : 0);
-          const accuracy = row.accuracy ? Number(row.accuracy) : (localP?.accuracy ? Number(localP.accuracy) : 0);
+          const mmr = row.mmr ?? 1000;
+          const wins = row.wins ?? 0;
+          const losses = row.losses ?? 0;
+          const matchesPlayed = row.matches_played ?? (wins + losses);
+          const avgWpm = row.avg_wpm ? Number(row.avg_wpm) : 0;
+          const peakWpm = row.peak_wpm ? Number(row.peak_wpm) : 0;
+          const accuracy = row.accuracy ? Number(row.accuracy) : 0;
 
           return {
             id: row.id,
@@ -671,7 +665,7 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
             matchesPlayed,
             wins,
             losses,
-            placementRemaining: row.placement_remaining ?? 5,
+            placementRemaining: row.placement_remaining ?? (matchesPlayed >= 5 ? 0 : 5 - matchesPlayed),
             avgWpm,
             peakWpm,
             accuracy,
