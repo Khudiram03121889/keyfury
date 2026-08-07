@@ -308,29 +308,30 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   }, [mode, room, isReady, handleQuickDuel, toggleReady, handleLeaveQueue, onBackToLanding]);
 
   return (
-    <div style={{ maxWidth: '900px', margin: '40px auto', padding: '0 24px' }}>
+    <div className="lobby-container">
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <button
           className="btn-secondary"
           onClick={() => {
             soundManager.playClick();
             onBackToLanding();
           }}
+          style={{ padding: '8px 14px', fontSize: '0.85rem' }}
         >
-          <ArrowLeft size={18} /> Back to Home
+          <ArrowLeft size={16} /> Back to Home
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="glass-panel" style={{ padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+          <div className="glass-panel" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
             {connectionStatus === 'Connected' ? (
               <>
-                <Wifi size={16} color="#34d399" />
+                <Wifi size={14} color="#34d399" />
                 <span style={{ color: '#34d399', fontWeight: 600 }}>Connected</span>
               </>
             ) : (
               <>
-                <WifiOff size={16} color="#f43f5e" />
+                <WifiOff size={14} color="#f43f5e" />
                 <span style={{ color: '#f43f5e', fontWeight: 600 }}>{connectionStatus}</span>
               </>
             )}
@@ -343,30 +344,31 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '20px',
+        gap: '12px',
+        flexWrap: 'wrap',
         backgroundColor: 'rgba(15, 23, 42, 0.7)',
         border: '1px solid rgba(56, 189, 248, 0.2)',
         borderRadius: '14px',
-        padding: '10px 24px',
-        marginBottom: '24px',
-        fontSize: '0.85rem'
+        padding: '10px 16px',
+        marginBottom: '20px',
+        fontSize: '0.82rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 800 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#34d399', fontWeight: 800 }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399', boxShadow: '0 0 10px #34d399', display: 'inline-block' }} />
           <span>{liveStats.onlineWarriors} {liveStats.onlineWarriors === 1 ? 'WARRIOR' : 'WARRIORS'} ONLINE</span>
         </div>
-        <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontWeight: 800 }}>
-          <Swords size={16} />
+        <div style={{ width: '1px', height: '14px', backgroundColor: 'rgba(255, 255, 255, 0.1)', display: 'inline-block' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8', fontWeight: 800 }}>
+          <Swords size={15} />
           <span>{liveStats.activeDuels} ACTIVE RANKED {liveStats.activeDuels === 1 ? 'DUEL' : 'DUELS'}</span>
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '36px', textAlign: 'center' }}>
+      <div className="glass-panel" style={{ padding: '24px 18px', textAlign: 'center' }}>
         {mode === 'select' && (
           <div>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>Choose Duel Mode</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Select live human 1v1 duel, practice vs AI Bot, or challenge a friend.</p>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Choose Duel Mode</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '18px', fontSize: '0.9rem' }}>Select live human 1v1 duel, practice vs AI Bot, or challenge a friend.</p>
 
             {/* Mode Badge Banner */}
             <div style={{
@@ -374,14 +376,14 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               alignItems: 'center',
               gap: '6px',
               backgroundColor: 'var(--pill-bg)',
-              padding: '8px 20px',
+              padding: '6px 16px',
               borderRadius: '12px',
-              marginBottom: '28px',
+              marginBottom: '20px',
               border: '1px solid rgba(236, 72, 153, 0.4)',
               background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%)',
               color: 'var(--text-main)',
               fontWeight: 800,
-              fontSize: '0.9rem'
+              fontSize: '0.85rem'
             }}>
               🏆 Ranked Competitive 1v1 Mode
             </div>
@@ -389,22 +391,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
             {/* Guest Ranked Lock Callout */}
             {activeUser.isGuest && queueType === 'ranked' && (
               <div style={{
-                margin: '0 auto 24px auto',
+                margin: '0 auto 20px auto',
                 maxWidth: '540px',
-                padding: '14px 20px',
+                padding: '12px 16px',
                 borderRadius: '12px',
                 backgroundColor: 'rgba(236, 72, 153, 0.12)',
                 border: '1px solid rgba(236, 72, 153, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '12px'
+                flexWrap: 'wrap',
+                gap: '10px'
               }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <LogIn size={15} /> Ranked Mode Requires an Account
+                <div style={{ textAlign: 'left', flex: 1, minWidth: '200px' }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <LogIn size={14} /> Ranked Mode Requires an Account
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                     Create your account in 5 seconds to earn MMR rating, rank badges, & leaderboard placement.
                   </div>
                 </div>
@@ -412,19 +415,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   type="button"
                   className="btn-primary"
                   onClick={() => onOpenAuth?.('register')}
-                  style={{ padding: '6px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap', backgroundColor: '#ec4899' }}
+                  style={{ padding: '6px 12px', fontSize: '0.78rem', whiteSpace: 'nowrap', backgroundColor: '#ec4899' }}
                 >
                   Create Account
                 </button>
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
               <button
                 className="glass-panel"
                 onClick={handleQuickDuel}
                 style={{
-                  padding: '28px 18px',
+                  padding: '24px 16px',
                   cursor: 'pointer',
                   border: '1px solid rgba(56, 189, 248, 0.3)',
                   transition: 'all 0.2s ease',
@@ -432,19 +435,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 }}
               >
                 <div style={{
-                  width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(56, 189, 248, 0.15)',
-                  color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px'
+                  width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(56, 189, 248, 0.15)',
+                  color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px'
                 }}>
-                  <Users size={28} />
+                  <Users size={24} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-heading)' }}>Quick Duel <span className="kbd-badge">Enter</span></h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Match with earliest waiting human player</p>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-heading)' }}>Quick Duel <span className="kbd-badge">Enter</span></h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Match with earliest waiting human player</p>
               </button>
 
               <div
                 className="glass-panel"
                 style={{
-                  padding: '24px 18px',
+                  padding: '20px 16px',
                   border: '1px solid rgba(74, 222, 128, 0.4)',
                   textAlign: 'center',
                   display: 'flex',
@@ -454,17 +457,17 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               >
                 <div>
                   <div style={{
-                    width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(74, 222, 128, 0.2)',
-                    color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px'
+                    width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(74, 222, 128, 0.2)',
+                    color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px'
                   }}>
-                    <Bot size={28} />
+                    <Bot size={24} />
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '4px', color: '#4ade80' }}>Practice vs AI Bot</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '14px' }}>Adaptive AI scales speed to your WPM</p>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: '#4ade80' }}>Practice vs AI Bot</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '12px' }}>Adaptive AI scales speed to your WPM</p>
                 </div>
 
                 <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
                     {[
                       { id: 'adaptive', label: '⚡ Adaptive' },
                       { id: 'pro', label: '🔥 Pro (90)' },
@@ -475,9 +478,9 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                         key={item.id}
                         onClick={() => setBotDifficulty(item.id as any)}
                         style={{
-                          padding: '6px 8px',
+                          padding: '6px 6px',
                           borderRadius: '8px',
-                          fontSize: '0.75rem',
+                          fontSize: '0.72rem',
                           fontWeight: 600,
                           cursor: 'pointer',
                           border: botDifficulty === item.id ? '1px solid #4ade80' : '1px solid var(--border-card)',
@@ -494,19 +497,18 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   <button
                     className="btn-primary"
                     onClick={() => handleBotDuel(botDifficulty)}
-                    style={{ width: '100%', padding: '10px', fontSize: '0.9rem', background: '#22c55e', borderColor: '#4ade80' }}
+                    style={{ width: '100%', padding: '8px', fontSize: '0.85rem', background: '#22c55e', borderColor: '#4ade80' }}
                   >
                     Start Bot Fight
                   </button>
                 </div>
               </div>
 
-
               <button
                 className="glass-panel"
                 onClick={handleCreateChallenge}
                 style={{
-                  padding: '28px 18px',
+                  padding: '24px 16px',
                   cursor: 'pointer',
                   border: '1px solid rgba(244, 63, 94, 0.3)',
                   transition: 'all 0.2s ease',
@@ -514,32 +516,32 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 }}
               >
                 <div style={{
-                  width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(244, 63, 94, 0.15)',
-                  color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px'
+                  width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(244, 63, 94, 0.15)',
+                  color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px'
                 }}>
-                  <Link size={28} />
+                  <Link size={24} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-heading)' }}>Challenge a Friend</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Create a private room link & invite someone</p>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-heading)' }}>Challenge a Friend</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Create a private room link & invite someone</p>
               </button>
             </div>
 
             {/* Manual Join Section */}
-            <div style={{ paddingTop: '28px', borderTop: '1px solid var(--border-card)' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-heading)' }}>Have a Challenge Link or Room Code?</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>Paste the challenge link or room ID below to join your opponent.</p>
-              <div style={{ display: 'flex', gap: '10px', maxWidth: '540px', margin: '0 auto' }}>
-                <div style={{ position: 'relative', flex: 1 }}>
+            <div style={{ paddingTop: '20px', borderTop: '1px solid var(--border-card)' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-heading)' }}>Have a Challenge Link or Room Code?</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '14px' }}>Paste the challenge link or room ID below to join your opponent.</p>
+              <div style={{ display: 'flex', gap: '8px', maxWidth: '540px', margin: '0 auto', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', flex: '1 1 220px' }}>
                   <img
                     src="/logo.jpg"
                     alt="KeyFury Search"
                     style={{
                       position: 'absolute',
-                      left: '12px',
+                      left: '10px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      width: '22px',
-                      height: '22px',
+                      width: '20px',
+                      height: '20px',
                       borderRadius: '6px',
                       objectFit: 'cover',
                       border: '1px solid rgba(56, 189, 248, 0.5)'
@@ -547,18 +549,18 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   />
                   <input
                     type="text"
-                    placeholder="Paste link or Room ID (e.g. http://localhost:5173/?room=...)"
+                    placeholder="Paste link or Room ID"
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleJoinSubmittedCode(); }}
                     style={{
-                      width: '100%', padding: '12px 16px 12px 42px', borderRadius: '10px', background: 'var(--btn-sec-bg)',
-                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none'
+                      width: '100%', padding: '10px 14px 10px 38px', borderRadius: '10px', background: 'var(--btn-sec-bg)',
+                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.85rem', outline: 'none'
                     }}
                   />
                 </div>
-                <button className="btn-primary" onClick={handleJoinSubmittedCode} style={{ padding: '12px 24px' }}>
-                  <LogIn size={18} /> Join Duel
+                <button className="btn-primary" onClick={handleJoinSubmittedCode} style={{ padding: '10px 20px', fontSize: '0.85rem', flex: '0 0 auto' }}>
+                  <LogIn size={16} /> Join Duel
                 </button>
               </div>
             </div>
@@ -566,44 +568,44 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         )}
 
         {serverWarming && (
-          <div style={{ margin: '24px 0', padding: '16px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '12px', border: '1px solid rgba(251, 191, 36, 0.3)', color: '#fbbf24' }}>
-            <RefreshCw size={20} className="spin" style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+          <div style={{ margin: '20px 0', padding: '14px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '12px', border: '1px solid rgba(251, 191, 36, 0.3)', color: '#fbbf24', fontSize: '0.88rem' }}>
+            <RefreshCw size={18} className="spin" style={{ verticalAlign: 'middle', marginRight: '8px' }} />
             Preparing arena... Connecting to Colyseus server.
           </div>
         )}
 
         {errorMsg && (
-          <div style={{ margin: '20px 0', padding: '14px', background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertCircle size={20} />
+          <div style={{ margin: '16px 0', padding: '12px', background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+            <AlertCircle size={18} />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {mode === 'quick' && !serverWarming && (
           <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>
+            <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>
               {queueType === 'ranked' ? 'Ranked Competitive Matchmaking' : 'Casual Quick Duel'}
             </h2>
 
             {/* MMR Range Queue Timer Banner */}
             <div style={{
-              margin: '20px auto',
+              margin: '16px auto',
               maxWidth: '480px',
-              padding: '24px',
+              padding: '18px 16px',
               borderRadius: '16px',
               backgroundColor: 'var(--pill-bg)',
               border: '1px solid var(--border-card)',
               boxShadow: '0 0 35px var(--card-shadow)',
               position: 'relative'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '10px' }}>
-                <RefreshCw size={24} className="spin" color="var(--accent-cyan)" />
-                <span style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+                <RefreshCw size={20} className="spin" color="var(--accent-cyan)" />
+                <span style={{ fontSize: '1.8rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
                   {String(Math.floor(queueElapsed / 60)).padStart(2, '0')}:{String(queueElapsed % 60).padStart(2, '0')}
                 </span>
               </div>
 
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '14px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '12px' }}>
                 {`Searching for live human opponent... (${Math.max(0, 20 - queueElapsed)}s remaining)`}
               </p>
 
@@ -611,44 +613,44 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '10px',
+                gap: '8px',
                 flexWrap: 'wrap'
               }}>
                 <div style={{
                   backgroundColor: 'rgba(56, 189, 248, 0.1)',
                   border: '1px solid rgba(56, 189, 248, 0.25)',
-                  borderRadius: '10px',
-                  padding: '8px 14px',
-                  fontSize: '0.8rem',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
                   color: 'var(--accent-cyan)',
                   fontWeight: 800,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '6px'
                 }}>
-                  <Swords size={14} />
+                  <Swords size={13} />
                   <span>±{mmrTolerance} MMR Range</span>
                 </div>
 
                 <div style={{
                   backgroundColor: 'rgba(168, 85, 247, 0.1)',
                   border: '1px solid rgba(168, 85, 247, 0.25)',
-                  borderRadius: '10px',
-                  padding: '8px 14px',
-                  fontSize: '0.8rem',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
                   color: 'var(--accent-purple)',
                   fontWeight: 800,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '6px'
                 }}>
                   <span>±{levelTolerance} Level Range</span>
                 </div>
               </div>
 
               <div style={{
-                marginTop: '12px',
-                fontSize: '0.75rem',
+                marginTop: '10px',
+                fontSize: '0.72rem',
                 color: 'var(--text-muted)',
                 fontWeight: 700,
                 textTransform: 'uppercase',
@@ -665,25 +667,25 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
             </div>
 
             {queueElapsed >= 30 && !opponentName && (
-              <div style={{ margin: '24px 0', padding: '16px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '12px' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '12px' }}>
+              <div style={{ margin: '20px 0', padding: '14px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '12px' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '10px' }}>
                   No player paired yet. Create a challenge link to play with a friend.
                 </p>
-                <button className="btn-primary" onClick={handleCreateChallenge}>
-                  <Link size={18} /> Create a Challenge Link
+                <button className="btn-primary" onClick={handleCreateChallenge} style={{ fontSize: '0.9rem', padding: '10px 20px' }}>
+                  <Link size={16} /> Create a Challenge Link
                 </button>
               </div>
             )}
 
             {opponentName ? (
-              <div style={{ margin: '24px 0' }}>
-                <h3 style={{ color: '#34d399', fontSize: '1.3rem', marginBottom: '16px' }}>Opponent Found: {opponentName}</h3>
-                <button className="btn-primary" onClick={toggleReady}>
+              <div style={{ margin: '20px 0' }}>
+                <h3 style={{ color: '#34d399', fontSize: '1.15rem', marginBottom: '14px' }}>Opponent Found: {opponentName}</h3>
+                <button className="btn-primary" onClick={toggleReady} style={{ padding: '12px 28px', fontSize: '1rem' }}>
                   {isReady ? 'Ready! Waiting for match start...' : 'Click to Ready Up'} <span className="kbd-badge">Enter</span>
                 </button>
               </div>
             ) : (
-              <button className="btn-secondary" onClick={cancelLobby} style={{ marginTop: '20px' }}>
+              <button className="btn-secondary" onClick={cancelLobby} style={{ marginTop: '16px', padding: '10px 20px', fontSize: '0.85rem' }}>
                 Cancel Queue
               </button>
             )}
@@ -692,23 +694,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
         {mode === 'challenge' && !serverWarming && (
           <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>Private Challenge Room</h2>
+            <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Private Challenge Room</h2>
 
             {roomCode && (
-              <div style={{ margin: '24px 0' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Share room link or Room ID with your opponent:</span>
-                <div style={{ display: 'flex', gap: '10px', maxWidth: '520px', margin: '10px auto' }}>
+              <div style={{ margin: '20px 0' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Share room link or Room ID with your opponent:</span>
+                <div style={{ display: 'flex', gap: '8px', maxWidth: '520px', margin: '8px auto', flexWrap: 'wrap' }}>
                   <input
                     type="text"
                     readOnly
                     value={`${window.location.origin}/?room=${roomCode}`}
                     style={{
-                      flex: 1, padding: '10px 14px', borderRadius: '8px', background: 'var(--btn-sec-bg)',
-                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.9rem'
+                      flex: '1 1 200px', padding: '10px 12px', borderRadius: '8px', background: 'var(--btn-sec-bg)',
+                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.85rem'
                     }}
                   />
-                  <button className="btn-secondary" onClick={copyChallengeUrl}>
-                    {copied ? <Check size={18} color="#34d399" /> : <Copy size={18} />}
+                  <button className="btn-secondary" onClick={copyChallengeUrl} style={{ padding: '10px 16px', fontSize: '0.85rem' }}>
+                    {copied ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
                     {copied ? 'Copied' : 'Copy Link'}
                   </button>
                 </div>
@@ -716,19 +718,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
             )}
 
             {opponentName ? (
-              <div style={{ margin: '24px 0' }}>
-                <h3 style={{ color: '#34d399', fontSize: '1.3rem', marginBottom: '16px' }}>Opponent Joined: {opponentName}</h3>
-                <button className="btn-primary" onClick={toggleReady}>
+              <div style={{ margin: '20px 0' }}>
+                <h3 style={{ color: '#34d399', fontSize: '1.15rem', marginBottom: '14px' }}>Opponent Joined: {opponentName}</h3>
+                <button className="btn-primary" onClick={toggleReady} style={{ padding: '12px 28px', fontSize: '1rem' }}>
                   {isReady ? 'Ready! Waiting for opponent...' : 'Click to Ready Up'}
                 </button>
               </div>
             ) : (
-              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '24px 0' }}>
+              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '20px 0', fontSize: '0.88rem' }}>
                 Waiting for your opponent to open the link or enter the Room ID...
               </p>
             )}
 
-            <button className="btn-secondary" onClick={cancelLobby}>
+            <button className="btn-secondary" onClick={cancelLobby} style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
               Cancel Room
             </button>
           </div>

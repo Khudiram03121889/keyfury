@@ -107,10 +107,11 @@ export const RankTiersModal: React.FC<RankTiersModalProps> = ({
       onClick={onClose}
     >
       <div
+        className="glass-panel modal-dialog-content"
         style={{
           width: '100%',
           maxWidth: '720px',
-          maxHeight: '90vh',
+          maxHeight: 'calc(100vh - 32px)',
           backgroundColor: '#0f172a',
           border: '1px solid rgba(56, 189, 248, 0.3)',
           borderRadius: '20px',

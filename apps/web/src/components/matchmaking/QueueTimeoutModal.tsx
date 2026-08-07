@@ -68,14 +68,14 @@ export const QueueTimeoutModal: React.FC<QueueTimeoutModalProps> = ({
       onClick={onBackToLobby}
     >
       <div
-        className="glass-panel"
+        className="glass-panel modal-dialog-content"
         style={{
           width: '100%',
           maxWidth: '520px',
           maxHeight: 'calc(100vh - 48px)',
           display: 'flex',
           flexDirection: 'column',
-          padding: '28px 32px',
+          padding: '24px 20px',
           position: 'relative',
           border: '1px solid rgba(251, 191, 36, 0.35)',
           boxShadow: '0 0 45px rgba(251, 191, 36, 0.15), inset 0 0 25px rgba(251, 191, 36, 0.05)',

@@ -384,3 +384,96 @@ body {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.85; transform: scale(1.05); }
 }
+
+/* --- MOBILE & TABLET RESPONSIVE ENGINE (320px - 768px+) --- */
+
+/* Responsive Navbar Container */
+.navbar-header {
+  margin: 16px 24px 0 24px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px;
+  border: 1px solid var(--border-card);
+  box-shadow: 0 8px 32px var(--card-shadow);
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .navbar-header {
+    margin: 8px 12px 0 12px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-brand-subtext {
+    display: none;
+  }
+  .nav-social-group {
+    display: none !important;
+  }
+  .nav-btn-text {
+    display: none;
+  }
+  .kbd-badge {
+    display: none !important;
+  }
+}
+
+/* Touch-friendly Minimum Tap Target */
+@media (max-width: 768px) {
+  .btn-primary, .btn-secondary {
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .btn-primary:active, .btn-secondary:active {
+    transform: scale(0.97);
+  }
+
+  .glass-panel {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Responsive Grid & Layout Containers */
+.landing-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+@media (max-width: 768px) {
+  .landing-container {
+    padding: 24px 16px;
+  }
+}
+
+.lobby-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 24px;
+}
+
+@media (max-width: 768px) {
+  .lobby-container {
+    margin: 16px auto;
+    padding: 0 12px;
+  }
+}
+
+/* Responsive Modal Card Bounds */
+@media (max-width: 640px) {
+  .modal-dialog-content {
+    max-width: 95vw !important;
+    max-height: calc(100vh - 24px) !important;
+    padding: 20px 16px !important;
+  }
+}
+

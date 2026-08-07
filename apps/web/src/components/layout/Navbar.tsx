@@ -19,27 +19,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onQueueRankedMatch
 }) => {
   return (
-    <header
-      className="glass-panel"
-      style={{
-        margin: '16px 24px 0 24px',
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
-      }}
-    >
+    <header className="glass-panel navbar-header">
       {/* Brand / Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
         <img
           src="/logo.jpg"
           alt="KeyFury Logo"
           style={{
-            width: '38px',
-            height: '38px',
+            width: '36px',
+            height: '36px',
             borderRadius: '10px',
             objectFit: 'cover',
             border: '1px solid rgba(56, 189, 248, 0.5)',
@@ -47,19 +35,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
         />
         <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1, color: 'var(--text-heading)' }}>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1, color: 'var(--text-heading)' }}>
             KEY<span style={{ color: 'var(--accent-cyan)' }}>FURY</span>
           </h1>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <span className="nav-brand-subtext" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
             ESPORTS 1V1
           </span>
         </div>
       </div>
 
       {/* Action Navigation Buttons & Profile Info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         {/* Social Links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
+        <div className="nav-social-group" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '2px' }}>
           <a
             href="https://www.youtube.com/@keyfurytype"
             target="_blank"
@@ -103,23 +91,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={onQueueRankedMatch}
           className="btn-primary"
           style={{
-            padding: '8px 16px',
-            fontSize: '0.9rem',
+            padding: '8px 14px',
+            fontSize: '0.85rem',
             borderRadius: '10px',
             background: 'linear-gradient(135deg, #ec4899 0%, #7c3aed 100%)',
             boxShadow: '0 0 15px rgba(236, 72, 153, 0.4)'
           }}
         >
-          <RankedIcon size={16} /> Ranked Match
+          <RankedIcon size={16} /> <span className="nav-btn-text">Ranked Match</span>
         </button>
 
         {/* Global Leaderboard Button */}
         <button
           onClick={onOpenLeaderboard}
           className="btn-secondary"
-          style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: '10px' }}
+          style={{ padding: '8px 12px', fontSize: '0.85rem', borderRadius: '10px' }}
         >
-          <Trophy size={16} color="var(--accent-amber)" /> Leaderboard
+          <Trophy size={16} color="var(--accent-amber)" /> <span className="nav-btn-text">Leaderboard</span>
         </button>
 
         {/* Profile Card & Explicit Auth Buttons */}
@@ -129,12 +117,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '8px',
               backgroundColor: 'var(--pill-bg)',
               border: '1px solid var(--border-card)',
               boxShadow: '0 4px 14px var(--card-shadow)',
               borderRadius: '12px',
-              padding: '6px 14px',
+              padding: '6px 12px',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
@@ -146,25 +134,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               showRating
             />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <img
                 src={userProfile.avatarUrl}
                 alt={userProfile.displayName}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '26px',
+                  height: '26px',
                   borderRadius: '8px',
                   objectFit: 'cover',
                   border: '1px solid var(--accent-cyan)'
                 }}
               />
-              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              <span className="nav-btn-text" style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 {userProfile.displayName}
               </span>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {userProfile && (
               <div
                 onClick={onOpenProfile}
@@ -181,22 +169,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   color: 'var(--text-muted)'
                 }}
               >
-                <User size={14} /> Guest: <strong style={{ color: 'var(--text-main)' }}>{userProfile.displayName}</strong>
+                <User size={14} /> <span className="nav-btn-text">Guest: </span><strong style={{ color: 'var(--text-main)' }}>{userProfile.displayName}</strong>
               </div>
             )}
             <button
               onClick={() => onOpenAuth('login')}
               className="btn-secondary"
-              style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: '10px' }}
+              style={{ padding: '8px 12px', fontSize: '0.85rem', borderRadius: '10px' }}
             >
-              <LogIn size={15} /> Sign In
+              <LogIn size={15} /> <span className="nav-btn-text">Sign In</span>
             </button>
             <button
               onClick={() => onOpenAuth('register')}
               className="btn-primary"
-              style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: '10px', backgroundColor: '#38bdf8' }}
+              style={{ padding: '8px 12px', fontSize: '0.85rem', borderRadius: '10px', backgroundColor: '#38bdf8' }}
             >
-              <Sparkles size={15} /> Sign Up
+              <Sparkles size={15} /> <span className="nav-btn-text">Sign Up</span>
             </button>
           </div>
         )}

@@ -9,7 +9,7 @@ export const ClientMessageReadySchema = z.object({
 export const ClientMessageKeyIntentSchema = z.object({
   type: z.literal('key_intent'),
   seq: z.number().int().nonnegative(),
-  key: z.string().length(1).regex(/^[a-z0-9 ?,.!'"]$/i),
+  key: z.string().length(1),
   clientTimeMs: z.union([z.number(), z.bigint()]).transform((val) => Number(val))
 });
 

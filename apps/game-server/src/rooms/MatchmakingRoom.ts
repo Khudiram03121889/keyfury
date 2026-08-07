@@ -25,8 +25,10 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
   private matchmaker: RankedMatchmaker = new RankedMatchmaker();
   private isProcessing: boolean = false;
 
-  async onAuth(_client: Client, options: any) {
-    const token = options?.token || options?.auth?.token;
+  async onAuth(_client: Client, options: any, request?: any) {
+    const authHeader = request?.headers?.['authorization'];
+    const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+    const token = options?.token || options?.auth?.token || headerToken;
     if (token && supabaseServer) {
       const { data, error } = await supabaseServer.auth.getUser(token);
       if (error || !data?.user) {
@@ -44,7 +46,8 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
   }
 
   onJoin(client: Client, options: RankedQueueOptions) {
-    const profileId = options.profileId || `guest-${client.sessionId}`;
+    const authUserId = (client.auth as any)?.userId;
+    const profileId = authUserId || options.profileId || `guest-${client.sessionId}`;
     const displayName = options.displayName || `Challenger ${Math.floor(Math.random() * 900 + 100)}`;
     const mmr = options.mmr ?? 1000;
     const level = Math.max(1, options.level ?? 1);

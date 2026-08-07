@@ -111,8 +111,10 @@ export class CombatRoom extends Room<CombatRoomState> {
   private hasBotOpponent: boolean = false;
   private botDifficulty: BotDifficulty = 'adaptive';
 
-  async onAuth(_client: Client, options: any, _request?: http.IncomingMessage) {
-    const token = options?.token || options?.auth?.token;
+  async onAuth(_client: Client, options: any, request?: http.IncomingMessage) {
+    const authHeader = request?.headers?.['authorization'];
+    const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+    const token = options?.token || options?.auth?.token || headerToken;
     if (token) {
       if (supabaseServer) {
         const { data, error } = await supabaseServer.auth.getUser(token);
@@ -207,7 +209,8 @@ export class CombatRoom extends Room<CombatRoomState> {
       throw new Error('Room is full');
     }
 
-    const profileId = options.profileId || `guest-${client.sessionId}`;
+    const authUserId = (client.auth as any)?.userId;
+    const profileId = authUserId || options.profileId || `guest-${client.sessionId}`;
     const displayName = options.displayName || `Swift Falcon ${Math.floor(Math.random() * 900 + 100)}`;
     const side = this.state.players.size === 0 ? 'left' : 'right';
     const mmr = options.mmr ?? 1000;
@@ -268,7 +271,7 @@ export class CombatRoom extends Room<CombatRoomState> {
     this.spawnBotOpponent();
   }
 
-  async onLeave(client: Client, _consented: boolean) {
+  async onLeave(client: Client, consented: boolean) {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
@@ -291,6 +294,12 @@ export class CombatRoom extends Room<CombatRoomState> {
     }
 
     if (this.state.status === 'in_progress' && !this.matchEnded) {
+      if (consented) {
+        console.log(`[CombatRoom] Player ${client.sessionId} explicitly left/forfeited.`);
+        this.resolveForfeit(client.sessionId);
+        return;
+      }
+
       this.broadcast('server_event', {
         type: 'player_disconnect',
         playerId: client.sessionId,
@@ -754,6 +763,10 @@ export class CombatRoom extends Room<CombatRoomState> {
       const isDraw = !winnerSessionId;
       const eloInfo = mmrDeltas[sId] || { delta: 0, newMmr: p.mmr };
       p.mmr = eloInfo.newMmr;
+
+      if (p.profileId && !p.profileId.startsWith('guest-') && !p.profileId.startsWith('bot-')) {
+        updatePlayerProfileMmr(p.profileId, eloInfo.delta, eloInfo.newMmr, isWinner);
+      }
 
       playersPayload.push({
         profile_id: p.profileId,

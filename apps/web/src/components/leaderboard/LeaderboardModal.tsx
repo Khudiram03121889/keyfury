@@ -71,11 +71,11 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel modal-dialog-content"
         style={{
           width: '100%',
           maxWidth: '850px',
-          maxHeight: 'calc(100vh - 48px)',
+          maxHeight: 'calc(100vh - 32px)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

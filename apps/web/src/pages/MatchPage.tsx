@@ -1,13 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Room } from 'colyseus.js';
 import Phaser from 'phaser';
-import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle, Smartphone, Keyboard as KeyboardIcon } from 'lucide-react';
 import { StickFightScene, AttackKind } from '../game/StickFightScene';
 import { GuestProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { RankBadge } from '../components/ranked/RankBadge';
-
 import { soundSynth } from '../game/audio/SoundSynth';
+import { TouchKeyboard } from '../components/game/TouchKeyboard';
+
+const isTouchCapable = () => {
+  if (typeof window === 'undefined') return false;
+  return (
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768
+  );
+};
 
 interface MatchPageProps {
   room: Room;
@@ -35,6 +45,20 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(() => room?.state?.isPaused || false);
+
+  const [showTouchKeyboard, setShowTouchKeyboard] = useState<boolean>(() => {
+    const saved = localStorage.getItem('keyfury_touch_keyboard');
+    if (saved !== null) return saved === 'true';
+    return isTouchCapable();
+  });
+
+  const toggleTouchKeyboard = () => {
+    setShowTouchKeyboard((prev) => {
+      const next = !prev;
+      localStorage.setItem('keyfury_touch_keyboard', String(next));
+      return next;
+    });
+  };
 
   const isBotMode = React.useMemo(() => {
     if ((room as any)?.metadata?.withBot) return true;
@@ -342,6 +366,25 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     });
   };
 
+  const sendVirtualKeyIntent = (char: string) => {
+    if (showStatsOverlay || isMatchEndedRef.current || isPaused) return;
+    if (room.state?.status !== 'in_progress') return;
+
+    let keyChar = char;
+    if (keyChar === 'Spacebar' || keyChar === ' ') {
+      keyChar = ' ';
+    }
+    if (keyChar.length !== 1 || !/^[ -~]$/.test(keyChar)) return;
+
+    keySeqRef.current++;
+    console.log('[CLIENT VIRTUAL KEY SENT]', keyChar, 'seq:', keySeqRef.current);
+    room.send('key_intent', {
+      seq: keySeqRef.current,
+      key: keyChar,
+      clientTimeMs: Date.now()
+    });
+  };
+
   const handleCombatInput = (event: React.KeyboardEvent<HTMLInputElement>) => {
     handleCombatKey(event.nativeEvent);
   };
@@ -409,6 +452,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
+          inputMode={showTouchKeyboard ? "none" : "text"}
           value=""
           onChange={() => {}}
           onKeyDown={handleCombatInput}
@@ -416,130 +460,181 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         />
 
         {/* --- TOP HUD OVERLAYS --- */}
-
-        {/* Top-Left: Left Fighter Health & Name */}
         <div style={{
-          position: 'absolute', top: '20px', left: '24px', width: '280px', zIndex: 10,
-          background: 'var(--pill-bg)', backdropFilter: 'blur(8px)',
-          padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-card)'
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          right: '12px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '8px',
+          zIndex: 10,
+          pointerEvents: 'none'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              🎩 {leftPlayer?.displayName || 'PLAYER 1'}
-            </span>
-            <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: '0.85rem' }}>
-              {leftHealth} / 200
-            </span>
-          </div>
-          <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-            <div style={{
-              width: `${Math.max(0, Math.min(100, (leftHealth / 200) * 100))}%`, height: '100%',
-              background: 'linear-gradient(90deg, #22c55e, #4ade80)', transition: 'width 0.2s ease',
-              boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)'
-            }} />
-          </div>
-        </div>
-
-        {/* Top-Center: Digital Match Timer */}
-        <div style={{
-          position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10,
-          background: 'var(--pill-bg)', backdropFilter: 'blur(10px)',
-          border: '1px solid var(--border-card)', borderRadius: '14px',
-          padding: '6px 22px', display: 'flex', alignItems: 'center', gap: '12px',
-          boxShadow: '0 6px 20px var(--card-shadow)'
-        }}>
-          <span style={{
-            fontSize: '2.4rem', fontWeight: 900, fontFamily: 'var(--font-mono)',
-            color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
+          {/* Top-Left: Left Fighter Health & Name */}
+          <div style={{
+            pointerEvents: 'auto',
+            flex: '1 1 0',
+            maxWidth: '280px',
+            minWidth: 0,
+            background: 'var(--pill-bg)',
+            backdropFilter: 'blur(8px)',
+            padding: '8px 12px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-card)',
+            overflow: 'hidden'
           }}>
-            {remainingTime}
-          </span>
-          <button
-            onClick={() => {
-              const newMuted = soundManager.toggleMuted();
-              setMuted(newMuted);
-            }}
-            style={{
-              background: 'none', border: 'none', color: muted ? '#f43f5e' : '#34d399',
-              cursor: 'pointer', display: 'flex', alignItems: 'center'
-            }}
-            title={muted ? 'Unmute Audio' : 'Mute Audio'}
-          >
-            {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-          </button>
-          {isBotMode && (
-            <button
-              onClick={handleTogglePause}
-              style={{
-                background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
-                color: '#eab308', borderRadius: '8px', padding: '4px 10px',
-                fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-              }}
-              title={isPaused ? 'Resume' : 'Pause'}
-            >
-              {isPaused ? <Play size={15} /> : <Pause size={15} />}
-              <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
-            </button>
-          )}
-
-          {/* Quick Duel Real Players Mode: Small Leave Button */}
-          {!isBotMode && (
-            <button
-              onClick={() => setShowLeaveConfirmModal(true)}
-              style={{
-                background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#ef4444', borderRadius: '8px', padding: '4px 10px',
-                fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-              }}
-              title="Leave Match (Forfeit Loss)"
-            >
-              <LogOut size={15} />
-              <span>LEAVE</span>
-            </button>
-          )}
-        </div>
-
-        {/* Top-Right: Right Fighter Health & Name */}
-        <div style={{
-          position: 'absolute', top: '20px', right: '24px', width: '280px', zIndex: 10,
-          background: 'var(--pill-bg)', backdropFilter: 'blur(8px)',
-          padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-card)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              👓 {rightPlayer?.displayName || 'PLAYER 2'}
-            </span>
-            <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: '0.85rem' }}>
-              {rightHealth} / 200
-            </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '4px' }}>
+              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                🎩 {leftPlayer?.displayName || 'PLAYER 1'}
+              </span>
+              <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: '0.78rem', flexShrink: 0 }}>
+                {leftHealth} / 200
+              </span>
+            </div>
+            <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+              <div style={{
+                width: `${Math.max(0, Math.min(100, (leftHealth / 200) * 100))}%`, height: '100%',
+                background: 'linear-gradient(90deg, #22c55e, #4ade80)', transition: 'width 0.2s ease',
+                boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)'
+              }} />
+            </div>
           </div>
-          <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-            <div style={{
-              width: `${Math.max(0, Math.min(100, (rightHealth / 200) * 100))}%`, height: '100%',
-              background: 'linear-gradient(90deg, #ef4444, #f87171)', transition: 'width 0.2s ease',
-              boxShadow: '0 0 10px rgba(239, 68, 68, 0.8)'
-            }} />
+
+          {/* Top-Center: Digital Match Timer */}
+          <div style={{
+            pointerEvents: 'auto',
+            background: 'var(--pill-bg)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid var(--border-card)',
+            borderRadius: '14px',
+            padding: '4px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 6px 20px var(--card-shadow)',
+            flexShrink: 0
+          }}>
+            <span style={{
+              fontSize: 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
+              color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
+            }}>
+              {remainingTime}
+            </span>
+            <button
+              onClick={() => {
+                const newMuted = soundManager.toggleMuted();
+                setMuted(newMuted);
+              }}
+              style={{
+                background: 'none', border: 'none', color: muted ? '#f43f5e' : '#34d399',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px'
+              }}
+              title={muted ? 'Unmute Audio' : 'Mute Audio'}
+            >
+              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+            <button
+              onClick={toggleTouchKeyboard}
+              style={{
+                background: showTouchKeyboard ? 'rgba(56, 189, 248, 0.2)' : 'none',
+                border: showTouchKeyboard ? '1px solid rgba(56, 189, 248, 0.4)' : 'none',
+                color: showTouchKeyboard ? '#38bdf8' : 'var(--text-muted)',
+                borderRadius: '8px',
+                padding: '4px 6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.72rem',
+                fontWeight: 800
+              }}
+              title={showTouchKeyboard ? 'Hide Touch Keyboard' : 'Show Touch Keyboard'}
+            >
+              <Smartphone size={16} />
+              <span className="nav-btn-text">{showTouchKeyboard ? 'KBD' : 'KBD'}</span>
+            </button>
+            {isBotMode && (
+              <button
+                onClick={handleTogglePause}
+                style={{
+                  background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
+                  color: '#eab308', borderRadius: '8px', padding: '4px 8px',
+                  fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+                title={isPaused ? 'Resume' : 'Pause'}
+              >
+                {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                <span className="nav-btn-text">{isPaused ? 'RESUME' : 'PAUSE'}</span>
+              </button>
+            )}
+
+            {!isBotMode && (
+              <button
+                onClick={() => setShowLeaveConfirmModal(true)}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444', borderRadius: '8px', padding: '4px 8px',
+                  fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+                title="Leave Match (Forfeit Loss)"
+              >
+                <LogOut size={14} />
+                <span className="nav-btn-text">LEAVE</span>
+              </button>
+            )}
+          </div>
+
+          {/* Top-Right: Right Fighter Health & Name */}
+          <div style={{
+            pointerEvents: 'auto',
+            flex: '1 1 0',
+            maxWidth: '280px',
+            minWidth: 0,
+            background: 'var(--pill-bg)',
+            backdropFilter: 'blur(8px)',
+            padding: '8px 12px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-card)',
+            overflow: 'hidden'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '4px' }}>
+              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                👓 {rightPlayer?.displayName || 'PLAYER 2'}
+              </span>
+              <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: '0.78rem', flexShrink: 0 }}>
+                {rightHealth} / 200
+              </span>
+            </div>
+            <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+              <div style={{
+                width: `${Math.max(0, Math.min(100, (rightHealth / 200) * 100))}%`, height: '100%',
+                background: 'linear-gradient(90deg, #ef4444, #f87171)', transition: 'width 0.2s ease',
+                boxShadow: '0 0 10px rgba(239, 68, 68, 0.8)'
+              }} />
+            </div>
           </div>
         </div>
 
         {/* --- TRANSLUCENT HORIZONTAL TYPING STRIP BANNER --- */}
         {!showStatsOverlay && (
           <div id="active-typing-banner" style={{
-            position: 'absolute', bottom: '28px', left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', zIndex: 10,
-            width: '92%', maxWidth: '1080px'
+            position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', zIndex: 10,
+            width: '94%', maxWidth: '1080px'
           }}>
             {/* Combo Indicator pill */}
             {myCombo >= 3 && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '4px 14px', borderRadius: '999px',
+                padding: '4px 12px', borderRadius: '999px',
                 background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
-                color: '#ffffff', fontWeight: 900, fontSize: '0.85rem',
+                color: '#ffffff', fontWeight: 900, fontSize: '0.78rem',
                 letterSpacing: '1px', textTransform: 'uppercase',
                 boxShadow: '0 4px 14px rgba(245, 158, 11, 0.6)'
               }}>
-                <Flame size={16} /> COMBO STREAK x{myCombo}! (+5 DMG)
+                <Flame size={14} /> COMBO STREAK x{myCombo}! (+5 DMG)
               </div>
             )}
 
@@ -549,14 +644,14 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               background: 'var(--bg-card)',
               backdropFilter: 'blur(16px)',
               border: isErrorFlash ? '2px solid #ef4444' : '1px solid var(--border-card)',
-              borderRadius: '16px',
-              padding: '14px 24px',
+              borderRadius: '14px',
+              padding: '10px 16px',
               boxShadow: isErrorFlash
                 ? '0 0 30px rgba(239, 68, 68, 0.65)'
                 : '0 8px 32px var(--card-shadow)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
+              gap: '6px',
               position: 'relative',
               transition: 'border 0.15s ease, box-shadow 0.15s ease'
             }}>
@@ -564,8 +659,8 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               <div style={{
                 width: '100%',
                 whiteSpace: 'pre',
-                overflow: 'hidden',
-                fontSize: '1.75rem',
+                overflowX: 'auto',
+                fontSize: 'clamp(1.1rem, 4vw, 1.75rem)',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
                 letterSpacing: '0px',
                 lineHeight: 1.2
@@ -608,13 +703,13 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               <div style={{
                 width: '100%',
                 whiteSpace: 'pre',
-                overflow: 'hidden',
-                fontSize: '1.2rem',
+                overflowX: 'auto',
+                fontSize: 'clamp(0.85rem, 3vw, 1.2rem)',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
                 color: 'var(--text-muted)',
                 opacity: 0.7,
                 borderTop: '1px solid var(--border-card)',
-                paddingTop: '6px',
+                paddingTop: '4px',
                 letterSpacing: '0px'
               }}>
                 {(() => {
@@ -632,6 +727,16 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 })()}
               </div>
             </div>
+
+            {/* --- TOUCH KEYBOARD FOR MOBILE TOUCH GAMEPLAY --- */}
+            {showTouchKeyboard && (
+              <TouchKeyboard
+                onKeyPress={sendVirtualKeyIntent}
+                expectedChar={currentWord ? currentWord[typedCharIndex] : undefined}
+                onClose={() => setShowTouchKeyboard(false)}
+                isErrorFlash={isErrorFlash}
+              />
+            )}
           </div>
         )}
 
@@ -641,30 +746,30 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
             position: 'absolute', inset: 0,
             background: 'rgba(7, 15, 28, 0.78)', backdropFilter: 'blur(12px)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            zIndex: 40, padding: '24px'
+            zIndex: 40, padding: '16px'
           }}>
             <div className="glass-panel" style={{
-              width: '100%', maxWidth: '780px', padding: '36px 32px',
+              width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '24px 20px',
               background: 'rgba(15, 23, 42, 0.95)', border: '2px solid rgba(74, 222, 128, 0.4)',
               borderRadius: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
-              textAlign: 'center', position: 'relative', overflow: 'hidden'
+              textAlign: 'center', position: 'relative'
             }}>
               {/* Top Winner Badge */}
               <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                padding: '6px 20px', borderRadius: '999px',
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '4px 16px', borderRadius: '999px',
                 background: completedState?.winnerSessionId === room.sessionId ? 'rgba(74, 222, 128, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                 border: completedState?.winnerSessionId === room.sessionId ? '1px solid rgba(74, 222, 128, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
                 color: completedState?.winnerSessionId === room.sessionId ? '#4ade80' : '#f87171',
-                fontSize: '0.9rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px',
-                marginBottom: '16px'
+                fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px',
+                marginBottom: '12px'
               }}>
-                <Trophy size={18} />
+                <Trophy size={16} />
                 {completedState?.winnerSessionId === room.sessionId ? 'VICTORY BY KNOCKOUT!' : 'DEFEATED IN MATCH'}
               </div>
 
               <h2 style={{
-                fontSize: '2.8rem', fontWeight: 900, marginBottom: '24px',
+                fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', fontWeight: 900, marginBottom: '20px',
                 color: completedState?.winnerSessionId === room.sessionId ? '#4ade80' : '#f87171',
                 textTransform: 'uppercase', letterSpacing: '2px', textShadow: '0 4px 16px rgba(0,0,0,0.8)'
               }}>
@@ -672,16 +777,16 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               </h2>
 
               {/* Side by side stats grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '28px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                 {/* My Stats Card */}
                 <div style={{
                   background: 'rgba(30, 41, 59, 0.7)', border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '16px', padding: '16px 20px', textAlign: 'left'
+                  borderRadius: '16px', padding: '14px 16px', textAlign: 'left'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 900, color: '#4ade80', fontSize: '1.05rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontWeight: 900, color: '#4ade80', fontSize: '0.98rem' }}>
                     <span>🎩</span> {myPlayer?.displayName || 'YOU'}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem', color: '#cbd5e1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>Remaining HP:</span>
                       <strong style={{ color: '#4ade80' }}>{myPlayer?.health ?? 0} / 200</strong>
@@ -704,9 +809,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 {/* Opponent Stats Card */}
                 <div style={{
                   background: 'rgba(30, 41, 59, 0.7)', border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '16px', padding: '16px 20px', textAlign: 'left'
+                  borderRadius: '16px', padding: '14px 16px', textAlign: 'left'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 900, color: '#f87171', fontSize: '1.05rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontWeight: 900, color: '#f87171', fontSize: '0.98rem' }}>
                     <span>👓</span> {(() => {
                       let opp: any = null;
                       completedState?.players?.forEach((p: any, sId: string) => {
@@ -715,7 +820,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                       return opp?.displayName || 'OPPONENT';
                     })()}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem', color: '#cbd5e1' }}>
                     {(() => {
                       let opp: any = null;
                       completedState?.players?.forEach((p: any, sId: string) => {
@@ -747,19 +852,18 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               </div>
 
               {/* Action Button & Skip Prompt */}
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => onMatchComplete(completedState || room.state)}
                   style={{
                     background: 'linear-gradient(90deg, #22c55e, #16a34a)',
-                    border: 'none', borderRadius: '14px', padding: '14px 32px',
-                    color: '#ffffff', fontWeight: 900, fontSize: '1.1rem',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px',
-                    boxShadow: '0 6px 20px rgba(34, 197, 94, 0.4)',
-                    transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                    border: 'none', borderRadius: '12px', padding: '12px 24px',
+                    color: '#ffffff', fontWeight: 900, fontSize: '0.95rem',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                    boxShadow: '0 6px 20px rgba(34, 197, 94, 0.4)'
                   }}
                 >
-                  CONTINUE TO FULL RESULTS <ArrowRight size={20} />
+                  CONTINUE TO FULL RESULTS <ArrowRight size={18} />
                 </button>
               </div>
 

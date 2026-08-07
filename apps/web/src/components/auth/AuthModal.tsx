@@ -86,14 +86,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel modal-dialog-content"
         style={{
           width: '100%',
           maxWidth: '460px',
           maxHeight: 'calc(100vh - 48px)',
           display: 'flex',
           flexDirection: 'column',
-          padding: '24px 28px',
+          padding: '24px 20px',
           position: 'relative',
           border: '1px solid rgba(56, 189, 248, 0.3)',
           boxShadow: '0 0 40px rgba(56, 189, 248, 0.2), inset 0 0 20px rgba(56, 189, 248, 0.05)',

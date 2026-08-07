@@ -46,8 +46,15 @@ export interface MatchPersistencePayload {
   };
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidUuid(id: string | undefined | null): boolean {
+  if (!id) return false;
+  return UUID_REGEX.test(id);
+}
+
 export async function updatePlayerProfileMmr(profileId: string, mmrDelta: number, newMmr: number, isWin: boolean): Promise<boolean> {
-  if (!supabaseServer) {
+  if (!supabaseServer || !isValidUuid(profileId)) {
     return false;
   }
   try {
@@ -83,18 +90,29 @@ export async function updatePlayerProfileMmr(profileId: string, mmrDelta: number
   }
 }
 
-
 export async function persistMatchResult(payload: MatchPersistencePayload): Promise<boolean> {
   if (!supabaseServer) {
     console.warn('[SupabaseServer] Skipping persistence: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing.');
     return false;
   }
 
+  const sanitizedMatch = {
+    ...payload.match,
+    winner_profile_id: isValidUuid(payload.match.winner_profile_id) ? payload.match.winner_profile_id : undefined
+  };
+
+  const sanitizedPlayers = payload.players.filter((p) => isValidUuid(p.profile_id));
+
+  if (sanitizedPlayers.length === 0) {
+    console.log('[SupabaseServer] Skipping RPC match result save: guest/bot match with no registered UUID profiles.');
+    return true;
+  }
+
   const attemptPersist = async (): Promise<boolean> => {
     try {
       const { error } = await supabaseServer!.rpc('save_match_result', {
-        p_match: payload.match,
-        p_players: payload.players,
+        p_match: sanitizedMatch,
+        p_players: sanitizedPlayers,
         p_events: payload.events || null
       });
 
