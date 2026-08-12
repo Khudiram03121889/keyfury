@@ -5,7 +5,7 @@ import { soundSynth } from '../game/audio/SoundSynth';
 
 export type ComboTier = 'Double Kill' | 'Triple Kill' | 'Hyper Speed' | number;
 
-class SoundManager {
+export class SoundManager {
   private ctx: AudioContext | null = null;
   private muted: boolean = false;
   private masterGain: GainNode | null = null;
@@ -89,6 +89,8 @@ class SoundManager {
     osc.stop(now + 0.04);
   }
 
+  private keypressGainNode: GainNode | null = null;
+
   // --- 2. Typing Keypress Sound ---
   public playKeypress(): void {
     if (this.muted) return;
@@ -96,24 +98,25 @@ class SoundManager {
     if (!ctx) return;
     this.ensureUnlocked();
 
+    if (!this.keypressGainNode) {
+      this.keypressGainNode = ctx.createGain();
+      this.keypressGainNode.connect(this.masterGain || ctx.destination);
+    }
+
     const now = ctx.currentTime;
     // Slight random pitch shift for realistic mechanical key feel
     const pitchOffset = (Math.random() - 0.5) * 60;
     const startFreq = 750 + pitchOffset;
 
     const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(startFreq, now);
     osc.frequency.exponentialRampToValueAtTime(180, now + 0.035);
 
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    this.keypressGainNode.gain.setValueAtTime(0.25, now);
+    this.keypressGainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
-    osc.connect(gain);
-    gain.connect(this.masterGain || ctx.destination);
-
+    osc.connect(this.keypressGainNode);
     osc.start(now);
     osc.stop(now + 0.035);
   }

@@ -12,6 +12,12 @@ export class SoundSynth {
   private muted: boolean = false;
   private volume: number = 0.8;
 
+  // Web Audio Node Pooling & Buffer Caching for High-Speed Typing (>100 WPM)
+  private cachedNoiseBuffer: AudioBuffer | null = null;
+  private clickGainNode: GainNode | null = null;
+  private noiseFilterNode: BiquadFilterNode | null = null;
+  private noiseGainNode: GainNode | null = null;
+
   constructor(options: SoundSynthOptions = {}) {
     this.muted = options.muted ?? false;
     this.volume = options.volume ?? 0.8;
@@ -21,6 +27,38 @@ export class SoundSynth {
       if (savedMute !== null) {
         this.muted = savedMute === 'true';
       }
+    }
+  }
+
+  private initPersistentNodes(ctx: AudioContext): void {
+    if (!this.masterGain) return;
+
+    // 1. Static AudioBuffer cache for tactile release transient (pre-allocated once)
+    if (!this.cachedNoiseBuffer) {
+      const bufferSize = Math.floor(ctx.sampleRate * 0.015);
+      this.cachedNoiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = this.cachedNoiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+    }
+
+    // 2. Persistent GainNode for click snap pitch drop
+    if (!this.clickGainNode) {
+      this.clickGainNode = ctx.createGain();
+      this.clickGainNode.connect(this.masterGain);
+    }
+
+    // 3. Persistent GainNode & FilterNode for noise transient
+    if (!this.noiseGainNode) {
+      this.noiseGainNode = ctx.createGain();
+      this.noiseGainNode.connect(this.masterGain);
+    }
+
+    if (!this.noiseFilterNode) {
+      this.noiseFilterNode = ctx.createBiquadFilter();
+      this.noiseFilterNode.type = 'bandpass';
+      this.noiseFilterNode.connect(this.noiseGainNode);
     }
   }
 
@@ -79,59 +117,46 @@ export class SoundSynth {
   /**
    * Tactile Mechanical Keyboard Click sound
    * Simulates a tactile mechanical switch (Cherry MX Blue/Brown snap + bottoming out)
+   * Uses pooled Web Audio gain/filter nodes & static cached noise buffer
    */
   public playMechanicalClick(isSpace: boolean = false): void {
     if (this.muted) return;
     const ctx = this.getAudioContext();
     if (!ctx || !this.masterGain) return;
 
+    this.initPersistentNodes(ctx);
     const now = ctx.currentTime;
     const pitchOffset = (Math.random() - 0.5) * 80;
     const baseFreq = isSpace ? 450 + pitchOffset : 780 + pitchOffset;
 
-    // 1. High frequency metallic click snap (triangle wave rapid pitch drop)
+    // 1. High frequency metallic click snap (reuses persistent clickGainNode)
     const osc = ctx.createOscillator();
-    const oscGain = ctx.createGain();
-
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(baseFreq, now);
     osc.frequency.exponentialRampToValueAtTime(140, now + 0.025);
 
-    oscGain.gain.setValueAtTime(isSpace ? 0.35 : 0.28, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+    this.clickGainNode!.gain.setValueAtTime(isSpace ? 0.35 : 0.28, now);
+    this.clickGainNode!.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
 
-    osc.connect(oscGain);
-    oscGain.connect(this.masterGain);
-
+    osc.connect(this.clickGainNode!);
     osc.start(now);
     osc.stop(now + 0.025);
 
-    // 2. High-pass noise transient for tactile key cap release
-    const bufferSize = Math.floor(ctx.sampleRate * 0.015);
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+    // 2. High-pass noise transient (reuses cachedNoiseBuffer, persistent noiseFilterNode & noiseGainNode)
+    if (this.cachedNoiseBuffer && this.noiseFilterNode && this.noiseGainNode) {
+      const noise = ctx.createBufferSource();
+      noise.buffer = this.cachedNoiseBuffer;
+
+      this.noiseFilterNode.frequency.setValueAtTime(isSpace ? 1800 : 3200, now);
+      this.noiseFilterNode.Q.setValueAtTime(1.5, now);
+
+      this.noiseGainNode.gain.setValueAtTime(0.18, now);
+      this.noiseGainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+
+      noise.connect(this.noiseFilterNode);
+      noise.start(now);
+      noise.stop(now + 0.015);
     }
-
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(isSpace ? 1800 : 3200, now);
-    filter.Q.setValueAtTime(1.5, now);
-
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.18, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
-
-    noise.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(this.masterGain);
-
-    noise.start(now);
-    noise.stop(now + 0.015);
   }
 
   /**

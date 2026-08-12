@@ -1,23 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Room } from 'colyseus.js';
 import Phaser from 'phaser';
-import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle, Smartphone, Keyboard as KeyboardIcon } from 'lucide-react';
+import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle } from 'lucide-react';
 import { StickFightScene, AttackKind } from '../game/StickFightScene';
 import { GuestProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { RankBadge } from '../components/ranked/RankBadge';
 import { soundSynth } from '../game/audio/SoundSynth';
-import { TouchKeyboard } from '../components/game/TouchKeyboard';
-
-const isTouchCapable = () => {
-  if (typeof window === 'undefined') return false;
-  return (
-    'ontouchstart' in window ||
-    navigator.maxTouchPoints > 0 ||
-    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    window.innerWidth <= 768
-  );
-};
 
 interface MatchPageProps {
   room: Room;
@@ -32,7 +21,6 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   const sceneRef = useRef<StickFightScene | null>(null);
 
   const [matchState, setMatchState] = useState<any>(() => room?.state || null);
-  const [, setTick] = useState<number>(0);
   const [countdown, setCountdown] = useState<number | null>(3);
   const [remainingTime, setRemainingTime] = useState<number>(90);
   const [muted, setMuted] = useState<boolean>(() => soundManager.isMuted());
@@ -46,19 +34,35 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(() => room?.state?.isPaused || false);
 
-  const [showTouchKeyboard, setShowTouchKeyboard] = useState<boolean>(() => {
-    const saved = localStorage.getItem('keyfury_touch_keyboard');
-    if (saved !== null) return saved === 'true';
-    return isTouchCapable();
-  });
+  const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
 
-  const toggleTouchKeyboard = () => {
-    setShowTouchKeyboard((prev) => {
-      const next = !prev;
-      localStorage.setItem('keyfury_touch_keyboard', String(next));
-      return next;
-    });
-  };
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onVVResize = () => {
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 50 ? offset : 0);
+    };
+    vv.addEventListener('resize', onVVResize);
+    vv.addEventListener('scroll', onVVResize);
+    return () => {
+      vv.removeEventListener('resize', onVVResize);
+      vv.removeEventListener('scroll', onVVResize);
+    };
+  }, []);
+
+  const wordsPerLine = React.useMemo(() => {
+    if (viewportWidth < 480) return 3;
+    if (viewportWidth < 768) return 5;
+    return 7;
+  }, [viewportWidth]);
 
   const isBotMode = React.useMemo(() => {
     if ((room as any)?.metadata?.withBot) return true;
@@ -104,6 +108,13 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   const activeWordIdxRef = useRef<number>(0);
   const typedCharIdxRef = useRef<number>(0);
   const typingInputRef = useRef<HTMLInputElement>(null);
+  const lastProcessedInputDataRef = useRef<string>('');
+  const lastProcessedInputTimeRef = useRef<number>(0);
+
+  // High-Speed Typing (>100 WPM) rAF UI State Batching & Stun Window Refs
+  const pendingUiUpdateRef = useRef<{ wordIndex: number; charIndex: number } | null>(null);
+  const rafPendingRef = useRef<boolean>(false);
+  const stunnedUntilMsRef = useRef<number>(0);
 
   // Sync refs for event handlers
   matchStateRef.current = matchState;
@@ -111,10 +122,31 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   typedCharIdxRef.current = typedCharIndex;
 
   const syncLocalProgress = (wordIndex: number, charIndex: number) => {
+    const isWordChanged = wordIndex !== activeWordIdxRef.current;
     activeWordIdxRef.current = wordIndex;
     typedCharIdxRef.current = charIndex;
-    setActiveWordIndex(wordIndex);
-    setTypedCharIndex(charIndex);
+
+    // Immediate React state update on word completion or line wrap to prevent visual lag
+    if (isWordChanged) {
+      setActiveWordIndex(wordIndex);
+      setTypedCharIndex(charIndex);
+      return;
+    }
+
+    // Batch character index advances within the same word using requestAnimationFrame (60 FPS max)
+    pendingUiUpdateRef.current = { wordIndex, charIndex };
+    if (!rafPendingRef.current) {
+      rafPendingRef.current = true;
+      requestAnimationFrame(() => {
+        rafPendingRef.current = false;
+        if (pendingUiUpdateRef.current) {
+          const { wordIndex: wIdx, charIndex: cIdx } = pendingUiUpdateRef.current;
+          pendingUiUpdateRef.current = null;
+          setActiveWordIndex(wIdx);
+          setTypedCharIndex(cIdx);
+        }
+      });
+    }
   };
 
   // Room state change listeners
@@ -126,6 +158,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
       }
       const me = room.state.players?.get(room.sessionId);
       if (me) {
+        if (typeof me.stunnedUntilMs === 'number') {
+          stunnedUntilMsRef.current = me.stunnedUntilMs;
+        }
         syncLocalProgress(me.activeWordIndex, me.wordTypedCharCount);
       }
     }
@@ -135,7 +170,6 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
       if (typeof state.isPaused === 'boolean') {
         setIsPaused(state.isPaused);
       }
-      setTick((t) => t + 1); // Force React re-render when Colyseus state mutates (e.g. health changes)
       setRemainingTime(state.remainingSeconds);
       setCountdown(state.status === 'countdown' ? state.countdownSeconds : null);
 
@@ -149,8 +183,11 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         wordsRef.current = Array.from(state.words);
       }
 
-      const me = state.players.get(room.sessionId);
+      const me = state.players?.get(room.sessionId);
       if (me) {
+        if (typeof me.stunnedUntilMs === 'number') {
+          stunnedUntilMsRef.current = me.stunnedUntilMs;
+        }
         // The server is the only source of typing progress.
         syncLocalProgress(me.activeWordIndex, me.wordTypedCharCount);
 
@@ -217,8 +254,6 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
       const side: 'left' | 'right' = senderPlayer?.side || (event.playerId === room.sessionId ? mySide : (mySide === 'left' ? 'right' : 'left'));
       const isMyEvent = event.playerId === room.sessionId;
 
-      setTick((t) => t + 1);
-
       if (event.type === 'key_accepted') {
         soundSynth.playMechanicalClick();
 
@@ -256,6 +291,8 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         }
       } else if (event.type === 'key_error' && isMyEvent) {
         soundSynth.playKeyError();
+        const now = Date.now();
+        stunnedUntilMsRef.current = now + 500;
         syncLocalProgress(event.wordIndex, event.charIndex);
         setIsErrorFlash(true);
         sceneRef.current?.triggerStun(mySide);
@@ -314,6 +351,52 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   // canvas before React sees them. Listening on window makes typing work after
   // clicking anywhere in the arena, not just while the invisible input has
   // focus.
+  const handleKeyPress = (char: string) => {
+    if (showStatsOverlay || isMatchEndedRef.current || isPaused) return;
+    if (room.state?.status !== 'in_progress') return;
+
+    let keyChar = char;
+    if (keyChar === 'Spacebar' || keyChar === ' ') {
+      keyChar = ' ';
+    }
+    if (keyChar.length !== 1 || !/^[ -~]$/.test(keyChar)) return;
+
+    keySeqRef.current++;
+    console.log('[CLIENT KEY SENT]', keyChar, 'seq:', keySeqRef.current);
+    room.send('key_intent', {
+      seq: keySeqRef.current,
+      key: keyChar,
+      clientTimeMs: Date.now()
+    });
+  };
+
+  const processInputText = (text: string) => {
+    if (!text) return;
+    for (const char of text) {
+      handleKeyPress(char);
+    }
+    setTimeout(() => {
+      if (typingInputRef.current) {
+        typingInputRef.current.value = '';
+      }
+    }, 0);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val) {
+      processInputText(val);
+    }
+  };
+
+  const handleInputEvent = (e: React.FormEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const val = target.value;
+    if (val) {
+      processInputText(val);
+    }
+  };
+
   const handleCombatKey = (event: KeyboardEvent) => {
     if (showStatsOverlay || isMatchEndedRef.current) {
       if (event.key === 'Enter') {
@@ -335,6 +418,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
     if (isPaused) return;
 
+    // Soft keyboards on Android Gboard / iOS IME send 'Unidentified' or keycode 229; onInput/onChange handles extraction
+    if (event.key === 'Unidentified' || event.key === '229') return;
+
     // Only accept typing input when match is actively in progress on live room state
     if (room.state?.status !== 'in_progress') {
       console.log('[CLIENT KEY DROPPED - status not in_progress]', room.state?.status);
@@ -355,34 +441,8 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     // Allow all single printable ASCII characters (letters, numbers, space, hyphens '-', and symbols)
     if (char.length !== 1 || !/^[ -~]$/.test(char)) return;
 
-
     event.preventDefault();
-    keySeqRef.current++;
-    console.log('[CLIENT KEY SENT]', char, 'seq:', keySeqRef.current);
-    room.send('key_intent', {
-      seq: keySeqRef.current,
-      key: char,
-      clientTimeMs: Date.now()
-    });
-  };
-
-  const sendVirtualKeyIntent = (char: string) => {
-    if (showStatsOverlay || isMatchEndedRef.current || isPaused) return;
-    if (room.state?.status !== 'in_progress') return;
-
-    let keyChar = char;
-    if (keyChar === 'Spacebar' || keyChar === ' ') {
-      keyChar = ' ';
-    }
-    if (keyChar.length !== 1 || !/^[ -~]$/.test(keyChar)) return;
-
-    keySeqRef.current++;
-    console.log('[CLIENT VIRTUAL KEY SENT]', keyChar, 'seq:', keySeqRef.current);
-    room.send('key_intent', {
-      seq: keySeqRef.current,
-      key: keyChar,
-      clientTimeMs: Date.now()
-    });
+    handleKeyPress(char);
   };
 
   const handleCombatInput = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -433,6 +493,12 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
       <div
         ref={mainBoxRef}
         tabIndex={-1}
+        onTouchStart={() => {
+          typingInputRef.current?.focus();
+        }}
+        onClick={() => {
+          typingInputRef.current?.focus();
+        }}
         onMouseDown={(event) => {
           event.preventDefault();
           typingInputRef.current?.focus();
@@ -448,27 +514,44 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         <input
           ref={typingInputRef}
           aria-label="Combat typing input"
-          autoComplete="off"
-          autoCapitalize="none"
+          type="text"
+          inputMode="text"
+          autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
-          inputMode={showTouchKeyboard ? "none" : "text"}
+          autoComplete="off"
+          enterKeyHint="go"
           value=""
-          onChange={() => {}}
+          onInput={handleInputEvent}
+          onChange={handleInputChange}
           onKeyDown={handleCombatInput}
-          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0.001,
+            border: 'none',
+            background: 'transparent',
+            color: 'transparent',
+            outline: 'none',
+            cursor: 'default',
+            pointerEvents: 'auto',
+            zIndex: 2
+          }}
         />
 
         {/* --- TOP HUD OVERLAYS --- */}
         <div style={{
           position: 'absolute',
-          top: '12px',
-          left: '12px',
-          right: '12px',
+          top: viewportWidth < 600 ? '6px' : '12px',
+          left: viewportWidth < 600 ? '6px' : '12px',
+          right: viewportWidth < 600 ? '6px' : '12px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '8px',
+          gap: viewportWidth < 600 ? '4px' : '8px',
           zIndex: 10,
           pointerEvents: 'none'
         }}>
@@ -476,24 +559,24 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
           <div style={{
             pointerEvents: 'auto',
             flex: '1 1 0',
-            maxWidth: '280px',
+            maxWidth: viewportWidth < 600 ? '140px' : '280px',
             minWidth: 0,
             background: 'var(--pill-bg)',
             backdropFilter: 'blur(8px)',
-            padding: '8px 12px',
+            padding: viewportWidth < 600 ? '4px 8px' : '8px 12px',
             borderRadius: '12px',
             border: '1px solid var(--border-card)',
             overflow: 'hidden'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '4px' }}>
-              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', gap: '2px' }}>
+              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: viewportWidth < 600 ? '0.72rem' : '0.82rem', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 🎩 {leftPlayer?.displayName || 'PLAYER 1'}
               </span>
-              <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: '0.78rem', flexShrink: 0 }}>
+              <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem', flexShrink: 0 }}>
                 {leftHealth} / 200
               </span>
             </div>
-            <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+            <div style={{ width: '100%', height: viewportWidth < 600 ? '7px' : '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
               <div style={{
                 width: `${Math.max(0, Math.min(100, (leftHealth / 200) * 100))}%`, height: '100%',
                 background: 'linear-gradient(90deg, #22c55e, #4ade80)', transition: 'width 0.2s ease',
@@ -509,15 +592,15 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
             backdropFilter: 'blur(10px)',
             border: '1px solid var(--border-card)',
             borderRadius: '14px',
-            padding: '4px 14px',
+            padding: viewportWidth < 600 ? '2px 8px' : '4px 14px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: viewportWidth < 600 ? '4px' : '8px',
             boxShadow: '0 6px 20px var(--card-shadow)',
             flexShrink: 0
           }}>
             <span style={{
-              fontSize: 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
+              fontSize: viewportWidth < 600 ? '1.2rem' : 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
               color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
             }}>
               {remainingTime}
@@ -533,35 +616,16 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               }}
               title={muted ? 'Unmute Audio' : 'Mute Audio'}
             >
-              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
-            <button
-              onClick={toggleTouchKeyboard}
-              style={{
-                background: showTouchKeyboard ? 'rgba(56, 189, 248, 0.2)' : 'none',
-                border: showTouchKeyboard ? '1px solid rgba(56, 189, 248, 0.4)' : 'none',
-                color: showTouchKeyboard ? '#38bdf8' : 'var(--text-muted)',
-                borderRadius: '8px',
-                padding: '4px 6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '0.72rem',
-                fontWeight: 800
-              }}
-              title={showTouchKeyboard ? 'Hide Touch Keyboard' : 'Show Touch Keyboard'}
-            >
-              <Smartphone size={16} />
-              <span className="nav-btn-text">{showTouchKeyboard ? 'KBD' : 'KBD'}</span>
-            </button>
+
             {isBotMode && (
               <button
                 onClick={handleTogglePause}
                 style={{
                   background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
                   color: '#eab308', borderRadius: '8px', padding: '4px 8px',
-                  fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
                 }}
                 title={isPaused ? 'Resume' : 'Pause'}
               >
@@ -576,7 +640,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 style={{
                   background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
                   color: '#ef4444', borderRadius: '8px', padding: '4px 8px',
-                  fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
                 }}
                 title="Leave Match (Forfeit Loss)"
               >
@@ -590,24 +654,24 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
           <div style={{
             pointerEvents: 'auto',
             flex: '1 1 0',
-            maxWidth: '280px',
+            maxWidth: viewportWidth < 600 ? '140px' : '280px',
             minWidth: 0,
             background: 'var(--pill-bg)',
             backdropFilter: 'blur(8px)',
-            padding: '8px 12px',
+            padding: viewportWidth < 600 ? '4px 8px' : '8px 12px',
             borderRadius: '12px',
             border: '1px solid var(--border-card)',
             overflow: 'hidden'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '4px' }}>
-              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', gap: '2px' }}>
+              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: viewportWidth < 600 ? '0.72rem' : '0.82rem', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 👓 {rightPlayer?.displayName || 'PLAYER 2'}
               </span>
-              <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: '0.78rem', flexShrink: 0 }}>
+              <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem', flexShrink: 0 }}>
                 {rightHealth} / 200
               </span>
             </div>
-            <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+            <div style={{ width: '100%', height: viewportWidth < 600 ? '7px' : '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
               <div style={{
                 width: `${Math.max(0, Math.min(100, (rightHealth / 200) * 100))}%`, height: '100%',
                 background: 'linear-gradient(90deg, #ef4444, #f87171)', transition: 'width 0.2s ease',
@@ -619,18 +683,32 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
         {/* --- TRANSLUCENT HORIZONTAL TYPING STRIP BANNER --- */}
         {!showStatsOverlay && (
-          <div id="active-typing-banner" style={{
-            position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', zIndex: 10,
-            width: '94%', maxWidth: '1080px'
-          }}>
+          <div
+            id="active-typing-banner"
+            onTouchStart={() => typingInputRef.current?.focus()}
+            onClick={() => typingInputRef.current?.focus()}
+            style={{
+              position: 'absolute',
+              bottom: keyboardOffset > 0 ? `${keyboardOffset + 8}px` : (viewportWidth < 600 ? '8px' : '16px'),
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              zIndex: 10,
+              width: '96%',
+              maxWidth: '1080px',
+              transition: 'bottom 0.1s ease'
+            }}
+          >
             {/* Combo Indicator pill */}
             {myCombo >= 3 && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '4px 12px', borderRadius: '999px',
+                padding: '3px 10px', borderRadius: '999px',
                 background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
-                color: '#ffffff', fontWeight: 900, fontSize: '0.78rem',
+                color: '#ffffff', fontWeight: 900, fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem',
                 letterSpacing: '1px', textTransform: 'uppercase',
                 boxShadow: '0 4px 14px rgba(245, 158, 11, 0.6)'
               }}>
@@ -645,13 +723,13 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               backdropFilter: 'blur(16px)',
               border: isErrorFlash ? '2px solid #ef4444' : '1px solid var(--border-card)',
               borderRadius: '14px',
-              padding: '10px 16px',
+              padding: viewportWidth < 600 ? '8px 12px' : '10px 16px',
               boxShadow: isErrorFlash
                 ? '0 0 30px rgba(239, 68, 68, 0.65)'
                 : '0 8px 32px var(--card-shadow)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
+              gap: '4px',
               position: 'relative',
               transition: 'border 0.15s ease, box-shadow 0.15s ease'
             }}>
@@ -660,13 +738,12 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 width: '100%',
                 whiteSpace: 'pre',
                 overflowX: 'auto',
-                fontSize: 'clamp(1.1rem, 4vw, 1.75rem)',
+                fontSize: viewportWidth < 600 ? '1.1rem' : 'clamp(1.1rem, 4vw, 1.75rem)',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
                 letterSpacing: '0px',
                 lineHeight: 1.2
               }}>
                 {(() => {
-                  const wordsPerLine = 7;
                   const currentLineIndex = Math.floor(activeWordIndex / wordsPerLine);
                   const lineStartIndex = currentLineIndex * wordsPerLine;
                   const currentLineWords = wordsList.slice(lineStartIndex, lineStartIndex + wordsPerLine);
@@ -704,7 +781,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 width: '100%',
                 whiteSpace: 'pre',
                 overflowX: 'auto',
-                fontSize: 'clamp(0.85rem, 3vw, 1.2rem)',
+                fontSize: viewportWidth < 600 ? '0.85rem' : 'clamp(0.85rem, 3vw, 1.2rem)',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
                 color: 'var(--text-muted)',
                 opacity: 0.7,
@@ -713,7 +790,6 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 letterSpacing: '0px'
               }}>
                 {(() => {
-                  const wordsPerLine = 7;
                   const currentLineIndex = Math.floor(activeWordIndex / wordsPerLine);
                   const nextLineStartIndex = (currentLineIndex + 1) * wordsPerLine;
                   const nextLineWords = wordsList.slice(nextLineStartIndex, nextLineStartIndex + wordsPerLine);
@@ -727,16 +803,6 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
                 })()}
               </div>
             </div>
-
-            {/* --- TOUCH KEYBOARD FOR MOBILE TOUCH GAMEPLAY --- */}
-            {showTouchKeyboard && (
-              <TouchKeyboard
-                onKeyPress={sendVirtualKeyIntent}
-                expectedChar={currentWord ? currentWord[typedCharIndex] : undefined}
-                onClose={() => setShowTouchKeyboard(false)}
-                isErrorFlash={isErrorFlash}
-              />
-            )}
           </div>
         )}
 
