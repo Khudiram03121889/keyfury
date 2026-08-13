@@ -126,19 +126,15 @@ describe('Challenger Empirical Stress Test: shouldProcessInput & Soft Keyboard D
       expect(processor.sentIntents.map(i => i.key).join('')).toBe(fastWord);
     });
 
-    it('should throttle identical character duplicate event (< 50ms) but allow intentional tap after 50ms', () => {
+    it('should allow fast consecutive character taps without throttling', () => {
       const char = 'z';
 
       // First tap at t=0
       expect(processor.shouldProcessInput(char)).toBe(true);
       processor.processInputText(char);
 
-      // Duplicate DOM event trigger 5ms later
+      // Fast second tap 5ms later
       vi.advanceTimersByTime(5);
-      expect(processor.shouldProcessInput(char)).toBe(false);
-
-      // Real second tap 60ms later
-      vi.advanceTimersByTime(55);
       expect(processor.shouldProcessInput(char)).toBe(true);
       processor.processInputText(char);
 

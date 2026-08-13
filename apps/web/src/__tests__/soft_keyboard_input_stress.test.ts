@@ -32,12 +32,6 @@ export class MatchPageInputProcessor {
 
   public shouldProcessInput = (data: string): boolean => {
     if (!data) return false;
-    const now = Date.now();
-    if (data === this.lastProcessedData && (now - this.lastProcessedTime) < 50) {
-      return false;
-    }
-    this.lastProcessedData = data;
-    this.lastProcessedTime = now;
     return true;
   };
 
@@ -59,27 +53,47 @@ export class MatchPageInputProcessor {
     });
   };
 
-  public processInputText = (text: string) => {
-    if (!text) return;
-    for (const char of text) {
-      this.handleKeyPress(char);
-    }
+  public lastInputValue = '';
+
+  public syncAndResetInput = () => {
+    this.lastInputValue = '';
     this.inputValue = '';
   };
 
-  public handleInputChange = (e: { target: { value: string } }) => {
-    const val = e.target.value;
-    if (val) {
-      this.processInputText(val);
+  public handleInputDOMEvent = (e: { target: { value: string } }) => {
+    const newVal = e.target.value || '';
+    const oldVal = this.lastInputValue;
+
+    if (newVal === oldVal) return;
+
+    if (newVal.startsWith(oldVal)) {
+      const addedText = newVal.slice(oldVal.length);
+      this.lastInputValue = newVal;
+      if (addedText) {
+        for (const char of addedText) {
+          this.handleKeyPress(char);
+        }
+      }
+    } else {
+      this.lastInputValue = newVal;
+      if (newVal) {
+        for (const char of newVal) {
+          this.handleKeyPress(char);
+        }
+      }
     }
   };
 
+  public processInputText = (text: string) => {
+    this.handleInputDOMEvent({ target: { value: (this.lastInputValue || '') + text } });
+  };
+
+  public handleInputChange = (e: { target: { value: string } }) => {
+    this.handleInputDOMEvent(e);
+  };
+
   public handleInputEvent = (e: { target: { value: string }; nativeEvent?: { data?: string } }) => {
-    const target = e.target;
-    const val = target.value;
-    if (val) {
-      this.processInputText(val);
-    }
+    this.handleInputDOMEvent(e);
   };
 
   public handleBeforeInput = (_e: any) => {
@@ -330,6 +344,31 @@ describe('MatchPage Soft Keyboard Input Handler Empirical Stress Test Suite', ()
       processor.processInputText('hello');
 
       expect(processor.sentIntents).toHaveLength(0);
+    });
+
+    it('should correctly process fast consecutive typing like "e" then "l" without duplicating or missing keys', () => {
+      // 1. User types 'e' on Android Gboard (DOM value becomes "e")
+      processor.handleInputDOMEvent({ target: { value: 'e' } });
+      expect(processor.sentIntents).toHaveLength(1);
+      expect(processor.sentIntents[0].key).toBe('e');
+
+      // 2. User types 'l' rapidly before input is cleared (DOM value becomes "el")
+      processor.handleInputDOMEvent({ target: { value: 'el' } });
+      expect(processor.sentIntents).toHaveLength(2);
+      expect(processor.sentIntents[1].key).toBe('l');
+
+      // 3. User types 'e' rapidly (DOM value becomes "ele")
+      processor.handleInputDOMEvent({ target: { value: 'ele' } });
+      expect(processor.sentIntents).toHaveLength(3);
+      expect(processor.sentIntents[2].key).toBe('e');
+
+      // 4. User types 'p' rapidly (DOM value becomes "elep")
+      processor.handleInputDOMEvent({ target: { value: 'elep' } });
+      expect(processor.sentIntents).toHaveLength(4);
+      expect(processor.sentIntents[3].key).toBe('p');
+
+      const fullSent = processor.sentIntents.map(i => i.key).join('');
+      expect(fullSent).toBe('elep');
     });
   });
 });

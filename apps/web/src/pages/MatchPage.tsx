@@ -128,6 +128,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
     // Immediate React state update on word completion or line wrap to prevent visual lag
     if (isWordChanged) {
+      syncAndResetInput();
       setActiveWordIndex(wordIndex);
       setTypedCharIndex(charIndex);
       return;
@@ -370,30 +371,41 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     });
   };
 
-  const processInputText = (text: string) => {
-    if (!text) return;
-    for (const char of text) {
-      handleKeyPress(char);
-    }
-    setTimeout(() => {
-      if (typingInputRef.current) {
-        typingInputRef.current.value = '';
-      }
-    }, 0);
-  };
+  const lastInputValueRef = useRef<string>('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (val) {
-      processInputText(val);
+  const syncAndResetInput = () => {
+    lastInputValueRef.current = '';
+    if (typingInputRef.current) {
+      typingInputRef.current.value = '';
     }
   };
 
-  const handleInputEvent = (e: React.FormEvent<HTMLInputElement>) => {
+  const handleInputDOMEvent = (e: React.FormEvent<HTMLInputElement> | React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
-    const val = target.value;
-    if (val) {
-      processInputText(val);
+    const newVal = target.value || '';
+    const oldVal = lastInputValueRef.current;
+
+    if (newVal === oldVal) return;
+
+    if (newVal.startsWith(oldVal)) {
+      const addedText = newVal.slice(oldVal.length);
+      lastInputValueRef.current = newVal;
+      if (addedText) {
+        for (const char of addedText) {
+          handleKeyPress(char);
+        }
+      }
+    } else {
+      lastInputValueRef.current = newVal;
+      if (newVal) {
+        for (const char of newVal) {
+          handleKeyPress(char);
+        }
+      }
+    }
+
+    if (newVal.length > 20) {
+      syncAndResetInput();
     }
   };
 
@@ -522,8 +534,8 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
           autoComplete="off"
           enterKeyHint="go"
           value=""
-          onInput={handleInputEvent}
-          onChange={handleInputChange}
+          onInput={handleInputDOMEvent}
+          onChange={handleInputDOMEvent}
           onKeyDown={handleCombatInput}
           style={{
             position: 'absolute',
