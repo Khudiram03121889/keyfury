@@ -136,9 +136,54 @@ export async function persistMatchResult(payload: MatchPersistencePayload): Prom
     await new Promise((res) => setTimeout(res, 500));
     success = await attemptPersist();
     if (!success) {
-      console.error('[SupabaseServer] Persistence attempt 2 failed. Match result retained in room memory only.');
+      console.error('[SupabaseServer] Persistence attempt 2 failed. Queueing for background retry...');
+      if (failedMatchQueue.length < 100) {
+        failedMatchQueue.push(payload);
+      }
     }
   }
 
   return success;
+}
+
+const failedMatchQueue: MatchPersistencePayload[] = [];
+let isFlushingQueue = false;
+
+async function flushFailedMatchQueue() {
+  if (isFlushingQueue || failedMatchQueue.length === 0 || !supabaseServer) return;
+  isFlushingQueue = true;
+  try {
+    const pending = [...failedMatchQueue];
+    failedMatchQueue.length = 0;
+    for (const payload of pending) {
+      const { error } = await supabaseServer.rpc('save_match_result', {
+        p_match: {
+          ...payload.match,
+          winner_profile_id: isValidUuid(payload.match.winner_profile_id) ? payload.match.winner_profile_id : undefined
+        },
+        p_players: payload.players.filter((p) => isValidUuid(p.profile_id)),
+        p_events: payload.events || null
+      });
+
+      if (error) {
+        console.error('[SupabaseServer] Background flush failed for match:', payload.match.id, error.message);
+        if (failedMatchQueue.length < 100) {
+          failedMatchQueue.push(payload);
+        }
+      } else {
+        console.log('[SupabaseServer] Background flush succeeded for match:', payload.match.id);
+      }
+    }
+  } catch (err) {
+    console.error('[SupabaseServer] Exception in flushFailedMatchQueue:', err);
+  } finally {
+    isFlushingQueue = false;
+  }
+}
+
+if (typeof setInterval !== 'undefined') {
+  const timer = setInterval(flushFailedMatchQueue, 30000);
+  if (timer && typeof timer === 'object' && 'unref' in timer) {
+    (timer as any).unref();
+  }
 }

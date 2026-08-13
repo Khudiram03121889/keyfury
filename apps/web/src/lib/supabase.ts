@@ -602,23 +602,15 @@ export async function updateUserProfile(
   if (!userId || !supabase) return true;
 
   try {
+    // Security Fix: Client-side updates are strictly restricted to cosmetic profile fields.
+    // MMR, wins, losses, matches_played, and rank tiers are managed exclusively by server authority.
     const payload: any = { id: userId };
     if (updates.displayName !== undefined) payload.display_name = updates.displayName;
     if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
     if (updates.bio !== undefined) payload.bio = updates.bio;
     if (updates.keycapTheme !== undefined) payload.keycap_theme = updates.keycapTheme;
     if (updates.accentColor !== undefined) payload.accent_color = updates.accentColor;
-    if (updates.mmr !== undefined) payload.mmr = updates.mmr;
-    if (updates.rankTier !== undefined) payload.rank_tier = updates.rankTier;
-    if (updates.rankDivision !== undefined) payload.rank_division = updates.rankDivision;
-    if (updates.matchesPlayed !== undefined) payload.matches_played = updates.matchesPlayed;
-    if (updates.wins !== undefined) payload.wins = updates.wins;
-    if (updates.losses !== undefined) payload.losses = updates.losses;
-    if (updates.placementRemaining !== undefined) payload.placement_remaining = updates.placementRemaining;
     if (updates.isGuest !== undefined) payload.is_guest = updates.isGuest;
-    if (updates.avgWpm !== undefined) payload.avg_wpm = updates.avgWpm;
-    if (updates.peakWpm !== undefined) payload.peak_wpm = updates.peakWpm;
-    if (updates.accuracy !== undefined) payload.accuracy = updates.accuracy;
 
     const { error } = await supabase.from('profiles').upsert([payload]);
     if (error) {

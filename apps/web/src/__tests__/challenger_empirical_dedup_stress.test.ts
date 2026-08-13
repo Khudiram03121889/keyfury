@@ -49,13 +49,12 @@ describe('Challenger Empirical Stress Test: shouldProcessInput & Soft Keyboard D
       expect(processor.sentIntents).toHaveLength(0);
     });
 
-    it('should handle multi-character pasted text in processInputText', () => {
+    it('should reject multi-character swipe or prediction text in processInputText', () => {
       const pasteData = 'keyfury123!';
       if (processor.shouldProcessInput(pasteData)) {
         processor.processInputText(pasteData);
       }
-      expect(processor.sentIntents).toHaveLength(pasteData.length);
-      expect(processor.sentIntents.map(i => i.key).join('')).toBe(pasteData);
+      expect(processor.sentIntents).toHaveLength(0);
     });
   });
 

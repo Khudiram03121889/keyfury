@@ -68,18 +68,28 @@ export class MatchPageInputProcessor {
 
     if (newVal.startsWith(oldVal)) {
       const addedText = newVal.slice(oldVal.length);
-      this.lastInputValue = newVal;
       if (addedText) {
+        if (addedText.length > 1) {
+          this.syncAndResetInput();
+          return;
+        }
+        this.lastInputValue = newVal;
         for (const char of addedText) {
           this.handleKeyPress(char);
         }
       }
     } else {
-      this.lastInputValue = newVal;
       if (newVal) {
+        if (newVal.length > 1) {
+          this.syncAndResetInput();
+          return;
+        }
+        this.lastInputValue = newVal;
         for (const char of newVal) {
           this.handleKeyPress(char);
         }
+      } else {
+        this.lastInputValue = '';
       }
     }
   };
@@ -317,13 +327,11 @@ describe('MatchPage Soft Keyboard Input Handler Empirical Stress Test Suite', ()
       expect(processor.sentIntents[processor.sentIntents.length - 1].seq).toBe(inputText.length * 3);
     });
 
-    it('should process pasted multi-character text in processInputText', () => {
-      const burstText = "FASTTYPINGCOMBO";
-      processor.processInputText(burstText);
+    it('should reject multi-character swipe typing or word prediction insertion', () => {
+      const swipedWord = "FASTTYPINGCOMBO";
+      processor.handleInputDOMEvent({ target: { value: swipedWord } });
 
-      expect(processor.sentIntents).toHaveLength(burstText.length);
-      const sentString = processor.sentIntents.map(i => i.key).join('');
-      expect(sentString).toBe(burstText);
+      expect(processor.sentIntents).toHaveLength(0);
     });
 
     it('should drop keypresses when room status is not in_progress', () => {

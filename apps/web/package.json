@@ -11,6 +11,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@keyfury/content": "workspace:*",
     "@keyfury/game-core": "workspace:*",
     "@keyfury/protocol": "workspace:*",

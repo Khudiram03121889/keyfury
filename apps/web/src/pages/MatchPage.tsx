@@ -389,18 +389,32 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
     if (newVal.startsWith(oldVal)) {
       const addedText = newVal.slice(oldVal.length);
-      lastInputValueRef.current = newVal;
       if (addedText) {
+        if (addedText.length > 1) {
+          // Swipe typing / word prediction selection detected: block multi-char insertion for fair manual gameplay
+          console.warn('[INPUT BLOCKED] Multi-character insertion rejected (swipe/prediction blocked):', addedText);
+          syncAndResetInput();
+          return;
+        }
+        lastInputValueRef.current = newVal;
         for (const char of addedText) {
           handleKeyPress(char);
         }
       }
     } else {
-      lastInputValueRef.current = newVal;
       if (newVal) {
+        if (newVal.length > 1) {
+          // Swipe typing / word prediction selection detected: block multi-char insertion for fair manual gameplay
+          console.warn('[INPUT BLOCKED] Multi-character replacement rejected (swipe/prediction blocked):', newVal);
+          syncAndResetInput();
+          return;
+        }
+        lastInputValueRef.current = newVal;
         for (const char of newVal) {
           handleKeyPress(char);
         }
+      } else {
+        lastInputValueRef.current = '';
       }
     }
 
@@ -526,13 +540,15 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         <input
           ref={typingInputRef}
           aria-label="Combat typing input"
-          type="text"
+          type="password"
           inputMode="text"
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
           autoComplete="off"
           enterKeyHint="go"
+          data-gramm="false"
+          data-enable-grammarly="false"
           value=""
           onInput={handleInputDOMEvent}
           onChange={handleInputDOMEvent}

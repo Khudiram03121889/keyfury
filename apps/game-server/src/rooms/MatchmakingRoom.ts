@@ -47,7 +47,8 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
 
   onJoin(client: Client, options: RankedQueueOptions) {
     const authUserId = (client.auth as any)?.userId;
-    const profileId = authUserId || options.profileId || `guest-${client.sessionId}`;
+    // Security Fix: Only use profileId from authenticated JWT session; fallback to guest ID for unauthenticated connections
+    const profileId = authUserId || `guest-${client.sessionId}`;
     const displayName = options.displayName || `Challenger ${Math.floor(Math.random() * 900 + 100)}`;
     const mmr = options.mmr ?? 1000;
     const level = Math.max(1, options.level ?? 1);

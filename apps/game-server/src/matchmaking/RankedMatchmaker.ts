@@ -297,7 +297,8 @@ export class RankedMatchmaker {
     p2: RankedQueueEntry,
     onMatchFailed?: (p1: RankedQueueEntry, p2: RankedQueueEntry) => void
   ): void {
-    if (!p1.lockCancelled && this.queue.has(p1.sessionId)) {
+    const isClient1Closed = p1.client && typeof (p1.client as any).readyState === 'number' && (p1.client as any).readyState > 1;
+    if (!p1.lockCancelled && !isClient1Closed && this.queue.has(p1.sessionId)) {
       p1.status = 'queued';
     } else {
       this.queue.delete(p1.sessionId);
@@ -306,7 +307,8 @@ export class RankedMatchmaker {
       }
     }
 
-    if (!p2.lockCancelled && this.queue.has(p2.sessionId)) {
+    const isClient2Closed = p2.client && typeof (p2.client as any).readyState === 'number' && (p2.client as any).readyState > 1;
+    if (!p2.lockCancelled && !isClient2Closed && this.queue.has(p2.sessionId)) {
       p2.status = 'queued';
     } else {
       this.queue.delete(p2.sessionId);

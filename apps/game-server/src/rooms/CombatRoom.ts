@@ -210,7 +210,8 @@ export class CombatRoom extends Room<CombatRoomState> {
     }
 
     const authUserId = (client.auth as any)?.userId;
-    const profileId = authUserId || options.profileId || `guest-${client.sessionId}`;
+    // Security Fix: Only use profileId from authenticated JWT session; fallback to guest ID for unauthenticated connections
+    const profileId = authUserId || `guest-${client.sessionId}`;
     const displayName = options.displayName || `Swift Falcon ${Math.floor(Math.random() * 900 + 100)}`;
     const side = this.state.players.size === 0 ? 'left' : 'right';
     const mmr = options.mmr ?? 1000;
@@ -290,12 +291,20 @@ export class CombatRoom extends Room<CombatRoomState> {
         p.ready = false;
       });
       this.broadcast('server_event', { type: 'player_disconnect', playerId: client.sessionId, gracePeriodSeconds: 0 } as ServerEvent);
+      this.rateLimiter.delete(client.sessionId);
+      this.keystrokeTimes.delete(client.sessionId);
+      this.lastKeystrokeTime.delete(client.sessionId);
+      this.rematchVotes.delete(client.sessionId);
       return;
     }
 
     if (this.state.status === 'in_progress' && !this.matchEnded) {
       if (consented) {
         console.log(`[CombatRoom] Player ${client.sessionId} explicitly left/forfeited.`);
+        this.rateLimiter.delete(client.sessionId);
+        this.keystrokeTimes.delete(client.sessionId);
+        this.lastKeystrokeTime.delete(client.sessionId);
+        this.rematchVotes.delete(client.sessionId);
         this.resolveForfeit(client.sessionId);
         return;
       }
@@ -318,6 +327,11 @@ export class CombatRoom extends Room<CombatRoomState> {
         }
       }
     }
+
+    this.rateLimiter.delete(client.sessionId);
+    this.keystrokeTimes.delete(client.sessionId);
+    this.lastKeystrokeTime.delete(client.sessionId);
+    this.rematchVotes.delete(client.sessionId);
   }
 
   onDispose() {
@@ -326,6 +340,12 @@ export class CombatRoom extends Room<CombatRoomState> {
     if (this.botInterval) clearTimeout(this.botInterval);
     if (this.botFallbackTimeout) clearTimeout(this.botFallbackTimeout);
     if (this.challengeExpiryTimeout) clearTimeout(this.challengeExpiryTimeout);
+
+    this.rateLimiter.clear();
+    this.keystrokeTimes.clear();
+    this.lastKeystrokeTime.clear();
+    this.rematchVotes.clear();
+    this.combatStates.clear();
     console.log(`[CombatRoom] Room disposed: ${this.roomId}`);
   }
 
@@ -496,7 +516,7 @@ export class CombatRoom extends Room<CombatRoomState> {
 
       if (this.state.remainingSeconds <= 0) {
         clearInterval(this.matchTimerInterval);
-        if (this.botInterval) clearInterval(this.botInterval);
+        if (this.botInterval) clearTimeout(this.botInterval);
         this.resolveTimeUp();
       }
     }, 1000);
@@ -724,7 +744,7 @@ export class CombatRoom extends Room<CombatRoomState> {
     this.state.endReason = reason;
 
     if (this.matchTimerInterval) clearInterval(this.matchTimerInterval);
-    if (this.botInterval) clearInterval(this.botInterval);
+    if (this.botInterval) clearTimeout(this.botInterval);
 
     // Calculate ELO deltas
     const playersList: { sessionId: string; state: PlayerState }[] = [];
