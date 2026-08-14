@@ -29,7 +29,30 @@ const port = Number(process.env.PORT || 2567);
 const clientOrigin = process.env.CLIENT_ORIGIN || '*';
 
 const app = express();
-app.use(cors({ origin: clientOrigin, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, webview)
+      if (!origin) return callback(null, true);
+
+      if (
+        clientOrigin === '*' ||
+        origin === clientOrigin ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('https://localhost') ||
+        origin.startsWith('capacitor://') ||
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://10.0.2.2') ||
+        origin.startsWith('http://192.168.') ||
+        origin.startsWith('http://172.')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true
+  })
+);
 app.use(express.json());
 
 // Health check endpoint
@@ -57,7 +80,7 @@ gameServer.define('duel_room', DuelRoom).filterBy(['isChallenge']);
 gameServer.define('matchmaking', MatchmakingRoom);
 
 
-server.listen(port, () => {
-  console.log(`[KeyFury Game Server] Listening on http://localhost:${port}`);
-  console.log(`[KeyFury Game Server] CORS Origin set to: ${clientOrigin}`);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`[KeyFury Game Server] Listening on 0.0.0.0:${port}`);
+  console.log(`[KeyFury Game Server] Local & Mobile CORS allowed for: ${clientOrigin}`);
 });

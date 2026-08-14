@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Room } from 'colyseus.js';
-import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords } from 'lucide-react';
-import { joinQuickQueue, createChallengeRoom, joinChallengeRoom, startBotDuel, fetchLiveServerStats } from '../lib/colyseus';
+import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords, Settings, Server } from 'lucide-react';
+import { joinQuickQueue, createChallengeRoom, joinChallengeRoom, startBotDuel, fetchLiveServerStats, getGameServerUrl } from '../lib/colyseus';
 import { GuestProfile, UserProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
+import { ServerSettingsModal } from '../components/layout/ServerSettingsModal';
 
 interface LobbyPageProps {
   guest: GuestProfile;
@@ -38,12 +39,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [opponentName, setOpponentName] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'Connected' | 'Reconnecting' | 'Connection lost'>('Connected');
+  const [isServerSettingsOpen, setIsServerSettingsOpen] = useState<boolean>(false);
+  const [activeServerUrl, setActiveServerUrl] = useState<string>(getGameServerUrl());
 
   // Real live online server stats state
   const [liveStats, setLiveStats] = useState<{ onlineWarriors: number; activeDuels: number }>({
     onlineWarriors: 1,
     activeDuels: 0
   });
+
+  useEffect(() => {
+    const handleServerChange = (e: any) => {
+      setActiveServerUrl(e.detail?.url || getGameServerUrl());
+      setErrorMsg(null);
+    };
+    window.addEventListener('keyfury_server_changed', handleServerChange);
+    return () => window.removeEventListener('keyfury_server_changed', handleServerChange);
+  }, []);
 
   useEffect(() => {
     const updateStats = async () => {
@@ -109,7 +121,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       attachRoomListeners(rm);
     } catch (_err: any) {
       setServerWarming(false);
-      setErrorMsg('Matchmaking server connection timed out. Please click retry.');
+      setErrorMsg(`Matchmaking server connection failed (${activeServerUrl}). Please check server status.`);
     }
   };
 
@@ -124,7 +136,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       attachRoomListeners(rm);
     } catch (_err: any) {
       setServerWarming(false);
-      setErrorMsg('Failed to initialize AI Bot arena. Please try again.');
+      setErrorMsg(`Failed to connect to AI Bot arena on ${activeServerUrl}.`);
     }
   };
 
@@ -141,7 +153,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       rm.send('ready', {});
     } catch (_err: any) {
       setServerWarming(false);
-      setErrorMsg('Failed to initialize AI Bot arena. Please try again.');
+      setErrorMsg(`Failed to connect to AI Bot arena on ${activeServerUrl}.`);
     }
   };
 
@@ -174,7 +186,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       attachRoomListeners(rm);
     } catch (_err: any) {
       setServerWarming(false);
-      setErrorMsg('Failed to create private challenge arena.');
+      setErrorMsg(`Failed to create private challenge arena on ${activeServerUrl}.`);
     }
   };
 
@@ -196,7 +208,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       attachRoomListeners(rm);
     } catch (_err: any) {
       setServerWarming(false);
-      setErrorMsg('Room not found or game has already started.');
+      setErrorMsg(`Room not found or server unreachable on ${activeServerUrl}.`);
     }
   };
 
@@ -322,7 +334,20 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
           <ArrowLeft size={16} /> Back to Home
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => setIsServerSettingsOpen(true)}
+            className="btn-secondary"
+            title="Configure Game Server Address"
+            style={{ padding: '6px 10px', fontSize: '0.78rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Server size={14} color="#38bdf8" />
+            <span style={{ fontFamily: 'monospace', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {activeServerUrl.replace(/^wss?:\/\//, '')}
+            </span>
+            <Settings size={13} color="#94a3b8" />
+          </button>
+
           <div className="glass-panel" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
             {connectionStatus === 'Connected' ? (
               <>
@@ -575,9 +600,45 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         )}
 
         {errorMsg && (
-          <div style={{ margin: '16px 0', padding: '12px', background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-            <AlertCircle size={18} />
-            <span>{errorMsg}</span>
+          <div
+            style={{
+              margin: '16px 0',
+              padding: '12px 16px',
+              background: 'rgba(244, 63, 94, 0.15)',
+              color: '#f43f5e',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              fontSize: '0.85rem',
+              flexWrap: 'wrap'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{errorMsg}</span>
+            </div>
+            <button
+              onClick={() => setIsServerSettingsOpen(true)}
+              style={{
+                backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                border: '1px solid rgba(244, 63, 94, 0.5)',
+                color: '#fff',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                flexShrink: 0
+              }}
+            >
+              <Settings size={14} /> Server Settings
+            </button>
           </div>
         )}
 
@@ -761,6 +822,13 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         onStartBotDuel={handleStartBotFromTimeout}
         onRequeue={handleRequeueFromTimeout}
         onBackToLobby={handleBackToLobbyFromTimeout}
+      />
+
+      {/* Server Settings Modal */}
+      <ServerSettingsModal
+        isOpen={isServerSettingsOpen}
+        onClose={() => setIsServerSettingsOpen(false)}
+        onServerUpdated={(url) => setActiveServerUrl(url)}
       />
     </div>
   );

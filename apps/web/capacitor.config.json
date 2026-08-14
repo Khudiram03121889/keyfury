@@ -1,0 +1,9 @@
+{
+  "appId": "in.keyfury.app",
+  "appName": "KeyFury",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

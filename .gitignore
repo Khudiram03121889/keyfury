@@ -9,4 +9,10 @@ playwright-report/
 test-results/
 .agents/
 *.png
+.gradle/
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+**/android/app/src/main/assets/public/
+
 
