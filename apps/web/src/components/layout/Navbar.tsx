@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Swords, Trophy, User, LogIn, Swords as RankedIcon, Sparkles, Youtube, Instagram, Server } from 'lucide-react';
+import React from 'react';
+import { Swords, Trophy, User, LogIn, Swords as RankedIcon, Sparkles, Youtube, Instagram } from 'lucide-react';
 import { UserProfile } from '../../lib/supabase';
 import { RankBadge } from '../ranked/RankBadge';
-import { ServerSettingsModal } from './ServerSettingsModal';
 
 interface NavbarProps {
   userProfile: UserProfile | null;
@@ -19,10 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onQueueRankedMatch
 }) => {
-  const [isServerSettingsOpen, setIsServerSettingsOpen] = useState<boolean>(false);
-
   return (
-    <>
     <header className="glass-panel navbar-header">
       {/* Brand / Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
@@ -103,17 +99,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
         >
           <RankedIcon size={16} /> <span className="nav-btn-text">Ranked Match</span>
-        </button>
-
-        {/* Server Settings Button */}
-        <button
-          onClick={() => setIsServerSettingsOpen(true)}
-          className="btn-secondary"
-          title="Server Settings"
-          aria-label="Server Settings"
-          style={{ padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}
-        >
-          <Server size={17} />
         </button>
 
         {/* Global Leaderboard Button */}
@@ -205,12 +190,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
     </header>
-
-    <ServerSettingsModal
-      isOpen={isServerSettingsOpen}
-      onClose={() => setIsServerSettingsOpen(false)}
-    />
-    </>
   );
 };
 
