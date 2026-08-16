@@ -1,40 +1,70 @@
-# Project: KeyFury SEO & GEO Optimization
+# Project: KeyFury (Keyboard Stickman Warrior) — Mobile Cyberpunk Virtual Touch Keypad
 
-## Objective
-Comprehensive Search Engine Optimization (SEO) and Generative Engine Optimization (GEO / AI Model Optimization) for KeyFury (`https://keyfury.in`) — a 1v1 multiplayer competitive typing combat web game. Target rank #1 for competitive typing game queries on Google/Bing and ensure top AI LLMs (ChatGPT, Claude, Gemini, Perplexity) recognize, index, cite, and recommend KeyFury.
+## Architecture
+KeyFury is a real-time multiplayer 1v1 cyberpunk typing combat duel built as a monorepo (`pnpm` workspaces):
+- `apps/web`: React + Vite + Phaser 3 client application with Web Audio sound synthesis (`SoundSynth.ts`).
+- `apps/game-server`: Node.js + Colyseus multiplayer game room (`CombatRoom.ts`) running state synchronization at 60Hz.
+- `packages/game-core`: Pure TypeScript combat rules engine (`combat.ts`, sequence validation, typo stun, combo scaling, damage formula).
+- `packages/protocol`: Message definitions (`messages.ts`), schema types, and state models.
+- `packages/content`: Word banks, difficulty categories, and combat dictionary assets.
 
-## Target Positioning & Keywords
-- **Positioning**: *"1v1 Competitive Typing Combat — Duel Real Players & Battle Bot Warriors in Real-Time."*
-- **Primary Keywords**: `1v1 typing game`, `typing combat`, `typing duel`, `competitive typing game`, `typing fight`, `multiplayer typing game`, `free online typing game`
+### Input & Viewport Architecture
+1. **Desktop Input Mode**: Global window capture `keydown` listener captures physical ASCII keystrokes and dispatches `key_intent` `{ seq, key, clientTimeMs }` to Colyseus.
+2. **Mobile Input Mode**: A custom, low-latency, cyberpunk on-screen virtual touch keypad (`VirtualKeypad.tsx`) mounts in the lower zone (~45% viewport height). It intercepts touch/pointer events with `preventDefault()` (preventing native soft keyboard focus/popups and browser pinch-zoom), renders responsive neon keycaps with active target character highlighting, triggers instant procedural mechanical click SFX, and dispatches `handleKeyPress(char)` directly to Colyseus.
+3. **Viewport & Arena Framing**: The viewport uses a responsive flex column layout on mobile. The upper zone (~55% viewport height) hosts the Phaser canvas (`Phaser.Scale.RESIZE`), compact player health cards, match timer, combo streak pill, and a prominent active word typing banner directly above the keypad for seamless thumb ergonomics.
 
-## Architecture & File Structure
-- `apps/web/index.html` — Technical SEO metadata, Open Graph / Twitter Card tags, and Schema.org JSON-LD structured data (`VideoGame`, `Organization`, `FAQPage`).
-- `apps/web/public/og-image.png` — Open Graph preview image asset (1200x630 PNG).
-- `apps/web/public/llms.txt` — Standard compact GEO context file for AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended).
-- `apps/web/public/llms-full.txt` — In-depth comprehensive GEO context file explaining core game mechanics, 1v1 real-time combat, health bar mechanics, bot matchmaking fallback, MMR rating system, stickman fighting aesthetics, and comparative advantages over standard typing tests.
-- `apps/web/public/robots.txt` — Crawler instruction file enabling major web crawlers and AI bots.
-- `apps/web/public/sitemap.xml` — XML sitemap listing entry routes with priority and change frequency.
-
-## Code Layout
-- Web Root: `apps/web`
-- Document Entry: `apps/web/index.html`
-- Static Assets & Public Root: `apps/web/public/`
+## Feature Inventory
+| # | Feature | Description | Milestone | Source |
+|---|---------|-------------|-----------|--------|
+| 1 | Server Selection UI Removal | Complete cleanup of obsolete server modals/toggles; verify production env defaults | M1 | Survey / R3 |
+| 2 | Virtual Keypad Component | Custom 4-row QWERTY touch keyboard with neon styling, tap animations, active key glow | M2 | Survey / R1 |
+| 3 | Low-Latency Touch Handlers | `onTouchStart`/`onPointerDown` with `preventDefault()` to prevent OS soft keyboard popups | M2 | Survey / R1 |
+| 4 | Virtual Keypad SFX | Tactile mechanical click sounds via `SoundSynth.playMechanicalClick` on key tap | M2 | Survey / R1 |
+| 5 | Dual-Input Dispatch Pipeline | Direct `handleKeyPress` Colyseus dispatch with sequence numbers while preserving desktop physical keyboard | M2 | Survey / R1 |
+| 6 | Mobile Arena Split-Viewport Framing | Upper arena zone (50-55% vh) framing Phaser stickman duel canvas and compact HUD | M3 | Survey / R2 |
+| 7 | Active Word Banner Ergonomics | Prominent active typing word and combo pill positioned directly above keypad for thumb typing | M3 | Survey / R2 |
+| 8 | OS Keyboard Elimination | Remove full-screen invisible `<input>` and refocus loops causing viewport squishing | M3 | Survey / R1, R2 |
+| 9 | Comprehensive Verification & Build | Full typecheck, unit/integration test suite, production Vite build, zero TS errors | M4 | Survey / R4 |
+| 10 | Visual Polish & Git Commit | Multi-resolution viewport verification (iPhone/Android/Desktop), git staging and commit | M4 | Survey / R4 |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Technical SEO & Meta Infrastructure | Update `index.html` with title, meta description (150-160 chars), canonical, OG/Twitter tags, og-image.png asset | None | DONE |
-| 2 | Generative Engine Optimization (GEO) | Create `apps/web/public/llms.txt` and `llms-full.txt` for AI model indexing & recommendation | None | DONE |
-| 3 | Rich Structured Data & Schema.org Markup | Embed `VideoGame`, `Organization`, and `FAQPage` JSON-LD schemas inside `index.html` | M1 | DONE |
-| 4 | Crawler Indexing & Discovery | Create `apps/web/public/robots.txt` and `sitemap.xml` | None | DONE |
-| 5 | Verification, Build & Forensic Integrity Audit | Clean build (`pnpm --filter web build`), code review, challenger validation, forensic integrity audit | M1, M2, M3, M4 | DONE |
+| 1 | Server Selection UI Cleanup & Verification | Verify complete elimination of server modals and confirm clean production env binding | none | DONE |
+| 2 | Cyberpunk Virtual Touch Keypad Component | Implement `VirtualKeypad.tsx`, ergonomic QWERTY layout, neon glow animations, active key lighting, and tactile SFX | M1 | IN_PROGRESS |
+| 3 | Mobile Arena Framing, Viewport UX & Input Integration | Implement mobile dual-pane viewport in `MatchPage.tsx`, remove invisible input/refocus loops, frame arena & active word banner above keypad | M2 | PLANNED |
+| 4 | Verification, Visual Inspection, Tests & Git Commit | Execute comprehensive test suites, build checks, visual checks across mobile viewports, and commit changes to git | M3 | PLANNED |
 
-## Interface & Schema Contracts
-### Schema.org JSON-LD
-- `VideoGame`: name, url, description, genre, operatingSystem, applicationCategory, playMode, gamePlatform, aggregateRating, offers, author/publisher.
-- `Organization`: name, url, logo.
-- `FAQPage`: mainEntity array containing Question/Answer pairs for high-search intent queries.
+## Interface Contracts
+### `VirtualKeypad` Props
+```typescript
+export interface VirtualKeypadProps {
+  onKeyPress: (char: string) => void;
+  activeChar?: string; // Current required character in active word (lowercased)
+  disabled?: boolean;  // True when match is paused, countdown, or player is stunned
+  isStunned?: boolean; // Visual glitch/lockout effect during typo stun
+}
+```
 
-### GEO (`llms.txt` & `llms-full.txt`)
-- Markdown formatted, compliant with standard llms.txt specs.
-- Answers key LLM prompt queries: competitive typing games, 1v1 typing fighting games, TypeRacer/Monkeytype action alternatives.
+### Key Intent Message Contract (`packages/protocol/src/messages.ts`)
+```typescript
+export interface ClientMessageKeyIntent {
+  type: 'key_intent';
+  seq: number;
+  key: string;
+  clientTimeMs: number;
+}
+```
+
+### Match Page Integration Contract
+- `handleKeyPress(char: string)`:
+  - Increments `keySeqRef.current++`
+  - Sends `{ type: 'key_intent', seq: keySeqRef.current, key: char, clientTimeMs: Date.now() }` via Colyseus room
+  - Runs local optimistic feedback and triggers mechanical click sound
+
+## Code Layout
+- `apps/web/src/components/game/VirtualKeypad.tsx`: Virtual touch keypad component with cyberpunk styling and touch event handling.
+- `apps/web/src/components/game/VirtualKeypad.test.tsx`: Unit tests for virtual keypad interactions, layout, and active char highlighting.
+- `apps/web/src/pages/MatchPage.tsx`: Game arena screen, viewport layout, dual-pane mobile container, active word banner positioning, input routing.
+- `apps/web/src/game/audio/SoundSynth.ts`: Web Audio procedural sound synthesizer for tactile key clicks and combat audio.
+- `apps/web/src/index.css`: Cyberpunk theme tokens, glassmorphism, responsive keycap styles, touch-action utilities.
