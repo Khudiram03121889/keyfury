@@ -7,8 +7,6 @@ import { GuestProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { RankBadge } from '../components/ranked/RankBadge';
 import { soundSynth } from '../game/audio/SoundSynth';
-import { getActiveKeyHighlight } from '@keyfury/game-core';
-import { VirtualKeypad } from '../components/game/VirtualKeypad';
 
 interface MatchPageProps {
   room: Room;
@@ -94,6 +92,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   const handleTogglePause = () => {
     setIsPaused((prev) => !prev);
     room.send('toggle_pause', {});
+    setTimeout(() => {
+      typingInputRef.current?.focus();
+    }, 50);
   };
 
   // Local typing progress state
@@ -106,6 +107,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   const wordsRef = useRef<string[]>(room?.state?.words ? Array.from(room.state.words) : []);
   const activeWordIdxRef = useRef<number>(0);
   const typedCharIdxRef = useRef<number>(0);
+  const typingInputRef = useRef<HTMLInputElement>(null);
+  const lastProcessedInputDataRef = useRef<string>('');
+  const lastProcessedInputTimeRef = useRef<number>(0);
 
   // High-Speed Typing (>100 WPM) rAF UI State Batching & Stun Window Refs
   const pendingUiUpdateRef = useRef<{ wordIndex: number; charIndex: number } | null>(null);
@@ -124,6 +128,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
     // Immediate React state update on word completion or line wrap to prevent visual lag
     if (isWordChanged) {
+      syncAndResetInput();
       setActiveWordIndex(wordIndex);
       setTypedCharIndex(charIndex);
       return;
@@ -329,9 +334,24 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     };
   }, [matchState]);
 
+  // Keep a real input focused during combat. Phaser owns the canvas, so a
+  // focused input is more reliable than relying on canvas/window key events.
+  useEffect(() => {
+    if (matchState?.status === 'in_progress') {
+      typingInputRef.current?.focus();
+      const interval = setInterval(() => {
+        if (document.activeElement !== typingInputRef.current && matchStateRef.current?.status === 'in_progress') {
+          typingInputRef.current?.focus();
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [matchState?.status]);
+
   // Capture phase is intentional: Phaser can consume keyboard events from its
   // canvas before React sees them. Listening on window makes typing work after
-  // clicking anywhere in the arena.
+  // clicking anywhere in the arena, not just while the invisible input has
+  // focus.
   const handleKeyPress = (char: string) => {
     if (showStatsOverlay || isMatchEndedRef.current || isPaused) return;
     if (room.state?.status !== 'in_progress') return;
@@ -349,6 +369,58 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
       key: keyChar,
       clientTimeMs: Date.now()
     });
+  };
+
+  const lastInputValueRef = useRef<string>('');
+
+  const syncAndResetInput = () => {
+    lastInputValueRef.current = '';
+    if (typingInputRef.current) {
+      typingInputRef.current.value = '';
+    }
+  };
+
+  const handleInputDOMEvent = (e: React.FormEvent<HTMLInputElement> | React.ChangeEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const newVal = target.value || '';
+    const oldVal = lastInputValueRef.current;
+
+    if (newVal === oldVal) return;
+
+    if (newVal.startsWith(oldVal)) {
+      const addedText = newVal.slice(oldVal.length);
+      if (addedText) {
+        if (addedText.length > 1) {
+          // Swipe typing / word prediction selection detected: block multi-char insertion for fair manual gameplay
+          console.warn('[INPUT BLOCKED] Multi-character insertion rejected (swipe/prediction blocked):', addedText);
+          syncAndResetInput();
+          return;
+        }
+        lastInputValueRef.current = newVal;
+        for (const char of addedText) {
+          handleKeyPress(char);
+        }
+      }
+    } else {
+      if (newVal) {
+        if (newVal.length > 1) {
+          // Swipe typing / word prediction selection detected: block multi-char insertion for fair manual gameplay
+          console.warn('[INPUT BLOCKED] Multi-character replacement rejected (swipe/prediction blocked):', newVal);
+          syncAndResetInput();
+          return;
+        }
+        lastInputValueRef.current = newVal;
+        for (const char of newVal) {
+          handleKeyPress(char);
+        }
+      } else {
+        lastInputValueRef.current = '';
+      }
+    }
+
+    if (newVal.length > 20) {
+      syncAndResetInput();
+    }
   };
 
   const handleCombatKey = (event: KeyboardEvent) => {
@@ -372,7 +444,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
     if (isPaused) return;
 
-    // Soft keyboards on Android Gboard / iOS IME send 'Unidentified' or keycode 229
+    // Soft keyboards on Android Gboard / iOS IME send 'Unidentified' or keycode 229; onInput/onChange handles extraction
     if (event.key === 'Unidentified' || event.key === '229') return;
 
     // Only accept typing input when match is actively in progress on live room state
@@ -397,6 +469,10 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
     event.preventDefault();
     handleKeyPress(char);
+  };
+
+  const handleCombatInput = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    handleCombatKey(event.nativeEvent);
   };
 
   useEffect(() => {
@@ -432,46 +508,67 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     ? rawWords
     : (wordsRef.current.length > 0 ? wordsRef.current : []);
 
-  const isMobile = viewportWidth < 768;
-  const activeWord = wordsList[activeWordIndex] || '';
-  const currentWord = activeWord || (room.state?.status === 'in_progress' ? '...' : '');
-  const activeChar = getActiveKeyHighlight(activeWord, typedCharIndex) || undefined;
-  const isStunned = isErrorFlash || Boolean(Date.now() < stunnedUntilMsRef.current);
-  const isKeypadDisabled = room.state?.status !== 'in_progress' || isPaused || showStatsOverlay || isMatchEndedRef.current;
+  const currentWord = wordsList[activeWordIndex] || (room.state?.status === 'in_progress' ? '...' : '');
 
   const leftHealth = leftPlayer?.health ?? 100;
   const rightHealth = rightPlayer?.health ?? 100;
 
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      padding: '0',
-      margin: '0',
-      boxSizing: 'border-box',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      background: '#0a0d14'
-    }}>
-      {/* Upper Arena Zone */}
+    <div style={{ width: '100vw', height: '100vh', padding: '0', boxSizing: 'border-box', overflow: 'hidden' }}>
+      {/* Full Viewport Arena Box */}
       <div
         ref={mainBoxRef}
         tabIndex={-1}
+        onTouchStart={() => {
+          typingInputRef.current?.focus();
+        }}
+        onClick={() => {
+          typingInputRef.current?.focus();
+        }}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          typingInputRef.current?.focus();
+        }}
         style={{
-          position: 'relative',
-          width: '100%',
-          flex: isMobile ? '1 1 54%' : '1 1 100%',
-          maxHeight: isMobile ? '56%' : 'none',
-          minHeight: isMobile ? '240px' : '0px',
-          borderRadius: '0px',
-          overflow: 'hidden',
-          background: '#1e293b',
-          outline: 'none'
+          position: 'relative', width: '100%', height: '100%', borderRadius: '0px', overflow: 'hidden',
+          background: '#1e293b', outline: 'none'
         }}
       >
-        {/* Phaser Canvas (Fills upper arena container) */}
+        {/* Phaser Canvas (Fills entire screen) */}
         <div ref={phaserContainerRef} style={{ width: '100%', height: '100%' }} />
+        
+        <input
+          ref={typingInputRef}
+          aria-label="Combat typing input"
+          type="password"
+          inputMode="text"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
+          enterKeyHint="go"
+          data-gramm="false"
+          data-enable-grammarly="false"
+          value=""
+          onInput={handleInputDOMEvent}
+          onChange={handleInputDOMEvent}
+          onKeyDown={handleCombatInput}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0.001,
+            border: 'none',
+            background: 'transparent',
+            color: 'transparent',
+            outline: 'none',
+            cursor: 'default',
+            pointerEvents: 'auto',
+            zIndex: 2
+          }}
+        />
 
         {/* --- TOP HUD OVERLAYS --- */}
         <div style={{
@@ -616,9 +713,11 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
         {!showStatsOverlay && (
           <div
             id="active-typing-banner"
+            onTouchStart={() => typingInputRef.current?.focus()}
+            onClick={() => typingInputRef.current?.focus()}
             style={{
               position: 'absolute',
-              bottom: isMobile ? '6px' : (viewportWidth < 600 ? '8px' : '16px'),
+              bottom: keyboardOffset > 0 ? `${keyboardOffset + 8}px` : (viewportWidth < 600 ? '8px' : '16px'),
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
@@ -626,7 +725,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
               alignItems: 'center',
               gap: '4px',
               zIndex: 10,
-              width: isMobile ? '98%' : '96%',
+              width: '96%',
               maxWidth: '1080px',
               transition: 'bottom 0.1s ease'
             }}
@@ -971,27 +1070,6 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
           </div>
         )}
       </div>
-
-      {/* --- LOWER KEYPAD ZONE (MOBILE VIEWPORTS) --- */}
-      {isMobile && (
-        <div
-          data-testid="mobile-keypad-zone"
-          style={{
-            flex: '0 0 auto',
-            width: '100%',
-            background: 'rgba(10, 15, 29, 0.95)',
-            zIndex: 15,
-            paddingBottom: 'max(4px, env(safe-area-inset-bottom, 4px))'
-          }}
-        >
-          <VirtualKeypad
-            onKeyPress={handleKeyPress}
-            activeChar={activeChar}
-            disabled={isKeypadDisabled}
-            isStunned={isStunned}
-          />
-        </div>
-      )}
     </div>
   );
 };
