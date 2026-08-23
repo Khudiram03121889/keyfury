@@ -7,7 +7,7 @@ test.use({
   hasTouch: true
 });
 
-test('Mobile Portrait Fight Viewport & Keyboard Framing Test', async ({ page }) => {
+test('Mobile Portrait Fight Viewport & Typo Error Test', async ({ page }) => {
   page.on('console', (msg) => console.log('[MOBILE CONSOLE]', msg.text()));
 
   // 1. Open mobile web app
@@ -31,34 +31,34 @@ test('Mobile Portrait Fight Viewport & Keyboard Framing Test', async ({ page }) 
   // Wait 4.5 seconds for countdown (3-2-1)
   await page.waitForTimeout(4500);
 
-  // Take screenshot of initial mobile duel arena (full screen before typing)
+  // Take screenshot of initial mobile duel arena
   await page.screenshot({ path: 'mobile_fight_arena_initial.png' });
 
   // 4. Simulate mobile soft keyboard opening (visualViewport resize: 844px -> 460px)
   await page.setViewportSize({ width: 390, height: 460 });
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(600);
 
-  // Type characters into combat input
-  for (let step = 0; step < 20; step++) {
-    try {
-      const caret = page.locator('.typing-caret').first();
-      if (await caret.isVisible({ timeout: 200 })) {
-        let char = await caret.innerText({ timeout: 200 });
-        char = char.trim();
-        if (char === '␣') char = ' ';
+  // 5. Deliberately type WRONG keys to trigger typo error and stun!
+  await page.keyboard.press('z');
+  await page.waitForTimeout(100);
+  await page.keyboard.press('q');
+  await page.waitForTimeout(200);
 
-        if (char === ' ') {
-          await page.keyboard.press('Space');
-        } else if (char.length === 1) {
-          await page.keyboard.press(char.toLowerCase());
-        }
-      }
-    } catch (_error) {
-    }
-    await page.waitForTimeout(150);
+  // Capture screenshot during error state to confirm arena is NOT turning black!
+  await page.screenshot({ path: 'mobile_fight_error_flash.png' });
+
+  // Wait for 500ms stun to clear
+  await page.waitForTimeout(600);
+
+  // Type correct combat keys
+  for (let i = 0; i < 15; i++) {
+    await page.keyboard.press('a');
+    await page.waitForTimeout(80);
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(80);
   }
 
-  // 5. Take screenshot of mobile arena with keyboard active
+  // 6. Take screenshot of mobile arena with keyboard active after error recovery
   await page.screenshot({ path: 'mobile_fight_arena_with_keyboard.png' });
-  console.log('MOBILE VISUAL SCREENSHOTS CAPTURED SUCCESSFULLY!');
+  console.log('MOBILE TYPO ERROR AND FRAMING TEST COMPLETED SUCCESSFULLY!');
 });

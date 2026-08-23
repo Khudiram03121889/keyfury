@@ -341,9 +341,9 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
     });
   }, [room, onMatchComplete]);
 
-  // Initialize Phaser Scene AFTER container is rendered in DOM
+  // Initialize Phaser Scene ONCE when container is mounted in DOM
   useEffect(() => {
-    if (!matchState || !phaserContainerRef.current || phaserGameRef.current) return;
+    if (!phaserContainerRef.current || phaserGameRef.current) return;
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
@@ -391,8 +391,9 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       }
       game.destroy(true);
       phaserGameRef.current = null;
+      sceneRef.current = null;
     };
-  }, [matchState]);
+  }, []);
 
   // Keep a real input focused during combat. Phaser owns the canvas, so a
   // focused input is more reliable than relying on canvas/window key events.
