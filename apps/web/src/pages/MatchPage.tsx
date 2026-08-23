@@ -36,6 +36,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
   const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
+  const [visibleHeight, setVisibleHeight] = useState<number>(() => typeof window !== 'undefined' ? (window.visualViewport?.height || window.innerHeight) : 600);
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
@@ -47,8 +48,10 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     if (typeof window === 'undefined' || !window.visualViewport) return;
     const vv = window.visualViewport;
     const onVVResize = () => {
-      const offset = window.innerHeight - vv.height;
+      const vvh = vv.height;
+      const offset = window.innerHeight - vvh;
       setKeyboardOffset(offset > 50 ? offset : 0);
+      setVisibleHeight(vvh);
     };
     vv.addEventListener('resize', onVVResize);
     vv.addEventListener('scroll', onVVResize);
@@ -59,8 +62,8 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
   }, []);
 
   const wordsPerLine = React.useMemo(() => {
-    if (viewportWidth < 480) return 3;
-    if (viewportWidth < 768) return 5;
+    if (viewportWidth < 480) return 2;
+    if (viewportWidth < 768) return 4;
     return 7;
   }, [viewportWidth]);
 
@@ -359,14 +362,33 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
     const game = new Phaser.Game(config);
     phaserGameRef.current = game;
 
+    let resizeObserver: ResizeObserver | null = null;
+
     game.events.once('ready', () => {
       const sc = game.scene.getScene('StickFightScene') as StickFightScene;
       sceneRef.current = sc;
       const { p1CharId, p2CharId } = getPlayerCharacterIds(room?.state || matchStateRef.current);
       sc.setCharacterSkins(p1CharId, p2CharId);
+      sc.handleResize?.();
+
+      if (phaserContainerRef.current && typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 50 && height > 50 && phaserGameRef.current?.scale) {
+              phaserGameRef.current.scale.resize(width, height);
+              sc.handleResize?.();
+            }
+          }
+        });
+        resizeObserver.observe(phaserContainerRef.current);
+      }
     });
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       game.destroy(true);
       phaserGameRef.current = null;
     };
@@ -552,8 +574,18 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
   const rightHealth = rightPlayer?.health ?? 100;
 
   return (
-    <div style={{ width: '100vw', height: '100vh', padding: '0', boxSizing: 'border-box', overflow: 'hidden' }}>
-      {/* Full Viewport Arena Box */}
+    <div style={{
+      width: '100vw',
+      height: keyboardOffset > 0 ? `${visibleHeight}px` : '100dvh',
+      maxHeight: '100%',
+      padding: '0',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+      position: 'fixed',
+      inset: 0,
+      background: '#1e293b'
+    }}>
+      {/* Viewport Arena Box */}
       <div
         ref={mainBoxRef}
         tabIndex={-1}
@@ -568,23 +600,44 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           typingInputRef.current?.focus();
         }}
         style={{
-          position: 'relative', width: '100%', height: '100%', borderRadius: '0px', overflow: 'hidden',
-          background: '#1e293b', outline: 'none'
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          borderRadius: '0px',
+          overflow: 'hidden',
+          background: '#1e293b',
+          outline: 'none',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
-        {/* Phaser Canvas (Fills entire screen) */}
-        <div ref={phaserContainerRef} style={{ width: '100%', height: '100%' }} />
+        {/* Phaser Canvas (Upper Fight Arena) */}
+        <div
+          ref={phaserContainerRef}
+          style={{
+            width: '100%',
+            flex: keyboardOffset > 0 || viewportWidth < 768 ? '1 1 0' : '1 1 100%',
+            minHeight: 0,
+            position: 'relative'
+          }}
+        />
         
         <input
           ref={typingInputRef}
           aria-label="Combat typing input"
-          type="password"
+          type="text"
+          name="combat_keystroke_input"
+          id="combat_keystroke_input"
           inputMode="text"
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
           autoComplete="off"
-          enterKeyHint="go"
+          data-lpignore="true"
+          data-form-type="other"
+          data-1p-ignore="true"
+          data-bitwarden-watching="false"
+          enterKeyHint="done"
           data-gramm="false"
           data-enable-grammarly="false"
           value=""
@@ -611,9 +664,9 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         {/* --- TOP HUD OVERLAYS --- */}
         <div style={{
           position: 'absolute',
-          top: viewportWidth < 600 ? '6px' : '12px',
-          left: viewportWidth < 600 ? '6px' : '12px',
-          right: viewportWidth < 600 ? '6px' : '12px',
+          top: viewportWidth < 600 ? '4px' : '12px',
+          left: viewportWidth < 600 ? '4px' : '12px',
+          right: viewportWidth < 600 ? '4px' : '12px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -754,31 +807,33 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             onTouchStart={() => typingInputRef.current?.focus()}
             onClick={() => typingInputRef.current?.focus()}
             style={{
-              position: 'absolute',
-              bottom: keyboardOffset > 0 ? `${keyboardOffset + 8}px` : (viewportWidth < 600 ? '8px' : '16px'),
-              left: '50%',
-              transform: 'translateX(-50%)',
+              position: keyboardOffset > 0 || viewportWidth < 768 ? 'relative' : 'absolute',
+              bottom: keyboardOffset > 0 || viewportWidth < 768 ? '0px' : '16px',
+              left: keyboardOffset > 0 || viewportWidth < 768 ? 'auto' : '50%',
+              transform: keyboardOffset > 0 || viewportWidth < 768 ? 'none' : 'translateX(-50%)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
               zIndex: 10,
-              width: '96%',
+              width: '100%',
               maxWidth: '1080px',
-              transition: 'bottom 0.1s ease'
+              padding: viewportWidth < 600 ? '2px 8px 6px 8px' : '0 16px 14px 16px',
+              boxSizing: 'border-box',
+              flexShrink: 0
             }}
           >
             {/* Combo Indicator pill */}
             {myCombo >= 3 && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '3px 10px', borderRadius: '999px',
+                padding: '2px 8px', borderRadius: '999px',
                 background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
-                color: '#ffffff', fontWeight: 900, fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem',
+                color: '#ffffff', fontWeight: 900, fontSize: viewportWidth < 600 ? '0.68rem' : '0.78rem',
                 letterSpacing: '1px', textTransform: 'uppercase',
                 boxShadow: '0 4px 14px rgba(245, 158, 11, 0.6)'
               }}>
-                <Flame size={14} /> COMBO STREAK x{myCombo}! (+5 DMG)
+                <Flame size={13} /> COMBO STREAK x{myCombo}! (+5 DMG)
               </div>
             )}
 
@@ -788,14 +843,14 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               background: 'var(--bg-card)',
               backdropFilter: 'blur(16px)',
               border: isErrorFlash ? '2px solid #ef4444' : '1px solid var(--border-card)',
-              borderRadius: '14px',
-              padding: viewportWidth < 600 ? '8px 12px' : '10px 16px',
+              borderRadius: '12px',
+              padding: viewportWidth < 600 ? '6px 10px' : '10px 16px',
               boxShadow: isErrorFlash
                 ? '0 0 30px rgba(239, 68, 68, 0.65)'
                 : '0 8px 32px var(--card-shadow)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
+              gap: '2px',
               position: 'relative',
               transition: 'border 0.15s ease, box-shadow 0.15s ease'
             }}>

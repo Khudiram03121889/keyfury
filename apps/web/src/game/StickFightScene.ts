@@ -131,6 +131,18 @@ export class StickFightScene extends Phaser.Scene {
     this.load.image('highland_bg', highlandBgUrl);
   }
 
+  public getPlatformY(): number {
+    const width = this.cameras?.main?.width || (this.scale?.width as number) || 1024;
+    const height = this.cameras?.main?.height || (this.scale?.height as number) || 580;
+    const isPortrait = width < height || height < 480;
+
+    if (isPortrait) {
+      // In mobile portrait or compact viewports, ground fighters at ~76% of height (leaving headroom for jumps and top HUD)
+      return Math.min(height - 40, Math.max(height * 0.74, height - 65));
+    }
+    return height * 0.64;
+  }
+
   create() {
     this.cameras.main.setRoundPixels(true);
 
@@ -141,7 +153,7 @@ export class StickFightScene extends Phaser.Scene {
     try {
       this.bgImage = this.add.image(width / 2, height / 2, 'highland_bg');
       this.bgImage.setOrigin(0.5, 0.5);
-      this.bgImage.setDisplaySize(width, height);
+      this.handleResize();
       this.bgImage.setDepth(1);
     } catch (_err) {
       console.warn('[StickFightScene] Background image load deferred');
@@ -164,7 +176,7 @@ export class StickFightScene extends Phaser.Scene {
     this.debugGraphics.setDepth(40);
 
     // Initialize ragdoll skeleton bounds
-    const platformY = height * 0.64;
+    const platformY = this.getPlatformY();
     this.p1Ragdoll.initDefaultSkeleton({ x: width * 0.34, y: platformY }, 1.0);
     this.p2Ragdoll.initDefaultSkeleton({ x: width * 0.66, y: platformY }, 1.0);
 
@@ -172,14 +184,29 @@ export class StickFightScene extends Phaser.Scene {
     this.scale.on('resize', this.handleResize, this);
   }
 
-  private handleResize() {
+  public handleResize() {
+    if (!this.cameras?.main) return;
     this.cameras.main.setRoundPixels(true);
-    const width = this.cameras.main.width || 1024;
-    const height = this.cameras.main.height || 580;
+    const width = this.cameras.main.width || (this.scale?.width as number) || 1024;
+    const height = this.cameras.main.height || (this.scale?.height as number) || 580;
+    const isPortrait = width < height || height < 480;
 
     if (this.bgImage) {
-      this.bgImage.setPosition(width / 2, height / 2);
-      this.bgImage.setDisplaySize(width, height);
+      if (isPortrait) {
+        const bgImgW = 1920;
+        const bgImgH = 1080;
+        const scale = Math.max(width / bgImgW, height / bgImgH);
+        const displayW = bgImgW * scale;
+        const displayH = bgImgH * scale;
+        this.bgImage.setDisplaySize(displayW, displayH);
+        const currentPlatformY = this.getPlatformY();
+        const bgPlatformOrigY = 0.64 * displayH;
+        const offsetY = currentPlatformY - bgPlatformOrigY + displayH / 2;
+        this.bgImage.setPosition(width / 2, offsetY);
+      } else {
+        this.bgImage.setDisplaySize(width, height);
+        this.bgImage.setPosition(width / 2, height / 2);
+      }
     }
   }
 
@@ -245,8 +272,8 @@ export class StickFightScene extends Phaser.Scene {
    * ponytail: Calculates actual on-screen X positions for P1 & P2, enforcing arena bounds and pushbox separation.
    */
   public getFighterPositions(): { p1X: number; p2X: number } {
-    const width = Math.max(this.cameras.main?.width || 1024, (this.sys.game?.config?.width as number) || 1024);
-    const MIN_GAP = 65;
+    const width = this.cameras?.main?.width || (this.scale?.width as number) || 1024;
+    const MIN_GAP = width < 480 ? 45 : 65;
     const minX = width * 0.08;
     const maxX = width * 0.92;
 
@@ -281,8 +308,7 @@ export class StickFightScene extends Phaser.Scene {
     this.spatialHashGrid.clear();
     this.hitboxManager.clearAll();
 
-    const height = Math.max(this.cameras.main?.height || 580, 580);
-    const platformY = height * 0.64;
+    const platformY = this.getPlatformY();
 
     const { p1X: p1BaseX, p2X: p2BaseX } = this.getFighterPositions();
 
@@ -375,10 +401,8 @@ export class StickFightScene extends Phaser.Scene {
     // Tick the fixed-timestep RenderPipeline (16.666ms accumulators)
     const { alpha } = this.renderPipeline.tick(delta);
 
-    const height = Math.max(this.cameras.main.height, (this.sys.game.config.height as number) || 580);
-
     // Platform surface Y coordinate aligned with stone platform in highland_bg
-    const platformY = height * 0.64;
+    const platformY = this.getPlatformY();
     const { p1X: p1BaseX, p2X: p2BaseX } = this.getFighterPositions();
 
     // Z-Index Depth Layering: active attacker renders in front of defender
@@ -761,7 +785,7 @@ export class StickFightScene extends Phaser.Scene {
     const defenderX = isLeft
       ? Math.max(minX, Math.min(maxX, currentP2X))
       : Math.max(minX, Math.min(maxX, currentP1X));
-    const targetY = (this.cameras.main.height || 580) * 0.64 - (isAerial ? 120 : 140);
+    const targetY = this.getPlatformY() - (isAerial ? 120 : 140);
     const comboLabel = comboStreak >= 6 ? ` 🔥 COMBO x${comboStreak}!` : '';
     const labelText = `${moveTitle} -${damage}${comboLabel}`;
 
@@ -793,12 +817,11 @@ export class StickFightScene extends Phaser.Scene {
    * Triggers micro visual particle burst using ObjectPool and character elemental themes.
    */
   triggerKeystrokeJuice(side: 'left' | 'right', _charIndex: number, _totalChars: number, comboStreak: number = 0, wpm?: number) {
-    const height = this.cameras.main.height || 580;
     const isLeft = side === 'left';
     const charDef = isLeft ? this.p1CharDef : this.p2CharDef;
     const { p1X, p2X } = this.getFighterPositions();
     const handX = isLeft ? p1X + 25 : p2X - 25;
-    const handY = height * 0.64 - 100;
+    const handY = this.getPlatformY() - 100;
     const color = charDef.theme.primaryColor;
 
     // Micro keystroke spark burst via zero-allocation ParticlePool in character's elemental palette
@@ -819,10 +842,9 @@ export class StickFightScene extends Phaser.Scene {
    */
   triggerStun(side: 'left' | 'right') {
     const isLeft = side === 'left';
-    const height = this.cameras.main.height || 580;
     const { p1X, p2X } = this.getFighterPositions();
     const posX = isLeft ? p1X : p2X;
-    const posY = height * 0.64 - 110;
+    const posY = this.getPlatformY() - 110;
 
     if (isLeft) {
       this.p1State = 'hit';
@@ -1372,7 +1394,7 @@ export class StickFightScene extends Phaser.Scene {
 
     const { p1X, p2X } = this.getFighterPositions();
     const loserX = isLeftLoser ? p1X : p2X;
-    const platformY = height * 0.64;
+    const platformY = this.getPlatformY();
 
     // Phase 1: Freeze Frame (Hitstop) & Camera Punch-In
     this.cameras.main.pan(loserX, platformY - 80, 300, 'Cubic.easeOut');
