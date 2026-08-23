@@ -333,6 +333,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         soundSynth.playKeyError();
         const now = Date.now();
         stunnedUntilMsRef.current = now + 500;
+        syncAndResetInput();
         syncLocalProgress(event.wordIndex, event.charIndex);
         setIsErrorFlash(true);
         sceneRef.current?.triggerStun(mySide);
@@ -646,19 +647,19 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           onChange={handleInputDOMEvent}
           onKeyDown={handleCombatInput}
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: 0.001,
+            position: 'fixed',
+            bottom: '-100px',
+            left: '-100px',
+            width: '1px',
+            height: '1px',
+            opacity: 0,
             border: 'none',
             background: 'transparent',
             color: 'transparent',
             outline: 'none',
             cursor: 'default',
-            pointerEvents: 'auto',
-            zIndex: 2
+            pointerEvents: 'none',
+            zIndex: -1
           }}
         />
 
@@ -838,22 +839,20 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               </div>
             )}
 
-            {/* --- TRANSLUCENT 2-LINE STATIC TYPING STRIP BANNER --- */}
+            {/* --- 2-LINE STATIC TYPING STRIP BANNER --- */}
             <div style={{
               width: '100%',
-              background: 'var(--bg-card)',
-              backdropFilter: 'blur(16px)',
+              background: '#0f172a',
               border: isErrorFlash ? '2px solid #ef4444' : '1px solid var(--border-card)',
               borderRadius: '12px',
               padding: viewportWidth < 600 ? '6px 10px' : '10px 16px',
               boxShadow: isErrorFlash
-                ? '0 0 30px rgba(239, 68, 68, 0.65)'
-                : '0 8px 32px var(--card-shadow)',
+                ? '0 0 16px rgba(239, 68, 68, 0.45)'
+                : '0 4px 16px rgba(0, 0, 0, 0.35)',
               display: 'flex',
               flexDirection: 'column',
               gap: '2px',
-              position: 'relative',
-              transition: 'border 0.15s ease, box-shadow 0.15s ease'
+              position: 'relative'
             }}>
               {/* Line 1: Active Line with Monospace Character Stream (Zero Layout Shift) */}
               <div style={{

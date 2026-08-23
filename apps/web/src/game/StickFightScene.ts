@@ -858,24 +858,7 @@ export class StickFightScene extends Phaser.Scene {
       });
     }
 
-    const stunText = this.add.text(posX, posY, 'STUNNED! (-0.5s)', {
-      fontFamily: 'Impact, sans-serif',
-      fontSize: '22px',
-      color: '#f59e0b',
-      stroke: '#000000',
-      strokeThickness: 4
-    });
-    stunText.setOrigin(0.5, 0.5);
-    stunText.setDepth(20);
-
-    this.tweens.add({
-      targets: stunText,
-      y: posY - 40,
-      alpha: 0,
-      duration: 650,
-      ease: 'Cubic.easeOut',
-      onComplete: () => stunText.destroy()
-    });
+    this.spawnFloatingFeedback(posX, posY, 'STUNNED! (-0.5s)', 'damage', '#f59e0b');
   }
 
   /**
