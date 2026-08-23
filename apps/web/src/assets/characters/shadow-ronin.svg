@@ -1,0 +1,236 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="sr-bg-glow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#0369a1" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#050b14" stop-opacity="0.95" />
+    </radialGradient>
+    <linearGradient id="sr-bg-base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020813" />
+      <stop offset="50%" stop-color="#0a1526" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+
+    <!-- Metal & Armor Gradients -->
+    <linearGradient id="sr-metal-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="sr-metal-light" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="sr-titanium" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- Plasma & Neon Azure Gradients -->
+    <linearGradient id="sr-plasma-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe" />
+      <stop offset="40%" stop-color="#38bdf8" />
+      <stop offset="80%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="sr-visor-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+      <stop offset="25%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#e0f2fe" />
+      <stop offset="75%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="sr-blade-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="40%" stop-color="#38bdf8" />
+      <stop offset="70%" stop-color="#e0f2fe" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <linearGradient id="sr-gold-crest" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+
+    <!-- Scarf Gradient -->
+    <linearGradient id="sr-scarf-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.95" />
+      <stop offset="60%" stop-color="#0369a1" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#082f49" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="sr-glow-heavy" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="sr-glow-soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Pattern -->
+    <pattern id="sr-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#0ea5e9" stroke-width="0.75" stroke-opacity="0.12" />
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" fill="url(#sr-bg-base)" />
+  <rect width="512" height="512" fill="url(#sr-grid)" />
+  <circle cx="256" cy="240" r="230" fill="url(#sr-bg-glow)" />
+
+  <!-- Outer Cyber Ring / Frame -->
+  <circle cx="256" cy="240" r="210" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-opacity="0.3" stroke-dasharray="8 6 24 6" />
+  <circle cx="256" cy="240" r="195" fill="none" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.4" />
+  <circle cx="256" cy="240" r="185" fill="none" stroke="#0ea5e9" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="4 12" />
+
+  <!-- Cyber Hexagon Decorative Aura -->
+  <polygon points="256,40 430,140 430,340 256,440 82,340 82,140" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.25" stroke-dasharray="16 8" />
+
+  <!-- Tech HUD Crosshairs & Markers -->
+  <g stroke="#38bdf8" stroke-width="1" opacity="0.4">
+    <line x1="36" y1="240" x2="66" y2="240" />
+    <line x1="446" y1="240" x2="476" y2="240" />
+    <line x1="256" y1="20" x2="256" y2="50" />
+    <line x1="256" y1="430" x2="256" y2="460" />
+    <!-- HUD Target brackets -->
+    <path d="M 120 90 L 90 90 L 90 120" fill="none" stroke-width="2" />
+    <path d="M 392 90 L 422 90 L 422 120" fill="none" stroke-width="2" />
+    <path d="M 120 390 L 90 390 L 90 360" fill="none" stroke-width="2" />
+    <path d="M 392 390 L 422 390 L 422 360" fill="none" stroke-width="2" />
+  </g>
+
+  <!-- Katana in Background (Crossed behind fighter) -->
+  <g transform="rotate(-38 256 240)">
+    <!-- Katana Blade Glow -->
+    <path d="M 248 -30 L 264 -30 L 260 410 L 252 410 Z" fill="url(#sr-blade-grad)" filter="url(#sr-glow-heavy)" opacity="0.8" />
+    <!-- Katana Blade Spine -->
+    <path d="M 252 -20 L 260 -20 L 258 400 L 254 400 Z" fill="#ffffff" />
+    <line x1="256" y1="-20" x2="256" y2="400" stroke="#38bdf8" stroke-width="1.5" />
+    <!-- Katana Guard (Tsuba) -->
+    <polygon points="230,280 282,280 276,292 236,292" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+  </g>
+
+  <!-- Flowing Azure Energy Scarf / Trails -->
+  <g filter="url(#sr-glow-soft)">
+    <!-- Scarf Main Dynamic Ribbons -->
+    <path d="M 230 270 C 170 290, 90 340, 50 420 C 80 440, 150 360, 240 310 Z" fill="url(#sr-scarf-grad)" />
+    <path d="M 270 275 C 330 300, 420 370, 460 460 C 430 470, 340 380, 260 315 Z" fill="url(#sr-scarf-grad)" />
+    <!-- Inner bright plasma trail -->
+    <path d="M 240 275 C 190 295, 120 350, 70 410" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.7" />
+    <path d="M 265 280 C 320 310, 400 380, 440 440" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.7" />
+  </g>
+
+  <!-- Torso & Cybernetic Armor Body Base -->
+  <g>
+    <!-- Dark Undersuit / Neck -->
+    <polygon points="216,240 296,240 316,330 196,330" fill="#090d16" />
+    <line x1="256" y1="240" x2="256" y2="330" stroke="#0284c7" stroke-width="2" stroke-opacity="0.6" />
+
+    <!-- Shoulders & Upper Chest Armor -->
+    <path d="M 120 380 L 190 300 L 256 325 L 322 300 L 392 380 L 370 480 L 142 480 Z" fill="url(#sr-titanium)" stroke="#334155" stroke-width="2" />
+    
+    <!-- Chest Plate Segments -->
+    <polygon points="200,320 256,340 256,430 185,400 170,345" fill="url(#sr-metal-dark)" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7" />
+    <polygon points="312,320 256,340 256,430 327,400 342,345" fill="url(#sr-metal-dark)" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7" />
+
+    <!-- Center Reactor / Power Conduit -->
+    <polygon points="256,342 272,366 256,390 240,366" fill="#0369a1" stroke="#38bdf8" stroke-width="2" />
+    <polygon points="256,348 266,366 256,384 246,366" fill="#e0f2fe" filter="url(#sr-glow-soft)" />
+
+    <!-- Left Pauldron (Shoulder) -->
+    <polygon points="120,380 180,310 196,345 136,415" fill="url(#sr-metal-light)" stroke="#38bdf8" stroke-width="1.5" />
+    <line x1="130" y1="385" x2="185" y2="320" stroke="#38bdf8" stroke-width="2" filter="url(#sr-glow-soft)" />
+
+    <!-- Right Pauldron (Shoulder) -->
+    <polygon points="392,380 332,310 316,345 376,415" fill="url(#sr-metal-light)" stroke="#38bdf8" stroke-width="1.5" />
+    <line x1="382" y1="385" x2="327" y2="320" stroke="#38bdf8" stroke-width="2" filter="url(#sr-glow-soft)" />
+
+    <!-- Collar Plate -->
+    <polygon points="206,275 256,295 306,275 296,255 216,255" fill="url(#sr-metal-dark)" stroke="#0ea5e9" stroke-width="1.5" />
+  </g>
+
+  <!-- Cyber-Samurai Kabuto Helmet & Head -->
+  <g id="sr-head-group">
+    <!-- Neck Respirator Tubing / Tech Cables -->
+    <path d="M 216 230 C 210 260, 225 285, 235 295" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round" />
+    <path d="M 296 230 C 302 260, 287 285, 277 295" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round" />
+
+    <!-- Head Base / Face Mask Plate (Menpo) -->
+    <polygon points="210,185 256,265 302,185 288,140 224,140" fill="url(#sr-metal-dark)" stroke="#1e293b" stroke-width="2" />
+    <polygon points="220,205 256,258 292,205 282,190 230,190" fill="#0b1120" stroke="#0ea5e9" stroke-width="1" />
+
+    <!-- Lower Jaw / Respirator Vents -->
+    <line x1="240" y1="230" x2="252" y2="245" stroke="#38bdf8" stroke-width="2" />
+    <line x1="272" y1="230" x2="260" y2="245" stroke="#38bdf8" stroke-width="2" />
+    <circle cx="256" cy="245" r="4" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
+
+    <!-- Cyber Kabuto Dome & Cheeks -->
+    <path d="M 175 145 C 175 75, 337 75, 337 145 L 325 180 L 295 185 L 256 165 L 217 185 L 187 180 Z" fill="url(#sr-metal-dark)" stroke="#38bdf8" stroke-width="1.5" />
+    
+    <!-- Helmet Crest Shell Segments (Tiered plates) -->
+    <path d="M 188 135 C 205 85, 307 85, 324 135 Z" fill="url(#sr-metal-light)" stroke="#475569" stroke-width="1" />
+    <path d="M 205 105 C 220 75, 292 75, 307 105 Z" fill="url(#sr-titanium)" stroke="#0ea5e9" stroke-width="1" />
+
+    <!-- Twin Cyber Horns (Kuwagata Crest) -->
+    <!-- Left Horn -->
+    <path d="M 242 115 C 210 65, 140 40, 110 30 C 135 60, 175 100, 225 125 Z" fill="url(#sr-metal-light)" stroke="#38bdf8" stroke-width="2" />
+    <path d="M 235 110 C 200 68, 145 45, 122 38" fill="none" stroke="#38bdf8" stroke-width="2.5" filter="url(#sr-glow-soft)" />
+    <!-- Right Horn -->
+    <path d="M 270 115 C 302 65, 372 40, 402 30 C 377 60, 337 100, 287 125 Z" fill="url(#sr-metal-light)" stroke="#38bdf8" stroke-width="2" />
+    <path d="M 277 110 C 312 68, 367 45, 390 38" fill="none" stroke="#38bdf8" stroke-width="2.5" filter="url(#sr-glow-soft)" />
+
+    <!-- Center Forehead Golden Crest Ornament (Maedate) -->
+    <polygon points="256,58 274,100 256,124 238,100" fill="url(#sr-gold-crest)" stroke="#fbbf24" stroke-width="1.5" filter="url(#sr-glow-soft)" />
+    <circle cx="256" cy="98" r="5" fill="#e0f2fe" stroke="#38bdf8" stroke-width="1.5" filter="url(#sr-glow-soft)" />
+
+    <!-- NEON AZURE PLASMA VISOR (Center Focal Point) -->
+    <g filter="url(#sr-glow-heavy)">
+      <!-- Visor Background Frame -->
+      <polygon points="186,152 326,152 312,184 256,198 200,184" fill="#020d1c" stroke="#38bdf8" stroke-width="2" />
+      <!-- Glowing Plasma Bar -->
+      <polygon points="192,156 320,156 308,180 256,192 204,180" fill="url(#sr-visor-grad)" />
+      <!-- High-Intensity Laser Line Core -->
+      <line x1="202" y1="168" x2="310" y2="168" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+      <!-- Visor Data Hex / Segment Dividers -->
+      <line x1="230" y1="156" x2="226" y2="180" stroke="#0369a1" stroke-width="1.5" />
+      <line x1="256" y1="156" x2="256" y2="192" stroke="#0369a1" stroke-width="1.5" />
+      <line x1="282" y1="156" x2="286" y2="180" stroke="#0369a1" stroke-width="1.5" />
+    </g>
+
+    <!-- Ear Guards / Audio Receptors -->
+    <polygon points="172,145 186,145 186,195 166,180" fill="url(#sr-metal-dark)" stroke="#38bdf8" stroke-width="1.5" />
+    <circle cx="178" cy="168" r="4" fill="#38bdf8" filter="url(#sr-glow-soft)" />
+    <polygon points="340,145 326,145 326,195 346,180" fill="url(#sr-metal-dark)" stroke="#38bdf8" stroke-width="1.5" />
+    <circle cx="334" cy="168" r="4" fill="#38bdf8" filter="url(#sr-glow-soft)" />
+  </g>
+
+  <!-- Forefront Floating Plasma Sparks & Data Particles -->
+  <g filter="url(#sr-glow-soft)">
+    <circle cx="140" cy="180" r="2.5" fill="#38bdf8" opacity="0.8" />
+    <circle cx="110" cy="260" r="2" fill="#bae6fd" opacity="0.9" />
+    <circle cx="370" cy="190" r="2" fill="#38bdf8" opacity="0.8" />
+    <circle cx="410" cy="270" r="3" fill="#bae6fd" opacity="0.7" />
+    <circle cx="290" cy="380" r="2.5" fill="#38bdf8" opacity="0.6" />
+    <circle cx="210" cy="420" r="2" fill="#e0f2fe" opacity="0.8" />
+    <!-- Floating Cyber Kanji / Runes -->
+    <text x="70" y="475" fill="#38bdf8" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.7" letter-spacing="2">01 // KAGE</text>
+    <text x="350" y="475" fill="#38bdf8" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.7" letter-spacing="2">AZURE RONIN</text>
+  </g>
+
+  <!-- Bottom Vignette / Gradient Overlay -->
+  <rect x="0" y="440" width="512" height="72" fill="url(#sr-bg-base)" opacity="0.85" />
+  <line x1="40" y1="485" x2="472" y2="485" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.3" />
+</svg>

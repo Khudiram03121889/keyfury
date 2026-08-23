@@ -102,4 +102,97 @@ describe('Game Server Integration Tests', () => {
     await room1.leave();
     await room2.leave();
   });
+
+  it('syncs default characterId (shadow_ronin) when not specified', async () => {
+    const col = new ColyseusClient(SERVER_URL);
+    const room = await col.create('duel_room', {
+      profileId: 'default-char-user',
+      displayName: 'Default Player',
+      isChallenge: true
+    });
+
+    await waitForCondition(() => room.state.players.size === 1);
+    const player = room.state.players.get(room.sessionId);
+    expect(player).toBeDefined();
+    expect(player?.characterId).toBe('shadow_ronin');
+
+    await room.leave();
+  });
+
+  it('syncs custom characterId for both players in 1v1 duel', async () => {
+    const col1 = new ColyseusClient(SERVER_URL);
+    const col2 = new ColyseusClient(SERVER_URL);
+
+    const room1 = await col1.create('duel_room', {
+      profileId: 'p1-shinobi',
+      displayName: 'Shinobi P1',
+      characterId: 'volt_shinobi',
+      isChallenge: true
+    });
+
+    const room2 = await col2.joinById(room1.roomId, {
+      profileId: 'p2-assassin',
+      displayName: 'Assassin P2',
+      characterId: 'void_assassin'
+    });
+
+    await waitForCondition(() => room1.state.players.size === 2);
+    const p1 = room1.state.players.get(room1.sessionId);
+    const p2 = room1.state.players.get(room2.sessionId);
+
+    expect(p1?.characterId).toBe('volt_shinobi');
+    expect(p2?.characterId).toBe('void_assassin');
+
+    await room1.leave();
+    await room2.leave();
+  });
+
+  it('auto-assigns a distinct characterId for bot opponent avoiding human choice', async () => {
+    const col = new ColyseusClient(SERVER_URL);
+    const room = await col.create('duel_room', {
+      profileId: 'human-ronin',
+      displayName: 'Ronin Human',
+      characterId: 'shadow_ronin',
+      withBot: true
+    });
+
+    await waitForCondition(() => room.state.players.size === 2);
+    const human = room.state.players.get(room.sessionId);
+    const bot = room.state.players.get('bot-ai-opponent');
+
+    expect(human?.characterId).toBe('shadow_ronin');
+    expect(bot).toBeDefined();
+    expect(bot?.characterId).toBeDefined();
+    expect(bot?.characterId).not.toBe('shadow_ronin');
+
+    await room.leave();
+  });
+
+  it('preserves mirror match character selections', async () => {
+    const col1 = new ColyseusClient(SERVER_URL);
+    const col2 = new ColyseusClient(SERVER_URL);
+
+    const room1 = await col1.create('duel_room', {
+      profileId: 'mirror-1',
+      displayName: 'Valkyrie 1',
+      characterId: 'cyber_valkyrie',
+      isChallenge: true
+    });
+
+    const room2 = await col2.joinById(room1.roomId, {
+      profileId: 'mirror-2',
+      displayName: 'Valkyrie 2',
+      characterId: 'cyber_valkyrie'
+    });
+
+    await waitForCondition(() => room1.state.players.size === 2);
+    const p1 = room1.state.players.get(room1.sessionId);
+    const p2 = room1.state.players.get(room2.sessionId);
+
+    expect(p1?.characterId).toBe('cyber_valkyrie');
+    expect(p2?.characterId).toBe('cyber_valkyrie');
+
+    await room1.leave();
+    await room2.leave();
+  });
 });

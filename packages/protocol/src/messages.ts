@@ -59,6 +59,7 @@ export interface PlayerSnapshot {
   wordsCompleted: number;
   connected: boolean;
   level?: number;
+  characterId?: string;
 }
 
 export interface MatchStateSnapshot {
@@ -100,6 +101,7 @@ export interface RankedQueueOptions {
   mmr?: number;
   level?: number;
   token?: string;
+  characterId?: string;
 }
 
 export interface EloResult {

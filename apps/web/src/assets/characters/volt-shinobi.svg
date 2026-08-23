@@ -1,0 +1,226 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="vs-bg-glow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#b45309" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#080705" stop-opacity="0.96" />
+    </radialGradient>
+    <linearGradient id="vs-bg-base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#120c02" />
+      <stop offset="50%" stop-color="#1f1505" />
+      <stop offset="100%" stop-color="#090601" />
+    </linearGradient>
+
+    <!-- Shinobi Stealth Carbon & Metal Gradients -->
+    <linearGradient id="vs-carbon-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#27272a" />
+      <stop offset="50%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <linearGradient id="vs-carbon-light" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#52525b" />
+      <stop offset="50%" stop-color="#3f3f46" />
+      <stop offset="100%" stop-color="#18181b" />
+    </linearGradient>
+
+    <!-- Lightning & Gold Plasma Gradients -->
+    <linearGradient id="vs-gold-plasma" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef9c3" />
+      <stop offset="35%" stop-color="#fde047" />
+      <stop offset="70%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="vs-lightning-bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="40%" stop-color="#fef08a" />
+      <stop offset="80%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+    <linearGradient id="vs-kunai-blade" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d97706" />
+      <stop offset="50%" stop-color="#fbbf24" />
+      <stop offset="80%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+
+    <!-- Storm Ribbon Gradients -->
+    <linearGradient id="vs-ribbon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.95" />
+      <stop offset="60%" stop-color="#d97706" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="vs-glow-heavy" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="vs-glow-soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Circuit Pattern -->
+    <pattern id="vs-circuit-grid" width="26" height="26" patternUnits="userSpaceOnUse">
+      <path d="M 0 13 L 13 13 L 26 26 M 13 0 L 13 13" fill="none" stroke="#f59e0b" stroke-width="0.75" stroke-opacity="0.1" />
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" fill="url(#vs-bg-base)" />
+  <rect width="512" height="512" fill="url(#vs-circuit-grid)" />
+  <circle cx="256" cy="240" r="230" fill="url(#vs-bg-glow)" />
+
+  <!-- Outer Electric Speed Halo / Concentric Rings -->
+  <circle cx="256" cy="240" r="215" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.3" stroke-dasharray="10 8 30 8" />
+  <circle cx="256" cy="240" r="195" fill="none" stroke="#eab308" stroke-width="2" stroke-opacity="0.4" />
+  <circle cx="256" cy="240" r="175" fill="none" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="4 10" />
+
+  <!-- Speed Octagon Reticle Aura -->
+  <polygon points="256,38 410,102 474,256 410,410 256,474 102,410 38,256 102,102" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.25" stroke-dasharray="12 6" />
+
+  <!-- High-Voltage Arcs & Lightning Sparks in Background -->
+  <g filter="url(#vs-glow-heavy)" stroke="#fde047" stroke-width="2" fill="none">
+    <path d="M 60 120 L 110 160 L 90 200 L 150 250" />
+    <path d="M 450 120 L 400 160 L 420 200 L 360 250" />
+    <path d="M 180 60 L 220 100 L 200 130" />
+    <path d="M 330 60 L 290 100 L 310 130" />
+  </g>
+
+  <!-- Speed HUD Telemetry & Markers -->
+  <g stroke="#f59e0b" stroke-width="1" opacity="0.45">
+    <line x1="30" y1="240" x2="65" y2="240" stroke-width="2" />
+    <line x1="447" y1="240" x2="482" y2="240" stroke-width="2" />
+    <line x1="256" y1="15" x2="256" y2="45" stroke-width="2" />
+    <line x1="256" y1="435" x2="256" y2="465" stroke-width="2" />
+    <!-- Dynamic Lightning Brackets -->
+    <path d="M 115 85 L 85 85 L 85 115" fill="none" stroke-width="2" />
+    <path d="M 397 85 L 427 85 L 427 115" fill="none" stroke-width="2" />
+    <path d="M 115 395 L 85 395 L 85 365" fill="none" stroke-width="2" />
+    <path d="M 397 395 L 427 395 L 427 365" fill="none" stroke-width="2" />
+  </g>
+
+  <!-- Trailing Lightning Storm Ribbons (High-Speed Flow) -->
+  <g filter="url(#vs-glow-soft)">
+    <path d="M 220 270 C 150 300, 70 360, 30 440 C 60 450, 140 370, 230 310 Z" fill="url(#vs-ribbon-grad)" />
+    <path d="M 285 275 C 355 305, 435 375, 475 455 C 445 465, 365 385, 275 315 Z" fill="url(#vs-ribbon-grad)" />
+    <!-- Center Speed Ribbon Streams -->
+    <path d="M 230 280 C 170 320, 100 380, 50 430" fill="none" stroke="#fde047" stroke-width="2.5" opacity="0.8" />
+    <path d="M 275 285 C 335 325, 405 385, 455 435" fill="none" stroke="#fde047" stroke-width="2.5" opacity="0.8" />
+  </g>
+
+  <!-- Shinobi Body & Aerodynamic Carbon Torso -->
+  <g id="vs-torso-group">
+    <!-- Dark Under-Cowl Neck -->
+    <polygon points="214,235 298,235 318,335 194,335" fill="#09090b" />
+    <line x1="256" y1="235" x2="256" y2="335" stroke="#f59e0b" stroke-width="2" stroke-opacity="0.7" />
+
+    <!-- Sleek Carbon Fiber Chest Harness -->
+    <path d="M 125 385 L 190 295 L 256 320 L 322 295 L 387 385 L 365 485 L 147 485 Z" fill="url(#vs-carbon-dark)" stroke="#3f3f46" stroke-width="2" />
+
+    <!-- Angular Speed Plates (Chest) -->
+    <polygon points="195,315 256,335 256,430 180,400 165,340" fill="url(#vs-carbon-light)" stroke="#f59e0b" stroke-width="1.5" />
+    <polygon points="317,315 256,335 256,430 332,400 347,340" fill="url(#vs-carbon-light)" stroke="#f59e0b" stroke-width="1.5" />
+
+    <!-- Overclocked High-Voltage Conduit Core (Chest Center) -->
+    <polygon points="256,340 274,365 256,390 238,365" fill="#78350f" stroke="#fbbf24" stroke-width="2" />
+    <polygon points="256,346 268,365 256,384 244,365" fill="#fef08a" filter="url(#vs-glow-heavy)" />
+    <!-- Battery Cells / Capacitors on Torso -->
+    <rect x="180" y="365" width="8" height="20" rx="2" fill="#f59e0b" stroke="#fde047" stroke-width="1" />
+    <rect x="324" y="365" width="8" height="20" rx="2" fill="#f59e0b" stroke="#fde047" stroke-width="1" />
+
+    <!-- Left Light-Mesh Shoulder Guard -->
+    <polygon points="125,385 185,305 200,345 140,420" fill="url(#vs-carbon-light)" stroke="#f59e0b" stroke-width="1.5" />
+    <line x1="135" y1="390" x2="190" y2="315" stroke="#fde047" stroke-width="2" filter="url(#vs-glow-soft)" />
+
+    <!-- Right Light-Mesh Shoulder Guard -->
+    <polygon points="387,385 327,305 312,345 372,420" fill="url(#vs-carbon-light)" stroke="#f59e0b" stroke-width="1.5" />
+    <line x1="377" y1="390" x2="322" y2="315" stroke="#fde047" stroke-width="2" filter="url(#vs-glow-soft)" />
+
+    <!-- High Shinobi Collar Protector -->
+    <polygon points="200,270 256,295 312,270 300,245 212,245" fill="url(#vs-carbon-dark)" stroke="#fbbf24" stroke-width="1.5" />
+  </g>
+
+  <!-- Aerodynamic Shinobi Cyber Mask & Head -->
+  <g id="vs-head-group">
+    <!-- Stealth Hood / Cowl -->
+    <path d="M 170 145 C 170 65, 342 65, 342 145 L 328 190 L 298 200 L 256 180 L 214 200 L 184 190 Z" fill="url(#vs-carbon-dark)" stroke="#f59e0b" stroke-width="1.5" />
+
+    <!-- Forehead Headband Metal Protector Plate (Hitai-ate) -->
+    <polygon points="190,110 256,95 322,110 312,145 200,145" fill="url(#vs-carbon-light)" stroke="#fbbf24" stroke-width="2" />
+    <!-- Lightning Bolt Engraving on Headband -->
+    <polygon points="256,102 264,120 256,120 260,138 248,124 254,124" fill="url(#vs-lightning-bolt)" filter="url(#vs-glow-soft)" />
+
+    <!-- Lower Cyber-Mask Facemask (Menpo with breathing micro-slits) -->
+    <polygon points="208,185 256,265 304,185 292,150 220,150" fill="url(#vs-carbon-dark)" stroke="#27272a" stroke-width="2" />
+    <polygon points="220,200 256,255 292,200 282,185 230,185" fill="#18181b" stroke="#f59e0b" stroke-width="1" />
+    <!-- Micro Ventilation Grille -->
+    <line x1="238" y1="225" x2="252" y2="242" stroke="#fde047" stroke-width="2" />
+    <line x1="274" y1="225" x2="260" y2="242" stroke="#fde047" stroke-width="2" />
+    <circle cx="256" cy="245" r="3.5" fill="#f59e0b" />
+
+    <!-- GOLD LIGHTNING OCULAR SENSORS (Fierce Angular Cyber Eyes) -->
+    <g filter="url(#vs-glow-heavy)">
+      <!-- Left Ocular Sensor -->
+      <polygon points="214,160 248,166 244,178 210,172" fill="#000000" stroke="#f59e0b" stroke-width="1.5" />
+      <polygon points="218,162 245,168 242,175 215,170" fill="url(#vs-gold-plasma)" />
+      <circle cx="232" cy="168" r="2.5" fill="#ffffff" />
+
+      <!-- Right Ocular Sensor -->
+      <polygon points="298,160 264,166 268,178 302,172" fill="#000000" stroke="#f59e0b" stroke-width="1.5" />
+      <polygon points="294,162 267,168 270,175 297,170" fill="url(#vs-gold-plasma)" />
+      <circle cx="280" cy="168" r="2.5" fill="#ffffff" />
+    </g>
+  </g>
+
+  <!-- TWIN HIGH-VOLTAGE KUNAI (Foreground Combat Stance) -->
+  <g id="vs-kunai-group" filter="url(#vs-glow-soft)">
+    <!-- Left Kunai -->
+    <g transform="translate(60, 310) rotate(25)">
+      <polygon points="40,-40 55,20 40,50 25,20" fill="url(#vs-kunai-blade)" stroke="#ffffff" stroke-width="1.5" />
+      <line x1="40" y1="-40" x2="40" y2="50" stroke="#ffffff" stroke-width="2" />
+      <!-- Kunai Handle & Ring -->
+      <rect x="37" y="50" width="6" height="30" fill="#18181b" stroke="#f59e0b" stroke-width="1" />
+      <circle cx="40" cy="90" r="10" fill="none" stroke="#fbbf24" stroke-width="3" />
+      <!-- High Voltage Arcs around blade -->
+      <path d="M 25 10 L 15 25 L 30 30" fill="none" stroke="#fef08a" stroke-width="2" filter="url(#vs-glow-heavy)" />
+    </g>
+
+    <!-- Right Kunai -->
+    <g transform="translate(390, 330) rotate(-25)">
+      <polygon points="40,-40 55,20 40,50 25,20" fill="url(#vs-kunai-blade)" stroke="#ffffff" stroke-width="1.5" />
+      <line x1="40" y1="-40" x2="40" y2="50" stroke="#ffffff" stroke-width="2" />
+      <!-- Kunai Handle & Ring -->
+      <rect x="37" y="50" width="6" height="30" fill="#18181b" stroke="#f59e0b" stroke-width="1" />
+      <circle cx="40" cy="90" r="10" fill="none" stroke="#fbbf24" stroke-width="3" />
+      <!-- High Voltage Arcs around blade -->
+      <path d="M 55 10 L 65 25 L 50 30" fill="none" stroke="#fef08a" stroke-width="2" filter="url(#vs-glow-heavy)" />
+    </g>
+  </g>
+
+  <!-- High-Frequency Lightning Sparks & Voltage Embers -->
+  <g filter="url(#vs-glow-soft)">
+    <circle cx="125" cy="170" r="2.5" fill="#fde047" opacity="0.8" />
+    <circle cx="95" cy="250" r="2" fill="#fef3c7" opacity="0.9" />
+    <circle cx="390" cy="180" r="2" fill="#fde047" opacity="0.8" />
+    <circle cx="420" cy="260" r="3" fill="#fef3c7" opacity="0.7" />
+    <circle cx="285" cy="385" r="2.5" fill="#f59e0b" opacity="0.6" />
+    <circle cx="220" cy="425" r="2" fill="#fef08a" opacity="0.8" />
+    <!-- HUD Fighter Identifier -->
+    <text x="65" y="475" fill="#f59e0b" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.8" letter-spacing="2">03 // RAIJIN</text>
+    <text x="330" y="475" fill="#f59e0b" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.8" letter-spacing="2">VOLT SHINOBI</text>
+  </g>
+
+  <!-- Bottom Vignette / Gradient Overlay -->
+  <rect x="0" y="440" width="512" height="72" fill="url(#vs-bg-base)" opacity="0.85" />
+  <line x1="40" y1="485" x2="472" y2="485" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.3" />
+</svg>

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Room } from 'colyseus.js';
-import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords } from 'lucide-react';
+import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords, Sparkles } from 'lucide-react';
 import { joinQuickQueue, createChallengeRoom, joinChallengeRoom, startBotDuel, fetchLiveServerStats } from '../lib/colyseus';
-import { GuestProfile, UserProfile } from '../lib/supabase';
+import { GuestProfile, UserProfile, getSavedSelectedCharacter, saveSelectedCharacter, updateUserProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
+import { CharacterSelectModal } from '../components/character/CharacterSelectModal';
+import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID } from '@keyfury/game-core';
+import { CHARACTER_PORTRAITS } from '../assets/characters';
 
 interface LobbyPageProps {
   guest: GuestProfile;
@@ -27,6 +30,8 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
   const [mode, setMode] = useState<'select' | 'quick' | 'challenge' | 'bot'>(initialRoomCode ? 'challenge' : 'select');
   const [queueType] = useState<'casual' | 'ranked'>('ranked');
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterId>(() => activeUser.selectedCharacter || activeUser.characterId || getSavedSelectedCharacter());
+  const [isCharacterModalOpen, setIsCharacterModalOpen] = useState<boolean>(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [roomCode, setRoomCode] = useState<string>(initialRoomCode || '');
   const [inputCode, setInputCode] = useState<string>('');
@@ -38,6 +43,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [opponentName, setOpponentName] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'Connected' | 'Reconnecting' | 'Connection lost'>('Connected');
+
+  // Synchronize character if activeUser profile updates
+  useEffect(() => {
+    if (activeUser.selectedCharacter || activeUser.characterId) {
+      setSelectedCharacter(activeUser.selectedCharacter || activeUser.characterId || DEFAULT_CHARACTER_ID);
+    }
+  }, [activeUser.selectedCharacter, activeUser.characterId]);
+
+  const handleCharacterSelect = (newCharId: CharacterId) => {
+    setSelectedCharacter(newCharId);
+    saveSelectedCharacter(newCharId);
+    updateUserProfile({
+      id: activeUser.id,
+      selectedCharacter: newCharId,
+      characterId: newCharId
+    });
+  };
 
   // Real live online server stats state
   const [liveStats, setLiveStats] = useState<{ onlineWarriors: number; activeDuels: number }>({
@@ -104,7 +126,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr);
+      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -119,7 +141,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -135,7 +157,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter);
       setServerWarming(false);
       attachRoomListeners(rm);
       rm.send('ready', {});
@@ -168,7 +190,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr);
+      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter);
       setServerWarming(false);
       setRoomCode(rm.id);
       attachRoomListeners(rm);
@@ -190,7 +212,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await joinChallengeRoom(cleanCode, activeUser.id, activeUser.displayName, activeUser.mmr);
+      const rm = await joinChallengeRoom(cleanCode, activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter);
       setServerWarming(false);
       setRoomCode(cleanCode);
       attachRoomListeners(rm);
@@ -363,6 +385,103 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
           <span>{liveStats.activeDuels} ACTIVE RANKED {liveStats.activeDuels === 1 ? 'DUEL' : 'DUELS'}</span>
         </div>
       </div>
+
+      {/* Active Champion Lobby Banner */}
+      {(() => {
+        const activeFighter = getCharacterDefinition(selectedCharacter);
+        const portraitSrc = CHARACTER_PORTRAITS[activeFighter.id] || `/assets/characters/${activeFighter.portraitAssetKey}.svg`;
+        const ARCHETYPE_ICONS: Record<string, string> = {
+          shadow_ronin: '⚔️',
+          cyber_valkyrie: '🥊',
+          volt_shinobi: '⚡',
+          void_assassin: '🗡️'
+        };
+        const archetypeIcon = ARCHETYPE_ICONS[activeFighter.id] || '⚔️';
+
+        return (
+          <div
+            className="glass-panel"
+            onClick={() => {
+              soundManager.playClick();
+              setIsCharacterModalOpen(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 18px',
+              borderRadius: '14px',
+              marginBottom: '18px',
+              cursor: 'pointer',
+              border: `1px solid ${activeFighter.theme.primaryColor}88`,
+              boxShadow: `0 0 20px ${activeFighter.theme.glowColor}`,
+              background: `linear-gradient(135deg, ${activeFighter.theme.primaryColor}18 0%, rgba(15, 23, 42, 0.85) 100%)`,
+              transition: 'all 0.25s ease'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                backgroundColor: 'rgba(10, 15, 26, 0.8)',
+                border: `1px solid ${activeFighter.theme.primaryColor}`,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <img
+                  src={portraitSrc}
+                  alt={activeFighter.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{
+                  fontSize: '0.72rem',
+                  color: activeFighter.theme.primaryColor,
+                  fontWeight: 800,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span>ACTIVE CHAMPION</span>
+                  <span>•</span>
+                  <span>{archetypeIcon} {activeFighter.archetypeLabel}</span>
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-heading)', marginTop: '1px' }}>
+                  {activeFighter.name} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>"{activeFighter.codename}"</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                soundManager.playClick();
+                setIsCharacterModalOpen(true);
+              }}
+              style={{
+                padding: '8px 14px',
+                fontSize: '0.8rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderColor: `${activeFighter.theme.primaryColor}66`
+              }}
+            >
+              <Sparkles size={14} color={activeFighter.theme.primaryColor} />
+              <span>Change Champion</span>
+            </button>
+          </div>
+        );
+      })()}
 
       <div className="glass-panel" style={{ padding: '24px 18px', textAlign: 'center' }}>
         {mode === 'select' && (
@@ -761,6 +880,14 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         onStartBotDuel={handleStartBotFromTimeout}
         onRequeue={handleRequeueFromTimeout}
         onBackToLobby={handleBackToLobbyFromTimeout}
+      />
+
+      {/* Character Selection Modal */}
+      <CharacterSelectModal
+        isOpen={isCharacterModalOpen}
+        onClose={() => setIsCharacterModalOpen(false)}
+        selectedCharacterId={selectedCharacter}
+        onSelectCharacter={handleCharacterSelect}
       />
     </div>
   );

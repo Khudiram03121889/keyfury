@@ -1,11 +1,34 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { RankTier, getRankTier } from '../components/ranked/RankBadge';
+import { CharacterId, DEFAULT_CHARACTER_ID, isValidCharacterId } from '@keyfury/game-core';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase: SupabaseClient | null =
   supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+export const SELECTED_CHARACTER_KEY = 'keyfury_selected_character';
+
+export function getSavedSelectedCharacter(): CharacterId {
+  if (typeof window === 'undefined') return DEFAULT_CHARACTER_ID;
+  try {
+    const saved = localStorage.getItem(SELECTED_CHARACTER_KEY);
+    if (saved && isValidCharacterId(saved)) {
+      return saved;
+    }
+  } catch (_e) {}
+  return DEFAULT_CHARACTER_ID;
+}
+
+export function saveSelectedCharacter(charId: CharacterId): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (isValidCharacterId(charId)) {
+      localStorage.setItem(SELECTED_CHARACTER_KEY, charId);
+    }
+  } catch (_e) {}
+}
 
 export interface GuestProfile {
   id: string;
@@ -14,6 +37,8 @@ export interface GuestProfile {
   avatarUrl?: string;
   keycapTheme?: string;
   accentColor?: string;
+  selectedCharacter?: CharacterId;
+  characterId?: CharacterId;
   mmr?: number;
   rankTier?: RankTier;
   rankDivision?: string;
@@ -34,6 +59,8 @@ export interface UserProfile {
   bio: string;
   keycapTheme: string;
   accentColor: string;
+  selectedCharacter?: CharacterId;
+  characterId?: CharacterId;
   mmr: number;
   rankTier: RankTier;
   rankDivision: string;
@@ -124,6 +151,7 @@ export async function ensureGuestSession(): Promise<GuestProfile> {
   const localName = localStorage.getItem('keyfury_guest_name');
   const localTheme = localStorage.getItem('keyfury_theme') || 'cyberpunk';
   const localAvatar = localStorage.getItem('keyfury_avatar') || '';
+  const savedCharacter = getSavedSelectedCharacter();
 
   if (localId && localName) {
     const savedProfile = localStorage.getItem(`keyfury_profile_${localId}`);
@@ -143,6 +171,8 @@ export async function ensureGuestSession(): Promise<GuestProfile> {
       displayName: localName,
       keycapTheme: localTheme,
       avatarUrl: localAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${localName}`,
+      selectedCharacter: savedCharacter,
+      characterId: savedCharacter,
       mmr: savedMmr,
       rankTier: getRankTier(savedMmr),
       rankDivision: 'I',
@@ -170,6 +200,8 @@ export async function ensureGuestSession(): Promise<GuestProfile> {
           displayName: generatedName,
           keycapTheme: 'cyberpunk',
           avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${generatedName}`,
+          selectedCharacter: savedCharacter,
+          characterId: savedCharacter,
           mmr: 1000,
           rankTier: 'Bronze',
           rankDivision: 'I',
@@ -207,6 +239,8 @@ export async function ensureGuestSession(): Promise<GuestProfile> {
     displayName: generatedName,
     keycapTheme: 'cyberpunk',
     avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${generatedName}`,
+    selectedCharacter: savedCharacter,
+    characterId: savedCharacter,
     mmr: 1000,
     rankTier: 'Bronze',
     rankDivision: 'I',
@@ -507,6 +541,8 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           localStorage.setItem('keyfury_guest_name', data.display_name);
         }
 
+        const savedCharacter = getSavedSelectedCharacter();
+
         return {
           id: data.id,
           displayName: displayName,
@@ -515,6 +551,8 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           bio: data.bio || '',
           keycapTheme: localTheme || data.keycap_theme || 'cyberpunk',
           accentColor: data.accent_color || '#00ffcc',
+          selectedCharacter: savedCharacter,
+          characterId: savedCharacter,
           mmr,
           rankTier: getRankTier(mmr),
           rankDivision: data.rank_division || 'I',
@@ -535,11 +573,18 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
   }
 
   // Local fallback profile
+  const savedCharacter = getSavedSelectedCharacter();
   const savedProfile = localStorage.getItem(`keyfury_profile_${targetId}`);
   if (savedProfile) {
     try {
       const parsed = JSON.parse(savedProfile);
-      if (parsed) return parsed;
+      if (parsed) {
+        return {
+          ...parsed,
+          selectedCharacter: parsed.selectedCharacter || parsed.characterId || savedCharacter,
+          characterId: parsed.characterId || parsed.selectedCharacter || savedCharacter
+        };
+      }
     } catch (_e) {}
   }
 
@@ -552,6 +597,8 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
     bio: 'Competitive typing stick-fighter.',
     keycapTheme: localStorage.getItem('keyfury_theme') || 'cyberpunk',
     accentColor: '#00ffcc',
+    selectedCharacter: savedCharacter,
+    characterId: savedCharacter,
     mmr: gMmr,
     rankTier: getRankTier(gMmr),
     rankDivision: 'I',
@@ -589,6 +636,9 @@ export async function updateUserProfile(
   }
   if (updates.avatarUrl) {
     localStorage.setItem('keyfury_avatar', updates.avatarUrl);
+  }
+  if (updates.selectedCharacter || updates.characterId) {
+    saveSelectedCharacter((updates.selectedCharacter || updates.characterId)!);
   }
 
   // ponytail: always persist merged profile to localStorage cache so getUserProfile fallback works

@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="cv-bg-glow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#dc2626" stop-opacity="0.38" />
+      <stop offset="50%" stop-color="#991b1b" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#0b0713" stop-opacity="0.96" />
+    </radialGradient>
+    <linearGradient id="cv-bg-base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0714" />
+      <stop offset="50%" stop-color="#190d24" />
+      <stop offset="100%" stop-color="#08030c" />
+    </linearGradient>
+
+    <!-- Heavy Titanium & Armor Gradients -->
+    <linearGradient id="cv-titanium-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b3147" />
+      <stop offset="50%" stop-color="#241e30" />
+      <stop offset="100%" stop-color="#140e1d" />
+    </linearGradient>
+    <linearGradient id="cv-titanium-light" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6d5d80" />
+      <stop offset="50%" stop-color="#4d3f5e" />
+      <stop offset="100%" stop-color="#241e30" />
+    </linearGradient>
+    <linearGradient id="cv-gold-trim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#854d0e" />
+    </linearGradient>
+
+    <!-- Crimson Core & Plasma Gradients -->
+    <linearGradient id="cv-crimson-core" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fee2e2" />
+      <stop offset="35%" stop-color="#f87171" />
+      <stop offset="70%" stop-color="#dc2626" />
+      <stop offset="100%" stop-color="#7f1d1d" />
+    </linearGradient>
+    <linearGradient id="cv-visor-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#991b1b" stop-opacity="0.8" />
+      <stop offset="25%" stop-color="#ef4444" />
+      <stop offset="50%" stop-color="#fee2e2" />
+      <stop offset="75%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#991b1b" stop-opacity="0.8" />
+    </linearGradient>
+
+    <!-- Valkyrie Wing Gradients -->
+    <linearGradient id="cv-wing-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#450a0a" />
+      <stop offset="40%" stop-color="#dc2626" />
+      <stop offset="80%" stop-color="#f87171" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="cv-glow-heavy" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="cv-glow-soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Industrial Pattern -->
+    <pattern id="cv-hazard-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 0 28 L 28 0 M 0 0 L 28 28" fill="none" stroke="#ef4444" stroke-width="0.75" stroke-opacity="0.09" />
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" fill="url(#cv-bg-base)" />
+  <rect width="512" height="512" fill="url(#cv-hazard-grid)" />
+  <circle cx="256" cy="240" r="230" fill="url(#cv-bg-glow)" />
+
+  <!-- Holographic Valkyrie Shield Halo / Ring -->
+  <circle cx="256" cy="240" r="215" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.3" stroke-dasharray="12 8 36 8" />
+  <circle cx="256" cy="240" r="195" fill="none" stroke="#dc2626" stroke-width="2" stroke-opacity="0.4" />
+  <circle cx="256" cy="240" r="175" fill="none" stroke="#f87171" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="6 14" />
+
+  <!-- Hexagonal Aegis Geometric Shield Aura -->
+  <polygon points="256,35 435,138 435,342 256,445 77,342 77,138" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-opacity="0.25" stroke-dasharray="18 6" />
+
+  <!-- Heavy Combat HUD Telemetry -->
+  <g stroke="#ef4444" stroke-width="1" opacity="0.45">
+    <line x1="30" y1="240" x2="65" y2="240" stroke-width="2" />
+    <line x1="447" y1="240" x2="482" y2="240" stroke-width="2" />
+    <line x1="256" y1="15" x2="256" y2="45" stroke-width="2" />
+    <line x1="256" y1="435" x2="256" y2="465" stroke-width="2" />
+    <!-- Angular Brackets -->
+    <path d="M 115 85 L 85 85 L 85 115" fill="none" stroke-width="2" />
+    <path d="M 397 85 L 427 85 L 427 115" fill="none" stroke-width="2" />
+    <path d="M 115 395 L 85 395 L 85 365" fill="none" stroke-width="2" />
+    <path d="M 397 395 L 427 395 L 427 365" fill="none" stroke-width="2" />
+  </g>
+
+  <!-- VALKYRIE BACK WINGS (Aero-Plasma Kinetic Wings) -->
+  <g id="cv-wings-group">
+    <!-- Left Major Wing -->
+    <g filter="url(#cv-glow-heavy)">
+      <polygon points="230,170 120,80 35,35 95,120 160,185 225,200" fill="url(#cv-wing-grad)" opacity="0.9" />
+      <polygon points="215,190 100,125 45,95 85,160 145,215 210,225" fill="url(#cv-wing-grad)" opacity="0.8" />
+      <polygon points="200,215 115,175 65,155 95,205 145,245 195,245" fill="url(#cv-wing-grad)" opacity="0.7" />
+    </g>
+    <!-- Left Wing Solid Core Blades -->
+    <path d="M 230 170 L 40 40 L 95 120 Z" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="1.5" />
+    <line x1="230" y1="170" x2="40" y2="40" stroke="#fee2e2" stroke-width="2.5" />
+
+    <!-- Right Major Wing -->
+    <g filter="url(#cv-glow-heavy)">
+      <polygon points="282,170 392,80 477,35 417,120 352,185 287,200" fill="url(#cv-wing-grad)" opacity="0.9" />
+      <polygon points="297,190 412,125 467,95 427,160 367,215 302,225" fill="url(#cv-wing-grad)" opacity="0.8" />
+      <polygon points="312,215 397,175 447,155 417,205 367,245 317,245" fill="url(#cv-wing-grad)" opacity="0.7" />
+    </g>
+    <!-- Right Wing Solid Core Blades -->
+    <path d="M 282 170 L 472 40 L 417 120 Z" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="1.5" />
+    <line x1="282" y1="170" x2="472" y2="40" stroke="#fee2e2" stroke-width="2.5" />
+  </g>
+
+  <!-- Heavy Exo-Armor Torso & Pauldrons -->
+  <g id="cv-torso-group">
+    <!-- Dark Undersuit / Reinforced Neck -->
+    <polygon points="210,240 302,240 326,340 186,340" fill="#0f0714" />
+    <line x1="256" y1="240" x2="256" y2="340" stroke="#dc2626" stroke-width="3" stroke-opacity="0.8" />
+
+    <!-- Heavy Titanium Chest & Abdominal Plate -->
+    <path d="M 105 390 L 180 295 L 256 325 L 332 295 L 407 390 L 385 490 L 127 490 Z" fill="url(#cv-titanium-dark)" stroke="#4d3f5e" stroke-width="2.5" />
+
+    <!-- Angular Heavy Chest Carapace -->
+    <polygon points="190,315 256,340 256,440 170,410 155,340" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="2" />
+    <polygon points="322,315 256,340 256,440 342,410 357,340" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="2" />
+
+    <!-- Crimson Kinetic Reactor (Center Chest) -->
+    <circle cx="256" cy="375" r="28" fill="#140e1d" stroke="#ef4444" stroke-width="2" />
+    <polygon points="256,352 276,375 256,398 236,375" fill="url(#cv-crimson-core)" stroke="#fee2e2" stroke-width="2" filter="url(#cv-glow-heavy)" />
+    <!-- Reactor Hydraulic Lines -->
+    <line x1="228" y1="375" x2="190" y2="375" stroke="#ef4444" stroke-width="2.5" />
+    <line x1="284" y1="375" x2="322" y2="375" stroke="#ef4444" stroke-width="2.5" />
+
+    <!-- Massive Left Exo-Pauldron (Shoulder) -->
+    <polygon points="95,395 175,300 200,345 130,430" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="2" />
+    <polygon points="105,375 165,310 185,340 135,405" fill="url(#cv-titanium-dark)" stroke="#dc2626" stroke-width="1.5" />
+    <!-- Hydraulic Exhaust Vents on Pauldron -->
+    <line x1="120" y1="380" x2="155" y2="335" stroke="#ef4444" stroke-width="3" filter="url(#cv-glow-soft)" />
+    <line x1="130" y1="395" x2="165" y2="350" stroke="#ef4444" stroke-width="3" filter="url(#cv-glow-soft)" />
+
+    <!-- Massive Right Exo-Pauldron (Shoulder) -->
+    <polygon points="417,395 337,300 312,345 382,430" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="2" />
+    <polygon points="407,375 347,310 327,340 377,405" fill="url(#cv-titanium-dark)" stroke="#dc2626" stroke-width="1.5" />
+    <!-- Hydraulic Exhaust Vents on Pauldron -->
+    <line x1="392" y1="380" x2="357" y2="335" stroke="#ef4444" stroke-width="3" filter="url(#cv-glow-soft)" />
+    <line x1="382" y1="395" x2="347" y2="350" stroke="#ef4444" stroke-width="3" filter="url(#cv-glow-soft)" />
+
+    <!-- Heavy Collar Guard -->
+    <polygon points="196,280 256,305 316,280 304,250 208,250" fill="url(#cv-titanium-dark)" stroke="#f87171" stroke-width="2" />
+  </g>
+
+  <!-- Valkyrie Combat Helm & Optical Sensors -->
+  <g id="cv-helm-group">
+    <!-- Helm Base Jaw & Chintank -->
+    <polygon points="214,195 256,275 298,195 284,145 228,145" fill="url(#cv-titanium-dark)" stroke="#3b3147" stroke-width="2" />
+    <polygon points="226,215 256,268 286,215 276,200 236,200" fill="#140e1d" stroke="#ef4444" stroke-width="1.5" />
+
+    <!-- Titanium Facial Armor Plating -->
+    <polygon points="218,175 256,155 294,175 284,205 228,205" fill="url(#cv-titanium-light)" stroke="#4d3f5e" stroke-width="1.5" />
+
+    <!-- Top Crown Dome -->
+    <path d="M 185 145 C 185 70, 327 70, 327 145 L 315 180 L 290 185 L 256 160 L 222 185 L 197 180 Z" fill="url(#cv-titanium-dark)" stroke="#ef4444" stroke-width="2" />
+
+    <!-- Golden Crest Fin (Center Crown) -->
+    <polygon points="256,45 270,110 256,135 242,110" fill="url(#cv-gold-trim)" stroke="#eab308" stroke-width="1.5" filter="url(#cv-glow-soft)" />
+    <line x1="256" y1="50" x2="256" y2="130" stroke="#ffffff" stroke-width="2" />
+
+    <!-- Forehead Titanium Brow -->
+    <polygon points="210,135 256,120 302,135 288,155 224,155" fill="url(#cv-titanium-light)" stroke="#dc2626" stroke-width="1.5" />
+
+    <!-- CRIMSON OPTIC SENSORS / VISOR -->
+    <g filter="url(#cv-glow-heavy)">
+      <!-- Main Aggressive Angular Visor -->
+      <polygon points="196,158 316,158 300,188 256,202 212,188" fill="#1f0707" stroke="#ef4444" stroke-width="2" />
+      <polygon points="204,162 308,162 294,184 256,196 218,184" fill="url(#cv-visor-grad)" />
+      <!-- Twin Optic Focus Beams -->
+      <line x1="220" y1="174" x2="245" y2="174" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+      <line x1="267" y1="174" x2="292" y2="174" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+    </g>
+
+    <!-- Temple Ear Wings / Communications Fins -->
+    <polygon points="182,140 196,140 190,195 170,180" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="1.5" />
+    <polygon points="330,140 316,140 322,195 342,180" fill="url(#cv-titanium-light)" stroke="#ef4444" stroke-width="1.5" />
+  </g>
+
+  <!-- Foreground Hydraulic Kinetic Gauntlets (Fighter Stance) -->
+  <g id="cv-gauntlets-group" filter="url(#cv-glow-soft)">
+    <!-- Left Heavy Hydraulic Fist / Guard -->
+    <g transform="translate(60, 360)">
+      <polygon points="30,50 85,15 130,45 110,110 50,110" fill="url(#cv-titanium-dark)" stroke="#ef4444" stroke-width="2" />
+      <polygon points="50,25 85,5 115,25 90,65 55,60" fill="url(#cv-titanium-light)" stroke="#dc2626" stroke-width="1.5" />
+      <!-- Hydraulic Kinetic Pistons -->
+      <line x1="45" y1="75" x2="95" y2="75" stroke="#fee2e2" stroke-width="4" stroke-linecap="round" />
+      <line x1="45" y1="90" x2="85" y2="90" stroke="#fee2e2" stroke-width="4" stroke-linecap="round" />
+    </g>
+
+    <!-- Right Heavy Hydraulic Fist / Strike Ready -->
+    <g transform="translate(300, 360)">
+      <polygon points="110,50 55,15 10,45 30,110 90,110" fill="url(#cv-titanium-dark)" stroke="#ef4444" stroke-width="2" />
+      <polygon points="90,25 55,5 25,25 50,65 85,60" fill="url(#cv-titanium-light)" stroke="#dc2626" stroke-width="1.5" />
+      <!-- Hydraulic Kinetic Pistons -->
+      <line x1="95" y1="75" x2="45" y2="75" stroke="#fee2e2" stroke-width="4" stroke-linecap="round" />
+      <line x1="95" y1="90" x2="55" y2="90" stroke="#fee2e2" stroke-width="4" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <!-- Ambient Crimson Energy Sparks & Sparks -->
+  <g filter="url(#cv-glow-soft)">
+    <circle cx="130" cy="160" r="2.5" fill="#ef4444" opacity="0.8" />
+    <circle cx="100" cy="240" r="2" fill="#fecaca" opacity="0.9" />
+    <circle cx="385" cy="170" r="2" fill="#ef4444" opacity="0.8" />
+    <circle cx="415" cy="250" r="3" fill="#fecaca" opacity="0.7" />
+    <circle cx="280" cy="390" r="2.5" fill="#ef4444" opacity="0.6" />
+    <circle cx="215" cy="430" r="2" fill="#fee2e2" opacity="0.8" />
+    <!-- HUD Fighter Labels -->
+    <text x="65" y="475" fill="#ef4444" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.75" letter-spacing="2">02 // FREYA</text>
+    <text x="315" y="475" fill="#ef4444" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.75" letter-spacing="2">CRIMSON VALKYRIE</text>
+  </g>
+
+  <!-- Bottom Vignette / Gradient Overlay -->
+  <rect x="0" y="440" width="512" height="72" fill="url(#cv-bg-base)" opacity="0.85" />
+  <line x1="40" y1="485" x2="472" y2="485" stroke="#ef4444" stroke-width="1" stroke-opacity="0.3" />
+</svg>

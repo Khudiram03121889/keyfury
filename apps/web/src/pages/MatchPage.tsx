@@ -150,10 +150,41 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     }
   };
 
+const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string } => {
+  let p1CharId = 'shadow_ronin';
+  let p2CharId = 'cyber_valkyrie';
+
+  if (!state?.players) return { p1CharId, p2CharId };
+
+  if (typeof state.players.forEach === 'function') {
+    state.players.forEach((p: any) => {
+      if (p?.side === 'left' && p?.characterId) {
+        p1CharId = p.characterId;
+      } else if (p?.side === 'right' && p?.characterId) {
+        p2CharId = p.characterId;
+      }
+    });
+  } else if (typeof state.players === 'object') {
+    Object.values(state.players).forEach((p: any) => {
+      if (p?.side === 'left' && p?.characterId) {
+        p1CharId = p.characterId;
+      } else if (p?.side === 'right' && p?.characterId) {
+        p2CharId = p.characterId;
+      }
+    });
+  }
+
+  return { p1CharId, p2CharId };
+};
+
   // Room state change listeners
   useEffect(() => {
     if (room?.state) {
       setMatchState(room.state);
+      if (sceneRef.current) {
+        const { p1CharId, p2CharId } = getPlayerCharacterIds(room.state);
+        sceneRef.current.setCharacterSkins(p1CharId, p2CharId);
+      }
       if (room.state.words && Array.isArray(Array.from(room.state.words))) {
         wordsRef.current = Array.from(room.state.words);
       }
@@ -173,6 +204,11 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
       }
       setRemainingTime(state.remainingSeconds);
       setCountdown(state.status === 'countdown' ? state.countdownSeconds : null);
+
+      const { p1CharId, p2CharId } = getPlayerCharacterIds(state);
+      if (sceneRef.current) {
+        sceneRef.current.setCharacterSkins(p1CharId, p2CharId);
+      }
 
       // Play round start bell on transition to in_progress
       if (prevStatusRef.current !== 'in_progress' && state.status === 'in_progress') {
@@ -326,6 +362,8 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
     game.events.once('ready', () => {
       const sc = game.scene.getScene('StickFightScene') as StickFightScene;
       sceneRef.current = sc;
+      const { p1CharId, p2CharId } = getPlayerCharacterIds(room?.state || matchStateRef.current);
+      sc.setCharacterSkins(p1CharId, p2CharId);
     });
 
     return () => {

@@ -12,6 +12,9 @@ import {
   checkOBBvsCapsule,
   checkOBBvsOBB,
   getMoveSpec,
+  getCharacterDefinition,
+  type CharacterDefinition,
+  type CharacterId,
   type FightingMoveName,
   type OBBHitbox,
   type CircleHurtbox,
@@ -23,6 +26,14 @@ import { RenderPipeline } from '../render/RenderPipeline';
 import { SpatialHashGrid } from '../render/SpatialHashGrid';
 import { ParticlePool, Vector2Pool, HitboxPool, type PooledParticle } from '../render/ObjectPool';
 import { DebugOverlayRenderer } from '../render/DebugOverlayRenderer';
+import {
+  drawTaperedLimb,
+  drawCharacterHeadgear,
+  drawCharacterPauldronsAndTorso,
+  drawCharacterGauntletsAndWeapons,
+  drawCharacterWaistAndScarf,
+  drawCharacterAttackVFX
+} from './character/CharacterRigRenderer';
 
 export type AttackKind = 'jab' | 'kick' | 'jump_kick' | 'uppercut' | 'heavy' | 'knockdown';
 export type FighterState =
@@ -46,6 +57,12 @@ export class StickFightScene extends Phaser.Scene {
 
   private p1State: FighterState = 'idle';
   private p2State: FighterState = 'idle';
+
+  // Modular Character Skin Definitions
+  public p1CharId: CharacterId = 'shadow_ronin';
+  public p2CharId: CharacterId = 'cyber_valkyrie';
+  public p1CharDef: CharacterDefinition = getCharacterDefinition('shadow_ronin');
+  public p2CharDef: CharacterDefinition = getCharacterDefinition('cyber_valkyrie');
 
   private p1Timer?: Phaser.Time.TimerEvent;
   private p2Timer?: Phaser.Time.TimerEvent;
@@ -202,8 +219,17 @@ export class StickFightScene extends Phaser.Scene {
     for (let i = this.activeParticles.length - 1; i >= 0; i--) {
       const p = this.activeParticles[i]!;
       p.currentAgeMs += fixedDtMs;
-      p.position.x += p.velocity.x * dtSec;
-      p.position.y += p.velocity.y * dtSec + 150 * dtSec * dtSec; // gravity
+
+      if (p.type === 'orbital') {
+        const angVel = p.angularVelocity ?? 4;
+        p.angle = (p.angle ?? 0) + angVel * dtSec;
+        const radius = p.size * 6 * Math.max(0.2, 1 - p.currentAgeMs / p.lifetimeMs);
+        p.position.x += p.velocity.x * dtSec + Math.cos(p.angle) * radius * dtSec * 30;
+        p.position.y += p.velocity.y * dtSec + Math.sin(p.angle) * radius * dtSec * 30;
+      } else {
+        p.position.x += p.velocity.x * dtSec;
+        p.position.y += p.velocity.y * dtSec + 150 * dtSec * dtSec; // gravity
+      }
 
       if (p.currentAgeMs >= p.lifetimeMs) {
         ParticlePool.release(p);
@@ -388,7 +414,8 @@ export class StickFightScene extends Phaser.Scene {
         this.p1Combo,
         this.p1StepToggle,
         time,
-        this.p1Ragdoll
+        this.p1Ragdoll,
+        this.p1CharDef
       );
     }
 
@@ -406,7 +433,8 @@ export class StickFightScene extends Phaser.Scene {
         this.p2Combo,
         this.p2StepToggle,
         time,
-        this.p2Ragdoll
+        this.p2Ragdoll,
+        this.p2CharDef
       );
     }
 
@@ -423,18 +451,56 @@ export class StickFightScene extends Phaser.Scene {
   }
 
   /**
-   * Render zero-allocation pooled active particles.
+   * Dynamically sets and ingests character skins and loads their CharacterDefinition configs.
+   */
+  public setCharacterSkins(p1CharId?: string, p2CharId?: string): void {
+    if (p1CharId) {
+      this.p1CharDef = getCharacterDefinition(p1CharId);
+      this.p1CharId = this.p1CharDef.id;
+    }
+    if (p2CharId) {
+      this.p2CharDef = getCharacterDefinition(p2CharId);
+      this.p2CharId = this.p2CharDef.id;
+    }
+  }
+
+  /**
+   * Retrieves current loaded character skins.
+   */
+  public getCharacterSkins(): { p1: CharacterDefinition; p2: CharacterDefinition } {
+    return { p1: this.p1CharDef, p2: this.p2CharDef };
+  }
+
+  /**
+   * Render zero-allocation pooled active particles with elemental visual types.
    */
   private renderPooledParticles(): void {
     if (!this.p1FxGraphics) return;
 
     for (const p of this.activeParticles) {
       if (!p.active) continue;
-      const alpha = 1 - p.currentAgeMs / p.lifetimeMs;
+      const progress = Math.min(1, p.currentAgeMs / p.lifetimeMs);
+      const alpha = Math.max(0, 1 - progress);
       const colorHex = p.color.startsWith('#') ? parseInt(p.color.slice(1), 16) : 0xffffff;
 
-      this.p1FxGraphics.fillStyle(colorHex, Math.max(0, alpha));
-      this.p1FxGraphics.fillCircle(p.position.x, p.position.y, p.size * (0.5 + alpha * 0.5));
+      if (p.type === 'spark') {
+        const len = Math.sqrt(p.velocity.x * p.velocity.x + p.velocity.y * p.velocity.y) || 1;
+        const nx = (p.velocity.x / len) * (p.size * 2);
+        const ny = (p.velocity.y / len) * (p.size * 2);
+        this.p1FxGraphics.lineStyle(p.size, colorHex, alpha);
+        this.p1FxGraphics.lineBetween(p.position.x - nx, p.position.y - ny, p.position.x + nx, p.position.y + ny);
+      } else if (p.type === 'disc') {
+        this.p1FxGraphics.lineStyle(1.5, colorHex, alpha * 0.85);
+        this.p1FxGraphics.strokeCircle(p.position.x, p.position.y, p.size * (1 + progress * 2.5));
+      } else if (p.type === 'lightning') {
+        this.p1FxGraphics.lineStyle(2, colorHex, alpha);
+        const jx = (Math.random() - 0.5) * 6;
+        const jy = (Math.random() - 0.5) * 6;
+        this.p1FxGraphics.lineBetween(p.position.x, p.position.y, p.position.x + jx, p.position.y + jy);
+      } else {
+        this.p1FxGraphics.fillStyle(colorHex, Math.max(0, alpha));
+        this.p1FxGraphics.fillCircle(p.position.x, p.position.y, p.size * (0.5 + alpha * 0.5));
+      }
     }
   }
 
@@ -507,6 +573,8 @@ export class StickFightScene extends Phaser.Scene {
   triggerAttack(side: 'left' | 'right', attackKind: AttackKind, customDamage?: number, comboStreak: number = 0) {
     const isLeft = side === 'left';
     const width = this.cameras.main.width || 1024;
+    const attackerCharDef = isLeft ? this.p1CharDef : this.p2CharDef;
+    const defenderCharDef = isLeft ? this.p2CharDef : this.p1CharDef;
 
     if (isLeft) {
       this.p1Combo = comboStreak;
@@ -545,31 +613,31 @@ export class StickFightScene extends Phaser.Scene {
     // Select dynamic move pose & visual move title based on move bucket + combo level
     let moveState: FighterState = attackKind;
     let moveTitle = 'JAB';
-    let color = '#38bdf8';
+    let color = attackerCharDef.theme.primaryColor;
 
     if (attackKind === 'jab') {
       moveState = 'jab';
-      moveTitle = 'JAB';
-      color = '#38bdf8';
+      moveTitle = attackerCharDef.id === 'shadow_ronin' ? 'PLASMA JAB' : attackerCharDef.id === 'cyber_valkyrie' ? 'HYDRAULIC JAB' : attackerCharDef.id === 'volt_shinobi' ? 'VOLT JAB' : 'VOID JAB';
+      color = attackerCharDef.theme.primaryColor;
     } else if (attackKind === 'kick') {
       if (comboStreak >= 6) {
         moveState = 'jump_kick';
-        moveTitle = 'FLYING KICK';
-        color = '#a855f7';
+        moveTitle = attackerCharDef.id === 'shadow_ronin' ? 'FLYING BLADE' : attackerCharDef.id === 'cyber_valkyrie' ? 'ROCKET KICK' : attackerCharDef.id === 'volt_shinobi' ? 'LIGHTNING DIVE' : 'SHADOW LEAP';
+        color = attackerCharDef.theme.accentColor;
       } else {
         moveState = 'kick';
         moveTitle = 'ROUNDHOUSE KICK';
-        color = '#34d399';
+        color = attackerCharDef.theme.secondaryColor;
       }
     } else if (attackKind === 'heavy') {
       if (comboStreak >= 6) {
         moveState = 'uppercut';
-        moveTitle = 'SKY UPPERCUT';
-        color = '#ec4899';
+        moveTitle = attackerCharDef.signatureMove ? attackerCharDef.signatureMove.toUpperCase() : 'SKY UPPERCUT';
+        color = attackerCharDef.theme.primaryColor;
       } else {
         moveState = 'heavy';
-        moveTitle = 'HEAVY SLAM';
-        color = '#f59e0b';
+        moveTitle = 'HEAVY IMPACT';
+        color = attackerCharDef.theme.accentColor;
       }
     } else if (attackKind === 'knockdown') {
       moveState = 'knockdown';
@@ -583,9 +651,6 @@ export class StickFightScene extends Phaser.Scene {
     // Calculate current positions of both fighters to determine dynamic strike reach and impact FX coordinates
     const { p1X: currentP1X, p2X: currentP2X } = this.getFighterPositions();
     const currentGap = Math.max(70, currentP2X - currentP1X);
-
-    // Dynamic dash reach stops attacker right in front of defender (leaving a 60px strike distance)
-    const attackerReach = Math.max(0, currentGap - 60);
 
     // Stagger knockback distance scaled by hit severity
     const knockbackDist = attackKind === 'heavy' || moveState === 'uppercut' ? 65 : attackKind === 'kick' || moveState === 'jump_kick' ? 50 : 35;
@@ -719,24 +784,25 @@ export class StickFightScene extends Phaser.Scene {
     }
 
     this.spawnFloatingDamage(defenderX, targetY, labelText, color);
-    this.spawnImpactSparks(defenderX, targetY + 30, color);
-    this.spawnImpactParticleBurst(defenderX, targetY + 30, color, isCrit || (attackKind as string) === 'heavy', 18);
-    this.spawnShockwave(defenderX, targetY + 30, color);
+    this.spawnImpactSparks(defenderX, targetY + 30, color, attackerCharDef);
+    this.spawnImpactParticleBurst(defenderX, targetY + 30, attackerCharDef.theme.particlePalette, isCrit || (attackKind as string) === 'heavy', 20, attackerCharDef);
+    this.spawnShockwave(defenderX, targetY + 30, color, attackerCharDef);
   }
 
   /**
-   * Triggers micro visual particle burst using ObjectPool.
+   * Triggers micro visual particle burst using ObjectPool and character elemental themes.
    */
   triggerKeystrokeJuice(side: 'left' | 'right', _charIndex: number, _totalChars: number, comboStreak: number = 0, wpm?: number) {
     const height = this.cameras.main.height || 580;
     const isLeft = side === 'left';
+    const charDef = isLeft ? this.p1CharDef : this.p2CharDef;
     const { p1X, p2X } = this.getFighterPositions();
     const handX = isLeft ? p1X + 25 : p2X - 25;
     const handY = height * 0.64 - 100;
-    const color = isLeft ? '#38bdf8' : '#f43f5e';
+    const color = charDef.theme.primaryColor;
 
-    // Micro keystroke spark burst via zero-allocation ParticlePool
-    this.spawnImpactParticleBurst(handX, handY, color, false, 5);
+    // Micro keystroke spark burst via zero-allocation ParticlePool in character's elemental palette
+    this.spawnImpactParticleBurst(handX, handY, charDef.theme.particlePalette, false, 6, charDef);
 
     if (comboStreak >= 4) {
       this.impactFeedback.cameraShake.triggerShake(4);
@@ -744,7 +810,7 @@ export class StickFightScene extends Phaser.Scene {
 
     // Optional floating +WPM feedback text on fast typing streaks
     if (wpm && wpm > 40 && Math.random() < 0.3) {
-      this.spawnFloatingFeedback(handX, handY - 20, `+${Math.round(wpm)} WPM`, 'wpm', '#38bdf8');
+      this.spawnFloatingFeedback(handX, handY - 20, `+${Math.round(wpm)} WPM`, 'wpm', color);
     }
   }
 
@@ -871,44 +937,123 @@ export class StickFightScene extends Phaser.Scene {
   }
 
   /**
-   * Zero-allocation particle burst using ParticlePool from ObjectPool.ts.
+   * Zero-allocation particle burst using ParticlePool from ObjectPool.ts with character elemental styles.
    */
-  public spawnImpactParticleBurst(x: number, y: number, colorStr: string, isHeavy: boolean = false, particleCount: number = 14) {
+  public spawnImpactParticleBurst(
+    x: number,
+    y: number,
+    colorStrOrPalette: string | string[],
+    isHeavy: boolean = false,
+    particleCount?: number,
+    charDefParam?: CharacterDefinition
+  ) {
+    const charDef = charDefParam ?? (typeof colorStrOrPalette === 'string' ? (colorStrOrPalette === '#ef4444' || colorStrOrPalette === '#f43f5e' ? this.p2CharDef : this.p1CharDef) : this.p1CharDef);
+    const palette = Array.isArray(colorStrOrPalette)
+      ? colorStrOrPalette
+      : charDef?.theme?.particlePalette ?? [colorStrOrPalette, '#ffffff'];
+
+    const count = particleCount ?? (isHeavy ? 24 : 14);
     const baseSpeed = isHeavy ? 350 : 180;
-    for (let i = 0; i < particleCount; i++) {
+
+    for (let i = 0; i < count; i++) {
       const p = ParticlePool.acquire();
       const angle = Math.random() * Math.PI * 2;
       const speed = baseSpeed * (0.6 + Math.random() * 0.8);
+      const color = palette[i % palette.length];
 
       p.position.x = x;
       p.position.y = y;
       p.velocity.x = Math.cos(angle) * speed;
       p.velocity.y = Math.sin(angle) * speed;
-      p.size = Math.random() * (isHeavy ? 6 : 4) + 2;
-      p.color = colorStr;
-      p.lifetimeMs = isHeavy ? 450 : 250;
+      p.size = Math.random() * (isHeavy ? 5 : 3) + 2;
+      p.color = color;
+      p.lifetimeMs = isHeavy ? 450 : 260;
       p.currentAgeMs = 0;
       p.active = true;
+
+      // Character-specific elemental particle styles
+      if (charDef?.id === 'volt_shinobi') {
+        p.type = i % 3 === 0 ? 'spark' : i % 5 === 0 ? 'lightning' : 'circle';
+        p.lifetimeMs = 200 + Math.random() * 100;
+      } else if (charDef?.id === 'void_assassin') {
+        p.type = i % 3 === 0 ? 'orbital' : i % 6 === 0 ? 'disc' : 'circle';
+        p.angle = Math.random() * Math.PI * 2;
+        p.angularVelocity = (Math.random() - 0.5) * 8;
+        p.lifetimeMs = 380 + Math.random() * 120;
+      } else if (charDef?.id === 'shadow_ronin') {
+        p.type = i % 2 === 0 ? 'spark' : 'circle';
+      } else if (charDef?.id === 'cyber_valkyrie') {
+        p.type = 'circle';
+        p.size = Math.random() * (isHeavy ? 6 : 4) + 2.5;
+      } else {
+        p.type = 'circle';
+      }
 
       this.activeParticles.push(p);
     }
   }
 
-  private spawnImpactSparks(x: number, y: number, colorStr: string) {
+  private spawnImpactSparks(x: number, y: number, colorStrOrPalette: string | string[], charDefParam?: CharacterDefinition) {
     const graphics = this.add.graphics();
     graphics.setDepth(20);
 
-    const sparkColor = colorStr === '#f59e0b' ? 0xf59e0b : colorStr === '#a855f7' ? 0xa855f7 : 0x38bdf8;
-    graphics.lineStyle(3, sparkColor, 1);
+    const charDef = charDefParam ?? (typeof colorStrOrPalette === 'string' ? (colorStrOrPalette === '#ef4444' || colorStrOrPalette === '#f43f5e' ? this.p2CharDef : this.p1CharDef) : this.p1CharDef);
 
-    const numSparks = 10;
-    for (let i = 0; i < numSparks; i++) {
-      const angle = (i * Math.PI * 2) / numSparks;
-      const length = Math.random() * 25 + 25;
-      graphics.beginPath();
-      graphics.moveTo(x, y);
-      graphics.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
-      graphics.strokePath();
+    if (charDef?.id === 'volt_shinobi') {
+      // Jagged gold zigzag lightning sparks
+      graphics.lineStyle(3, 0xfde047, 1);
+      const numBolts = 8;
+      for (let i = 0; i < numBolts; i++) {
+        const baseAngle = (i * Math.PI * 2) / numBolts;
+        const len = Math.random() * 20 + 20;
+        const midX = x + Math.cos(baseAngle) * (len * 0.5) + (Math.random() - 0.5) * 12;
+        const midY = y + Math.sin(baseAngle) * (len * 0.5) + (Math.random() - 0.5) * 12;
+        const endX = x + Math.cos(baseAngle) * len;
+        const endY = y + Math.sin(baseAngle) * len;
+        graphics.beginPath();
+        graphics.moveTo(x, y);
+        graphics.lineTo(midX, midY);
+        graphics.lineTo(endX, endY);
+        graphics.strokePath();
+      }
+    } else if (charDef?.id === 'cyber_valkyrie') {
+      // Crimson explosive blast star
+      graphics.lineStyle(4, 0xef4444, 1);
+      const numRays = 8;
+      for (let i = 0; i < numRays; i++) {
+        const angle = (i * Math.PI * 2) / numRays;
+        const len = (i % 2 === 0 ? 35 : 20) + Math.random() * 10;
+        graphics.beginPath();
+        graphics.moveTo(x, y);
+        graphics.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+        graphics.strokePath();
+      }
+      graphics.fillStyle(0xfecaca, 1);
+      graphics.fillCircle(x, y, 6);
+    } else if (charDef?.id === 'void_assassin') {
+      // Swirling amethyst void shards
+      graphics.lineStyle(3, 0xc084fc, 1);
+      const numShards = 6;
+      for (let i = 0; i < numShards; i++) {
+        const angle = (i * Math.PI * 2) / numShards;
+        const len = Math.random() * 25 + 20;
+        graphics.beginPath();
+        graphics.moveTo(x, y);
+        graphics.lineTo(x + Math.cos(angle + 0.3) * len, y + Math.sin(angle + 0.3) * len);
+        graphics.strokePath();
+      }
+    } else {
+      // Sharp cutting azure plasma spikes
+      graphics.lineStyle(3, 0x00e5ff, 1);
+      const numSparks = 10;
+      for (let i = 0; i < numSparks; i++) {
+        const angle = (i * Math.PI * 2) / numSparks;
+        const length = Math.random() * 25 + 25;
+        graphics.beginPath();
+        graphics.moveTo(x, y);
+        graphics.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+        graphics.strokePath();
+      }
     }
 
     this.tweens.add({
@@ -922,13 +1067,18 @@ export class StickFightScene extends Phaser.Scene {
     });
   }
 
-  private spawnShockwave(x: number, y: number, colorStr: string) {
+  private spawnShockwave(x: number, y: number, colorStr: string, charDefParam?: CharacterDefinition) {
     const graphics = this.add.graphics();
     graphics.setDepth(18);
 
-    const shockColor = colorStr === '#f59e0b' ? 0xf59e0b : colorStr === '#a855f7' ? 0xa855f7 : 0x38bdf8;
+    const charDef = charDefParam ?? (colorStr === '#ef4444' || colorStr === '#f43f5e' ? this.p2CharDef : this.p1CharDef);
+    const shockColor = charDef ? parseInt(charDef.theme.primaryColor.replace('#', '0x'), 16) : 0x38bdf8;
+    const accentColor = charDef ? parseInt(charDef.theme.accentColor.replace('#', '0x'), 16) : 0x00e5ff;
+
     graphics.lineStyle(4, shockColor, 0.9);
     graphics.strokeCircle(x, y, 10);
+    graphics.lineStyle(2, accentColor, 0.7);
+    graphics.strokeCircle(x, y, 16);
 
     this.tweens.add({
       targets: graphics,
@@ -942,62 +1092,9 @@ export class StickFightScene extends Phaser.Scene {
   }
 
   /**
-   * Dynamic procedural IK stickman renderer with 2-Bone IK Limb Solvers.
-   */
-  /**
-   * Helper to draw sleek tapered vector limbs (thighs, shins, arms, forearms).
-   */
-  private drawTaperedLimb(
-    g: Phaser.GameObjects.Graphics,
-    p1: { x: number; y: number },
-    p2: { x: number; y: number },
-    w1: number,
-    w2: number,
-    fillColor: number,
-    strokeColor?: number
-  ) {
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1e-5;
-
-    const nx = -dy / len;
-    const ny = dx / len;
-
-    const hW1 = w1 / 2;
-    const hW2 = w2 / 2;
-
-    const v1 = { x: p1.x + nx * hW1, y: p1.y + ny * hW1 };
-    const v2 = { x: p1.x - nx * hW1, y: p1.y - ny * hW1 };
-    const v3 = { x: p2.x - nx * hW2, y: p2.y - ny * hW2 };
-    const v4 = { x: p2.x + nx * hW2, y: p2.y + ny * hW2 };
-
-    g.fillStyle(fillColor, 1);
-    g.beginPath();
-    g.moveTo(v1.x, v1.y);
-    g.lineTo(v4.x, v4.y);
-    g.lineTo(v3.x, v3.y);
-    g.lineTo(v2.x, v2.y);
-    g.closePath();
-    g.fillPath();
-
-    if (strokeColor !== undefined) {
-      g.lineStyle(1.5, strokeColor, 0.7);
-      g.strokePath();
-    }
-
-    g.fillCircle(p1.x, p1.y, hW1);
-    g.fillCircle(p2.x, p2.y, hW2);
-  }
-
-  /**
-   * Industry-Grade Vector Ninja / Shadow Fighter Renderer.
-   * Features tapered vector limbs, V-tapered martial gi, colored obi belt,
-   * glowing eye visor slits, flowing headband scarves, tabi boots, and strike gauntlets.
-   */
-  /**
-   * Proportional, Clean & Iconic Stickman Fighter Renderer.
-   * Features balanced anatomy, martial guard hand positions, natural joint flexing,
-   * clean fight gloves, grounded feet, and subtle warrior eyes.
+   * Industry-Grade Vector Fighter Renderer with Modular 2D Skeletal Rigs & 2-Bone IK Solvers.
+   * Renders custom headgear, pauldrons, chestplates, gauntlets, weapons, and flowing accessories
+   * according to each character's CharacterGearSpec and CharacterVisualTheme.
    */
   private drawFighter(
     g: Phaser.GameObjects.Graphics,
@@ -1005,21 +1102,23 @@ export class StickFightScene extends Phaser.Scene {
     x: number,
     y: number,
     facing: number,
-    accessory: 'flat_cap' | 'glasses',
+    accessory: 'flat_cap' | 'glasses' | string,
     state: FighterState,
     rotation: number,
     comboStreak: number,
     stepToggle: boolean,
     time: number,
-    ragdoll?: RagdollSystem
+    ragdoll?: RagdollSystem,
+    charDef?: CharacterDefinition
   ) {
     g.clear();
     fxG.clear();
 
     const isP1 = facing === 1;
-    const bodyColor = 0x0f172a; // Dark slate stickman body
-    const gloveColor = isP1 ? 0x0284c7 : 0xdc2626; // Cyan for P1, Crimson for P2
-    const eyeColor = isP1 ? 0x38bdf8 : 0xf87171;
+    const activeCharDef = charDef ?? (isP1 ? this.p1CharDef : this.p2CharDef) ?? getCharacterDefinition('shadow_ronin');
+    const bodyColor = activeCharDef.theme.bodyColor;
+    const gloveColor = activeCharDef.theme.gloveColor;
+    const eyeColor = activeCharDef.theme.eyeColor;
 
     // 1. Core Anatomy Parameters
     // Platform surface: y. Hips at y - 52. Neck at y - 106. Head at y - 128.
@@ -1164,16 +1263,14 @@ export class StickFightScene extends Phaser.Scene {
       const lP = rot(hipX, hipY); finalHipX = lP.x; finalHipY = lP.y;
     }
 
-    // --- RENDER STICKMAN ---
-
-    // --- INDUSTRY-GRADE VECTOR SHADOW NINJA WARRIOR RENDERER ---
+    // --- MODULAR 2D SKELETAL RIG & VECTOR MESH RENDERING ---
 
     // 1. REAR LIMBS (Layer 1 - Behind Torso)
     // Rear Leg (Thigh: 11px -> 8px, Shin: 8px -> 6px)
-    this.drawTaperedLimb(g, { x: lHipX, y: hipY }, legL.joint, 11, 8, bodyColor);
-    this.drawTaperedLimb(g, legL.joint, legL.tip, 8, 6, bodyColor);
+    drawTaperedLimb(g, { x: lHipX, y: hipY }, legL.joint, 11, 8, bodyColor);
+    drawTaperedLimb(g, legL.joint, legL.tip, 8, 6, bodyColor);
 
-    // Rear Tabi Boot
+    // Rear Foot (Tabi Boot / Armored Greave)
     g.fillStyle(bodyColor, 1);
     g.beginPath();
     g.moveTo(legL.tip.x - facing * 5, legL.tip.y);
@@ -1183,76 +1280,47 @@ export class StickFightScene extends Phaser.Scene {
     g.fillPath();
 
     // Rear Arm (Upper Arm: 9px -> 7px, Forearm: 7px -> 5px)
-    this.drawTaperedLimb(g, { x: lShoulderX, y: lShoulderY }, armL.joint, 9, 7, bodyColor);
-    this.drawTaperedLimb(g, armL.joint, armL.tip, 7, 5, bodyColor);
+    drawTaperedLimb(g, { x: lShoulderX, y: lShoulderY }, armL.joint, 9, 7, bodyColor);
+    drawTaperedLimb(g, armL.joint, armL.tip, 7, 5, bodyColor);
 
-    // Rear Glove Fist / Gauntlet
-    g.fillStyle(gloveColor, 1);
-    g.fillCircle(armL.tip.x, armL.tip.y, 6.5);
-    g.lineStyle(1.5, 0xffffff, 0.6);
-    g.strokeCircle(armL.tip.x, armL.tip.y, 6.5);
-
-    // 2. TORSO & V-TAPER CHEST (Layer 2)
-    // V-Taper Athletic Chest Polygon (Shoulders: 16px wide, Waist: 10px wide)
+    // 2. TORSO, PAULDRONS, CHESTPLATE, WAIST & SCARF (Layer 2)
     const neckL = { x: finalNeckX - facing * 7, y: finalNeckY };
     const neckR = { x: finalNeckX + facing * 7, y: finalNeckY };
     const hipL = { x: finalHipX - facing * 4, y: finalHipY };
     const hipR = { x: finalHipX + facing * 4, y: finalHipY };
 
-    g.fillStyle(bodyColor, 1);
-    g.beginPath();
-    g.moveTo(neckL.x, neckL.y);
-    g.lineTo(neckR.x, neckR.y);
-    g.lineTo(hipR.x, hipR.y);
-    g.lineTo(hipL.x, hipL.y);
-    g.closePath();
-    g.fillPath();
+    drawCharacterPauldronsAndTorso(
+      g,
+      neckL,
+      neckR,
+      hipL,
+      hipR,
+      { x: lShoulderX, y: lShoulderY },
+      { x: rShoulderX, y: rShoulderY },
+      facing,
+      activeCharDef,
+      state,
+      time
+    );
 
-    // Martial Obi Waist Belt & Flowing Tails
-    g.fillStyle(gloveColor, 1);
-    g.fillRect(finalHipX - 5, finalHipY - 3, 10, 5);
+    drawCharacterWaistAndScarf(g, finalHipX, finalHipY, finalHeadX, finalHeadY, facing, activeCharDef, state, time);
 
-    const obiWave = Math.sin(time / 100) * 3;
-    g.lineStyle(2.5, gloveColor, 1);
-    g.beginPath();
-    g.moveTo(finalHipX - facing * 4, finalHipY);
-    g.lineTo(finalHipX - facing * 12, finalHipY + 10 + obiWave);
-    g.strokePath();
+    // Head & Custom Modular Headgear (Kabuto, Valkyrie, Shinobi, Shadow Hood)
+    drawCharacterHeadgear(g, finalHeadX, finalHeadY, facing, activeCharDef, state, time);
 
-    // Ninja Mask & Head (Solid 16px circle)
-    const headRadius = 16;
-    g.fillStyle(bodyColor, 1);
-    g.fillCircle(finalHeadX, finalHeadY, headRadius);
-
-    // Glowing Neon Eye Visor Slit
-    if (state !== 'knockdown') {
-      const eyeX = finalHeadX + facing * 6;
-      const eyeY = finalHeadY - 2;
-      g.fillStyle(eyeColor, 1);
-      g.fillCircle(eyeX, eyeY, 3.5);
-      g.fillCircle(eyeX + facing * 4, eyeY, 2.5);
+    // Legacy accessory overlay support if explicitly requested
+    if (accessory === 'flat_cap') {
+      this.drawFlatCap(g, finalHeadX, finalHeadY, facing);
+    } else if (accessory === 'glasses') {
+      this.drawGlasses(g, finalHeadX, finalHeadY, facing);
     }
 
-    // Flowing Dual-Segment Ninja Scarf
-    if (state !== 'knockdown') {
-      const bandX = finalHeadX - facing * 14;
-      const bandY = finalHeadY - 4;
-      const scarfWave = Math.sin(time / 120) * 5;
-
-      g.lineStyle(3.5, gloveColor, 1);
-      g.beginPath();
-      g.moveTo(bandX, bandY);
-      g.lineTo(bandX - facing * 14, bandY + 4 + scarfWave);
-      g.lineTo(bandX - facing * 24, bandY + 12 + scarfWave * 1.5);
-      g.strokePath();
-    }
-
-    // 3. FRONT LIMBS (Layer 3 - In Front of Torso)
+    // 3. FRONT LIMBS & WEAPONS (Layer 3 - In Front of Torso)
     // Lead Leg (Thigh: 11px -> 8px, Shin: 8px -> 6px)
-    this.drawTaperedLimb(g, { x: rHipX, y: hipY }, legR.joint, 11, 8, bodyColor);
-    this.drawTaperedLimb(g, legR.joint, legR.tip, 8, 6, bodyColor);
+    drawTaperedLimb(g, { x: rHipX, y: hipY }, legR.joint, 11, 8, bodyColor);
+    drawTaperedLimb(g, legR.joint, legR.tip, 8, 6, bodyColor);
 
-    // Lead Tabi Boot
+    // Lead Foot (Tabi Boot / Armored Greave)
     g.fillStyle(bodyColor, 1);
     g.beginPath();
     g.moveTo(legR.tip.x - facing * 5, legR.tip.y);
@@ -1262,14 +1330,11 @@ export class StickFightScene extends Phaser.Scene {
     g.fillPath();
 
     // Lead Arm (Upper Arm: 9px -> 7px, Forearm: 7px -> 5px)
-    this.drawTaperedLimb(g, { x: rShoulderX, y: rShoulderY }, armR.joint, 9, 7, bodyColor);
-    this.drawTaperedLimb(g, armR.joint, armR.tip, 7, 5, bodyColor);
+    drawTaperedLimb(g, { x: rShoulderX, y: rShoulderY }, armR.joint, 9, 7, bodyColor);
+    drawTaperedLimb(g, armR.joint, armR.tip, 7, 5, bodyColor);
 
-    // Lead Strike Gauntlet / Glove
-    g.fillStyle(gloveColor, 1);
-    g.fillCircle(armR.tip.x, armR.tip.y, 7.5);
-    g.lineStyle(2, 0xffffff, 0.85);
-    g.strokeCircle(armR.tip.x, armR.tip.y, 7.5);
+    // Custom Gauntlets & Signature Weapons (Plasma Katana, Hydraulic Fist, Lightning Kunai, Void Daggers)
+    drawCharacterGauntletsAndWeapons(g, fxG, armL, armR, facing, activeCharDef, state, time);
 
     // 4. Knockdown Dazed Stars
     if (state === 'knockdown') {
@@ -1283,30 +1348,15 @@ export class StickFightScene extends Phaser.Scene {
       }
     }
 
-    // Motion & Energy Slash Arcs
-    if (state === 'heavy') {
-      fxG.lineStyle(6, 0xf59e0b, 0.95);
-      fxG.beginPath();
-      fxG.arc(neckX, neckY, 70, -Math.PI / 4, Math.PI / 3, false);
-      fxG.strokePath();
-    } else if (state === 'uppercut') {
-      fxG.lineStyle(5, 0xa855f7, 0.95);
-      fxG.beginPath();
-      fxG.arc(armR.tip.x, armR.tip.y + 30, 45, -Math.PI / 2, Math.PI / 2, false);
-      fxG.strokePath();
-    } else if (state === 'jump_kick') {
-      fxG.lineStyle(5, 0x38bdf8, 0.95);
-      fxG.beginPath();
-      fxG.lineBetween(hipX, hipY, legR.tip.x + facing * 20, legR.tip.y);
-      fxG.strokePath();
-    }
+    // 5. Dynamic Motion & Elemental Slash Arcs
+    drawCharacterAttackVFX(fxG, activeCharDef, state, neckX, neckY, hipX, hipY, armR, legR, facing, time);
   }
 
   /**
    * Triggers a cinematic 3-Phase KO finish sequence:
    * 1. Hitstop freeze frame & dynamic camera zoom on impact
    * 2. Slow-motion knockdown fall physics to stage floor
-   * 3. Ground impact shockwave & victory posture
+   * 3. Ground impact shockwave & elemental particle explosion
    */
   public triggerKOSequence(
     loserSide: 'left' | 'right',
@@ -1316,6 +1366,9 @@ export class StickFightScene extends Phaser.Scene {
     const isLeftLoser = loserSide === 'left';
     const width = this.cameras.main.width || 1024;
     const height = this.cameras.main.height || 580;
+
+    const winnerCharDef = isLeftLoser ? this.p2CharDef : this.p1CharDef;
+    const loserCharDef = isLeftLoser ? this.p1CharDef : this.p2CharDef;
 
     const { p1X, p2X } = this.getFighterPositions();
     const loserX = isLeftLoser ? p1X : p2X;
@@ -1371,10 +1424,11 @@ export class StickFightScene extends Phaser.Scene {
       duration: 1100,
       ease: 'Cubic.easeOut',
       onComplete: () => {
-        // Ground impact shockwave & particles
+        // Ground impact shockwave & particles with winner & loser elemental VFX
         const groundX = isLeftLoser ? width * 0.34 + fallDash : width * 0.66 + fallDash;
-        this.spawnShockwave(groundX, platformY, '#ef4444');
-        this.spawnImpactSparks(groundX, platformY, '#ef4444');
+        this.spawnShockwave(groundX, platformY, winnerCharDef.theme.primaryColor, winnerCharDef);
+        this.spawnImpactSparks(groundX, platformY, winnerCharDef.theme.primaryColor, winnerCharDef);
+        this.spawnImpactParticleBurst(groundX, platformY, winnerCharDef.theme.particlePalette, true, 36, winnerCharDef);
         this.cameras.main.shake(220, 0.015);
 
         // Winner victory posture

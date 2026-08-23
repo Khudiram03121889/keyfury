@@ -14,5 +14,20 @@ test-results/
 **/android/build/
 **/android/app/build/
 **/android/app/src/main/assets/public/
+scratch/
+renders/
+video/
+*.apk
+*.mp4
+*.mp3
+.genesis/
+__pycache__/
+*.pyc
+media_automation/
+youtube_oauth_token.json
+client_secret.json
+
+
+
 
 

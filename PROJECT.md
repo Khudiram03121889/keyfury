@@ -1,70 +1,78 @@
-# Project: KeyFury (Keyboard Stickman Warrior) — Mobile Cyberpunk Virtual Touch Keypad
+# Project: KeyFury 2D Character Roster System
 
 ## Architecture
-KeyFury is a real-time multiplayer 1v1 cyberpunk typing combat duel built as a monorepo (`pnpm` workspaces):
-- `apps/web`: React + Vite + Phaser 3 client application with Web Audio sound synthesis (`SoundSynth.ts`).
-- `apps/game-server`: Node.js + Colyseus multiplayer game room (`CombatRoom.ts`) running state synchronization at 60Hz.
-- `packages/game-core`: Pure TypeScript combat rules engine (`combat.ts`, sequence validation, typo stun, combo scaling, damage formula).
-- `packages/protocol`: Message definitions (`messages.ts`), schema types, and state models.
-- `packages/content`: Word banks, difficulty categories, and combat dictionary assets.
-
-### Input & Viewport Architecture
-1. **Desktop Input Mode**: Global window capture `keydown` listener captures physical ASCII keystrokes and dispatches `key_intent` `{ seq, key, clientTimeMs }` to Colyseus.
-2. **Mobile Input Mode**: A custom, low-latency, cyberpunk on-screen virtual touch keypad (`VirtualKeypad.tsx`) mounts in the lower zone (~45% viewport height). It intercepts touch/pointer events with `preventDefault()` (preventing native soft keyboard focus/popups and browser pinch-zoom), renders responsive neon keycaps with active target character highlighting, triggers instant procedural mechanical click SFX, and dispatches `handleKeyPress(char)` directly to Colyseus.
-3. **Viewport & Arena Framing**: The viewport uses a responsive flex column layout on mobile. The upper zone (~55% viewport height) hosts the Phaser canvas (`Phaser.Scale.RESIZE`), compact player health cards, match timer, combo streak pill, and a prominent active word typing banner directly above the keypad for seamless thumb ergonomics.
+KeyFury is a real-time 1v1 cyberpunk typing combat duel built with TypeScript monorepo architecture:
+- `packages/game-core`: Unified source of truth for combat calculations, 2-bone IK solvers, ragdoll physics, typing decks, and the Character Registry.
+- `packages/protocol`: Message schemas, Colyseus room state interfaces, snapshot data structures, and queue options.
+- `apps/game-server`: Colyseus multiplayer authoritative server managing `CombatRoom` and `DuelRoom`, state synchronization, and bot matchmaking.
+- `apps/web`: React 18 + Vite frontend with Phaser 3 combat arena (`StickFightScene`), procedural audio synthesis (`SoundManager`, `SoundSynth`), glassmorphism UI, and local state persistence.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Server Selection UI Removal | Complete cleanup of obsolete server modals/toggles; verify production env defaults | M1 | Survey / R3 |
-| 2 | Virtual Keypad Component | Custom 4-row QWERTY touch keyboard with neon styling, tap animations, active key glow | M2 | Survey / R1 |
-| 3 | Low-Latency Touch Handlers | `onTouchStart`/`onPointerDown` with `preventDefault()` to prevent OS soft keyboard popups | M2 | Survey / R1 |
-| 4 | Virtual Keypad SFX | Tactile mechanical click sounds via `SoundSynth.playMechanicalClick` on key tap | M2 | Survey / R1 |
-| 5 | Dual-Input Dispatch Pipeline | Direct `handleKeyPress` Colyseus dispatch with sequence numbers while preserving desktop physical keyboard | M2 | Survey / R1 |
-| 6 | Mobile Arena Split-Viewport Framing | Upper arena zone (50-55% vh) framing Phaser stickman duel canvas and compact HUD | M3 | Survey / R2 |
-| 7 | Active Word Banner Ergonomics | Prominent active typing word and combo pill positioned directly above keypad for thumb typing | M3 | Survey / R2 |
-| 8 | OS Keyboard Elimination | Remove full-screen invisible `<input>` and refocus loops causing viewport squishing | M3 | Survey / R1, R2 |
-| 9 | Comprehensive Verification & Build | Full typecheck, unit/integration test suite, production Vite build, zero TS errors | M4 | Survey / R4 |
-| 10 | Visual Polish & Git Commit | Multi-resolution viewport verification (iPhone/Android/Desktop), git staging and commit | M4 | Survey / R4 |
+| F1 | 4 Core Fighter Definitions | Data models for Shadow Ronin, Cyber Valkyrie, Volt Shinobi, Void Assassin with IDs, archetypes, lore, attributes, visual themes, and particle palettes | M1 | Survey |
+| F2 | Character Registry & Lookup API | `CHARACTER_REGISTRY`, `getCharacterDefinition`, `getAllCharacters`, and `isValidCharacterId` with safe fallback to `shadow_ronin` | M1 | Survey |
+| F3 | High-Resolution SVG Portrait Assets | 512x512 vector portrait art files for all 4 fighters in `apps/web/src/assets/characters/` with index map | M1 | Survey |
+| F4 | Character Registry Unit Tests | Comprehensive test suite in `packages/game-core/tests/characters.test.ts` verifying registry completeness, stat bounds, and fallbacks | M1 | Survey |
+| F5 | Character Select Modal UI | `apps/web/src/components/character/CharacterSelectModal.tsx` with carousel/grid cards, archetype badges, stats radar, and elemental borders | M2 | Survey |
+| F6 | Live Strike Preview & Audio Feedback | Interactive "Test Strike" canvas animation triggering elemental particle bursts and procedural audio synthesis on selection | M2 | Survey |
+| F7 | Active Champion Lobby Integration | Prominent Active Champion banner in `LobbyPage.tsx` displaying portrait, archetype, and quick-swap modal launcher | M2 | Survey |
+| F8 | Local State & Profile Persistence | `localStorage` persistence under `keyfury_selected_character` integrated with `UserProfile` and `GuestProfile` | M2 | Survey |
+| F9 | Modular 2D Skeletal Rigs & Vector Meshes | Dynamic vector rendering in `StickFightScene.ts` adapting helmets/visors, pauldrons, gauntlets, and scarves to each fighter | M3 | Survey |
+| F10 | 100% Combat Mechanics Preservation | Flawless preservation of `solve2BoneIK`, `solveSpineCurve`, typing advance, all strike states (`jab`, `kick`, `jump_kick`, `uppercut`, `heavy`, `hit`), and `RagdollSystem` KO tumbling | M3 | Survey |
+| F11 | Elemental Particle VFX via ObjectPool | Character-specific particle bursts (Azure Plasma, Crimson Energy, Electric Gold Lightning, Void Purple Wisps) via `ParticlePool` | M3 | Survey |
+| F12 | Protocol & Server State Sync | `characterId` field in `packages/protocol` (`PlayerSnapshot`, `RankedQueueOptions`) and `apps/game-server` (`CombatRoom.ts` `PlayerState`) | M4 | Survey |
+| F13 | Multiplayer Matchmaking & Bot Selection | `apps/web/src/lib/colyseus.ts` passing `characterId` across quick duels, challenge rooms, and AI bot duels (bot auto-selecting distinct character) | M4 | Survey |
+| F14 | Match Arena Character Skin Ingestion | `MatchPage.tsx` extracting P1 and P2 `characterId` from session state and injecting into `StickFightScene` | M4 | Survey |
+| F15 | End-to-End Test Suite & Verification | Comprehensive test suite (Tiers 1-4) covering registry, UI, physics, and multiplayer state + zero TypeScript errors on full build | M5 | Survey |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Server Selection UI Cleanup & Verification | Verify complete elimination of server modals and confirm clean production env binding | none | DONE |
-| 2 | Cyberpunk Virtual Touch Keypad Component | Implement `VirtualKeypad.tsx`, ergonomic QWERTY layout, neon glow animations, active key lighting, and tactile SFX | M1 | IN_PROGRESS |
-| 3 | Mobile Arena Framing, Viewport UX & Input Integration | Implement mobile dual-pane viewport in `MatchPage.tsx`, remove invisible input/refocus loops, frame arena & active word banner above keypad | M2 | PLANNED |
-| 4 | Verification, Visual Inspection, Tests & Git Commit | Execute comprehensive test suites, build checks, visual checks across mobile viewports, and commit changes to git | M3 | PLANNED |
+| M1 | Core Fighter Definitions & SVG Character Art | `packages/game-core/src/characters/`, `packages/game-core/src/index.ts`, `apps/web/src/assets/characters/*.svg`, `packages/game-core/tests/characters.test.ts` | none | DONE |
+| M2 | Character Selection UI & State Persistence | `apps/web/src/components/character/CharacterSelectModal.tsx`, `apps/web/src/pages/LobbyPage.tsx`, `apps/web/src/lib/supabase.ts` | M1 | DONE |
+| M3 | Phaser 2D Skeletal Rigs & Elemental VFX | `apps/web/src/game/StickFightScene.ts`, `apps/web/src/game/scenes/CombatScene.ts`, `apps/web/src/render/ObjectPool.ts` | M1 | DONE |
+| M4 | Colyseus Multiplayer Sync & Match Arena | `packages/protocol/src/messages.ts`, `apps/game-server/src/rooms/CombatRoom.ts`, `apps/game-server/src/rooms/DuelRoom.ts`, `apps/web/src/lib/colyseus.ts`, `apps/web/src/pages/MatchPage.tsx` | M1, M2, M3 | DONE |
+| M5 | E2E Integration & Verification Hardening | Full workspace build (`pnpm build`), unit test suites pass, E2E test suite validation (Tiers 1-4), adversarial test hardening (Tier 5) | M1, M2, M3, M4 | DONE |
 
 ## Interface Contracts
-### `VirtualKeypad` Props
-```typescript
-export interface VirtualKeypadProps {
-  onKeyPress: (char: string) => void;
-  activeChar?: string; // Current required character in active word (lowercased)
-  disabled?: boolean;  // True when match is paused, countdown, or player is stunned
-  isStunned?: boolean; // Visual glitch/lockout effect during typo stun
-}
-```
 
-### Key Intent Message Contract (`packages/protocol/src/messages.ts`)
-```typescript
-export interface ClientMessageKeyIntent {
-  type: 'key_intent';
-  seq: number;
-  key: string;
-  clientTimeMs: number;
-}
-```
+### `packages/game-core` ↔ `apps/web` & `apps/game-server`
+- `CharacterId`: `'shadow_ronin' | 'cyber_valkyrie' | 'volt_shinobi' | 'void_assassin'`
+- `CharacterDefinition`: `{ id, name, codename, title, archetype, archetypeLabel, tagline, lore, element, attributes, theme, gear, signatureMove, signatureQuote, portraitAssetKey, avatarIcon }`
+- `getCharacterDefinition(id?: string | null): CharacterDefinition`
+- `getAllCharacters(): CharacterDefinition[]`
+- `isValidCharacterId(id: unknown): id is CharacterId`
 
-### Match Page Integration Contract
-- `handleKeyPress(char: string)`:
-  - Increments `keySeqRef.current++`
-  - Sends `{ type: 'key_intent', seq: keySeqRef.current, key: char, clientTimeMs: Date.now() }` via Colyseus room
-  - Runs local optimistic feedback and triggers mechanical click sound
+### `packages/protocol` ↔ `apps/game-server` ↔ `apps/web`
+- `PlayerSnapshot`: includes `characterId?: string`
+- `RankedQueueOptions`: includes `characterId?: string`
+- `CombatRoom.onJoin(client, options)`: extracts `options.characterId`, stores in `PlayerState.characterId`
+- `CombatRoom.spawnBotOpponent()`: assigns distinct `characterId` (e.g. `'cyber_valkyrie'`) to bot `PlayerState`
+
+### `apps/web` UI ↔ Phaser `StickFightScene`
+- `StickFightScene.setCharacterSkins(p1CharacterId: string, p2CharacterId: string): void`
+- `StickFightScene.drawFighter(graphics, x, y, facing, pose, characterDef, isP1)`
+- `StickFightScene.spawnImpactParticleBurst(x, y, palette, isHeavy, count)`
 
 ## Code Layout
-- `apps/web/src/components/game/VirtualKeypad.tsx`: Virtual touch keypad component with cyberpunk styling and touch event handling.
-- `apps/web/src/components/game/VirtualKeypad.test.tsx`: Unit tests for virtual keypad interactions, layout, and active char highlighting.
-- `apps/web/src/pages/MatchPage.tsx`: Game arena screen, viewport layout, dual-pane mobile container, active word banner positioning, input routing.
-- `apps/web/src/game/audio/SoundSynth.ts`: Web Audio procedural sound synthesizer for tactile key clicks and combat audio.
-- `apps/web/src/index.css`: Cyberpunk theme tokens, glassmorphism, responsive keycap styles, touch-action utilities.
+- `packages/game-core/src/characters/CharacterTypes.ts` - TypeScript interfaces and types
+- `packages/game-core/src/characters/CharacterRegistry.ts` - 4 core fighter configurations & helpers
+- `packages/game-core/src/characters/index.ts` - Barrel exports
+- `packages/game-core/src/index.ts` - Top-level package export
+- `packages/game-core/tests/characters.test.ts` - Unit tests for registry
+- `apps/web/src/assets/characters/shadow-ronin.svg` - Shadow Ronin portrait art
+- `apps/web/src/assets/characters/cyber-valkyrie.svg` - Cyber Valkyrie portrait art
+- `apps/web/src/assets/characters/volt-shinobi.svg` - Volt Shinobi portrait art
+- `apps/web/src/assets/characters/void-assassin.svg` - Void Assassin portrait art
+- `apps/web/src/assets/characters/index.ts` - Asset index mapping
+- `apps/web/src/components/character/CharacterSelectModal.tsx` - Character select modal component
+- `apps/web/src/pages/LobbyPage.tsx` - Lobby page with Active Champion badge
+- `apps/web/src/lib/supabase.ts` - Storage helpers & user profile state
+- `apps/web/src/game/StickFightScene.ts` - Phaser combat scene with 2D modular skeletal rigs & elemental VFX
+- `apps/web/src/game/scenes/CombatScene.ts` - CombatScene wrapper
+- `packages/protocol/src/messages.ts` - Colyseus protocol message schemas
+- `apps/game-server/src/rooms/CombatRoom.ts` - Server room state and player character assignment
+- `apps/game-server/src/rooms/DuelRoom.ts` - Server duel room export
+- `apps/web/src/lib/colyseus.ts` - Matchmaking client functions passing characterId
+- `apps/web/src/pages/MatchPage.tsx` - Match page extracting character IDs and passing to Phaser

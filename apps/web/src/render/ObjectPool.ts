@@ -119,6 +119,9 @@ export interface PooledParticle {
   lifetimeMs: number;
   currentAgeMs: number;
   active: boolean;
+  type?: 'circle' | 'spark' | 'lightning' | 'orbital' | 'disc';
+  angle?: number;
+  angularVelocity?: number;
 }
 
 export const ParticlePool = new ObjectPool<PooledParticle>({
@@ -129,7 +132,10 @@ export const ParticlePool = new ObjectPool<PooledParticle>({
     color: '#ffffff',
     lifetimeMs: 300,
     currentAgeMs: 0,
-    active: false
+    active: false,
+    type: 'circle',
+    angle: 0,
+    angularVelocity: 0
   }),
   reset: (p) => {
     p.position.x = 0;
@@ -141,6 +147,9 @@ export const ParticlePool = new ObjectPool<PooledParticle>({
     p.lifetimeMs = 300;
     p.currentAgeMs = 0;
     p.active = false;
+    p.type = 'circle';
+    p.angle = 0;
+    p.angularVelocity = 0;
   },
   initialSize: 256,
   autoExpand: true

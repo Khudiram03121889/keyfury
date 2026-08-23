@@ -4,29 +4,35 @@ const serverUrl = import.meta.env.VITE_GAME_SERVER_URL || 'ws://localhost:2567';
 
 export const colyseusClient = new ColyseusClient(serverUrl);
 
-export async function joinQuickQueue(profileId: string, displayName: string, mmr?: number): Promise<Room> {
+export async function joinQuickQueue(profileId: string, displayName: string, mmr?: number, characterId?: string): Promise<Room> {
+  const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
   return await colyseusClient.joinOrCreate('duel_room', {
     profileId,
     displayName,
     mmr,
+    characterId: activeChar,
     isChallenge: false
   });
 }
 
-export async function createChallengeRoom(profileId: string, displayName: string, mmr?: number): Promise<Room> {
+export async function createChallengeRoom(profileId: string, displayName: string, mmr?: number, characterId?: string): Promise<Room> {
+  const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
     mmr,
+    characterId: activeChar,
     isChallenge: true
   });
 }
 
-export async function joinChallengeRoom(roomId: string, profileId: string, displayName: string, mmr?: number): Promise<Room> {
+export async function joinChallengeRoom(roomId: string, profileId: string, displayName: string, mmr?: number, characterId?: string): Promise<Room> {
+  const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
   return await colyseusClient.joinById(roomId, {
     profileId,
     displayName,
-    mmr
+    mmr,
+    characterId: activeChar
   });
 }
 
@@ -34,12 +40,15 @@ export async function startBotDuel(
   profileId: string,
   displayName: string,
   botDifficulty: 'novice' | 'fighter' | 'pro' | 'adaptive' = 'adaptive',
-  mmr?: number
+  mmr?: number,
+  characterId?: string
 ): Promise<Room> {
+  const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
     mmr,
+    characterId: activeChar,
     isChallenge: false,
     withBot: true,
     botDifficulty

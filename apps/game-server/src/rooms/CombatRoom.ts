@@ -10,7 +10,8 @@ import {
   BotDifficulty,
   PlayerCombatState,
   CombatEventLog,
-  MATCH_RULES
+  MATCH_RULES,
+  getAllCharacters
 } from '@keyfury/game-core';
 import { ClientMessageSchema, ServerEvent, EloResult } from '@keyfury/protocol';
 import { CONTENT_VERSION } from '@keyfury/content';
@@ -34,6 +35,7 @@ export class PlayerState extends Schema {
   @type('number') mmr: number = 1000;
   @type('number') level: number = 1;
   @type('number') matchesPlayed: number = 0;
+  @type('string') characterId: string = 'shadow_ronin';
 }
 
 export class CombatRoomState extends Schema {
@@ -204,7 +206,7 @@ export class CombatRoom extends Room<CombatRoomState> {
     }, 1000);
   }
 
-  onJoin(client: Client, options: { profileId?: string; displayName?: string; withBot?: boolean; botDifficulty?: BotDifficulty; mmr?: number; level?: number; matchesPlayed?: number }) {
+  onJoin(client: Client, options: { profileId?: string; displayName?: string; withBot?: boolean; botDifficulty?: BotDifficulty; mmr?: number; level?: number; matchesPlayed?: number; characterId?: string }) {
     if (this.state.players.size >= 2) {
       throw new Error('Room is full');
     }
@@ -217,6 +219,7 @@ export class CombatRoom extends Room<CombatRoomState> {
     const mmr = options.mmr ?? 1000;
     const level = Math.max(1, options.level ?? 1);
     const matchesPlayed = options.matchesPlayed ?? 0;
+    const characterId = options.characterId || 'shadow_ronin';
 
     if (options.botDifficulty) {
       this.botDifficulty = options.botDifficulty;
@@ -231,11 +234,12 @@ export class CombatRoom extends Room<CombatRoomState> {
     player.mmr = mmr;
     player.level = level;
     player.matchesPlayed = matchesPlayed;
+    player.characterId = characterId;
 
     this.state.players.set(client.sessionId, player);
     this.combatStates.set(client.sessionId, createInitialPlayerCombatState(client.sessionId));
 
-    console.log(`[CombatRoom] Player joined: ${displayName} (${client.sessionId}) side=${side} MMR=${mmr}`);
+    console.log(`[CombatRoom] Player joined: ${displayName} (${client.sessionId}) side=${side} MMR=${mmr} char=${characterId}`);
 
     if (options.withBot || this.hasBotOpponent) {
       this.spawnBotOpponent();
@@ -263,9 +267,24 @@ export class CombatRoom extends Room<CombatRoomState> {
     botPlayer.ready = true;
     botPlayer.mmr = 1000;
 
+    let humanCharId = 'shadow_ronin';
+    this.state.players.forEach((p, sId) => {
+      if (sId !== botSessionId && p.characterId) {
+        humanCharId = p.characterId;
+      }
+    });
+
+    const allCharacters = getAllCharacters();
+    const available = allCharacters.filter((c) => c.id !== humanCharId);
+    const botChar = available.length > 0
+      ? available[Math.floor(Math.random() * available.length)].id
+      : 'cyber_valkyrie';
+
+    botPlayer.characterId = botChar;
+
     this.state.players.set(botSessionId, botPlayer);
     this.combatStates.set(botSessionId, createInitialPlayerCombatState(botSessionId));
-    console.log(`[CombatRoom] Spawned AI Bot Opponent in room ${this.roomId}`);
+    console.log(`[CombatRoom] Spawned AI Bot Opponent (${botChar}) in room ${this.roomId}`);
   }
 
   public triggerSpawnBot() {

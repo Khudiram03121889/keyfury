@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="va-bg-glow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.38" />
+      <stop offset="50%" stop-color="#581c87" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#05030a" stop-opacity="0.96" />
+    </radialGradient>
+    <linearGradient id="va-bg-base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080310" />
+      <stop offset="50%" stop-color="#120722" />
+      <stop offset="100%" stop-color="#040208" />
+    </linearGradient>
+
+    <!-- Stealth Obsidian & Armor Gradients -->
+    <linearGradient id="va-obsidian-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2e1065" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <linearGradient id="va-obsidian-light" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6b21a8" />
+      <stop offset="50%" stop-color="#4c1d95" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+
+    <!-- Void Energy & Amethyst Plasma Gradients -->
+    <linearGradient id="va-amethyst-plasma" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fae8ff" />
+      <stop offset="35%" stop-color="#d8b4fe" />
+      <stop offset="70%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#6b21a8" />
+    </linearGradient>
+    <linearGradient id="va-void-dagger" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#581c87" />
+      <stop offset="40%" stop-color="#9333ea" />
+      <stop offset="75%" stop-color="#e9d5ff" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+
+    <!-- Dimensional Rift Smoke Gradient -->
+    <linearGradient id="va-smoke-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.85" />
+      <stop offset="60%" stop-color="#6b21a8" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#3b0764" stop-opacity="0.1" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="va-glow-heavy" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="va-glow-soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Void Lattice Pattern -->
+    <pattern id="va-void-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.5" fill="#a855f7" fill-opacity="0.15" />
+      <path d="M 0 12 L 24 12 M 12 0 L 12 24" fill="none" stroke="#7c3aed" stroke-width="0.5" stroke-opacity="0.08" />
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" fill="url(#va-bg-base)" />
+  <rect width="512" height="512" fill="url(#va-void-grid)" />
+  <circle cx="256" cy="240" r="230" fill="url(#va-bg-glow)" />
+
+  <!-- Outer Dimensional Rift Halo / Concentric Arc Rings -->
+  <circle cx="256" cy="240" r="215" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.3" stroke-dasharray="14 10 28 6" />
+  <circle cx="256" cy="240" r="195" fill="none" stroke="#7c3aed" stroke-width="2" stroke-opacity="0.4" />
+  <circle cx="256" cy="240" r="175" fill="none" stroke="#c084fc" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="6 12" />
+
+  <!-- Quantum Inversion Star / Hexagram Shroud Aura -->
+  <polygon points="256,36 345,110 455,110 395,200 455,290 345,290 256,444 167,290 57,290 117,200 57,110 167,110" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.22" stroke-dasharray="16 8" />
+
+  <!-- Stealth Sensor Brackets & Quantum Coordinates -->
+  <g stroke="#a855f7" stroke-width="1" opacity="0.45">
+    <line x1="30" y1="240" x2="65" y2="240" stroke-width="2" />
+    <line x1="447" y1="240" x2="482" y2="240" stroke-width="2" />
+    <line x1="256" y1="15" x2="256" y2="45" stroke-width="2" />
+    <line x1="256" y1="435" x2="256" y2="465" stroke-width="2" />
+    <!-- Stealth Brackets -->
+    <path d="M 115 85 L 85 85 L 85 115" fill="none" stroke-width="2" />
+    <path d="M 397 85 L 427 85 L 427 115" fill="none" stroke-width="2" />
+    <path d="M 115 395 L 85 395 L 85 365" fill="none" stroke-width="2" />
+    <path d="M 397 395 L 427 395 L 427 365" fill="none" stroke-width="2" />
+  </g>
+
+  <!-- Swirling Dimensional Rift Wisps / Void Cloak Mist -->
+  <g filter="url(#va-glow-heavy)">
+    <!-- Swirling Ethereal Void Energy tendrils -->
+    <path d="M 180 280 C 100 300, 40 370, 20 460 C 60 460, 130 380, 210 320 Z" fill="url(#va-smoke-grad)" />
+    <path d="M 332 280 C 412 300, 472 370, 492 460 C 452 460, 382 380, 302 320 Z" fill="url(#va-smoke-grad)" />
+    <!-- Center swirling void vortex behind assassin -->
+    <ellipse cx="256" cy="280" rx="90" ry="30" fill="none" stroke="#a855f7" stroke-width="3" stroke-dasharray="16 8" opacity="0.6" />
+  </g>
+
+  <!-- Stealth Body & Shadow Mantle -->
+  <g id="va-torso-group">
+    <!-- Dark Under-Shroud / Neck -->
+    <polygon points="214,240 298,240 320,340 192,340" fill="#040208" />
+    <line x1="256" y1="240" x2="256" y2="340" stroke="#7c3aed" stroke-width="2" stroke-opacity="0.8" />
+
+    <!-- Obsidian Stealth Shroud & Chest -->
+    <path d="M 120 390 L 185 295 L 256 320 L 327 295 L 392 390 L 370 490 L 142 490 Z" fill="url(#va-obsidian-dark)" stroke="#3b0764" stroke-width="2" />
+
+    <!-- Angular Stealth Armor Plates (Chest) -->
+    <polygon points="195,315 256,335 256,430 180,400 165,340" fill="url(#va-obsidian-light)" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.8" />
+    <polygon points="317,315 256,335 256,430 332,400 347,340" fill="url(#va-obsidian-light)" stroke="#a855f7" stroke-width="1.5" stroke-opacity="0.8" />
+
+    <!-- Amethyst Void Core / Rift Siphon (Center Torso) -->
+    <polygon points="256,338 274,364 256,390 238,364" fill="#3b0764" stroke="#a855f7" stroke-width="2" />
+    <polygon points="256,344 268,364 256,384 244,364" fill="#f3e8ff" filter="url(#va-glow-heavy)" />
+
+    <!-- Left Shadow-Shroud Pauldron -->
+    <polygon points="120,390 180,305 200,345 135,425" fill="url(#va-obsidian-light)" stroke="#a855f7" stroke-width="1.5" />
+    <line x1="130" y1="395" x2="185" y2="320" stroke="#c084fc" stroke-width="2" filter="url(#va-glow-soft)" />
+
+    <!-- Right Shadow-Shroud Pauldron -->
+    <polygon points="392,390 332,305 312,345 377,425" fill="url(#va-obsidian-light)" stroke="#a855f7" stroke-width="1.5" />
+    <line x1="382" y1="395" x2="327" y2="320" stroke="#c084fc" stroke-width="2" filter="url(#va-glow-soft)" />
+
+    <!-- Stealth Collar Guard -->
+    <polygon points="202,275 256,300 310,275 300,248 212,248" fill="url(#va-obsidian-dark)" stroke="#c084fc" stroke-width="1.5" />
+  </g>
+
+  <!-- STEALTH HOOD COWL & AMETHYST OPTICAL MASK -->
+  <g id="va-hood-group">
+    <!-- Deep Shadowed Interior of Hood -->
+    <path d="M 180 150 C 180 80, 332 80, 332 150 L 320 220 L 256 265 L 192 220 Z" fill="#040208" />
+
+    <!-- Deep Outer Stealth Cowl Hood -->
+    <path d="M 160 145 C 160 50, 352 50, 352 145 L 340 215 L 305 240 L 256 200 L 207 240 L 172 215 Z" fill="url(#va-obsidian-dark)" stroke="#a855f7" stroke-width="2" />
+
+    <!-- Hood Peak / Fold Crest -->
+    <path d="M 180 140 C 205 65, 307 65, 332 140 C 300 110, 212 110, 180 140 Z" fill="url(#va-obsidian-light)" stroke="#7c3aed" stroke-width="1" />
+    <polygon points="256,58 266,95 256,115 246,95" fill="#a855f7" filter="url(#va-glow-soft)" />
+
+    <!-- Dark Faceless Optical Mask Beneath Hood -->
+    <polygon points="214,175 256,245 298,175 286,145 226,145" fill="#09090b" stroke="#3b0764" stroke-width="1.5" />
+
+    <!-- GLOWING AMETHYST OPTICAL VISOR / EYE SLITS -->
+    <g filter="url(#va-glow-heavy)">
+      <!-- Left Optical Flare -->
+      <polygon points="216,162 246,168 242,176 214,170" fill="url(#va-amethyst-plasma)" stroke="#ffffff" stroke-width="0.5" />
+      <circle cx="230" cy="168" r="2.5" fill="#ffffff" />
+      
+      <!-- Right Optical Flare -->
+      <polygon points="296,162 266,168 270,176 298,170" fill="url(#va-amethyst-plasma)" stroke="#ffffff" stroke-width="0.5" />
+      <circle cx="282" cy="168" r="2.5" fill="#ffffff" />
+
+      <!-- Center Optical Rune Mark -->
+      <polygon points="256,150 262,162 256,174 250,162" fill="#c084fc" />
+    </g>
+
+    <!-- Lower Hood Shadows & Shroud Flaps -->
+    <polygon points="190,215 210,245 256,230 200,210" fill="url(#va-obsidian-dark)" stroke="#7c3aed" stroke-width="1" />
+    <polygon points="322,215 302,245 246,230 312,210" fill="url(#va-obsidian-dark)" stroke="#7c3aed" stroke-width="1" />
+  </g>
+
+  <!-- TWIN ETHEREAL VOID DAGGERS (Materializing from Dimensional Rifts) -->
+  <g id="va-daggers-group" filter="url(#va-glow-heavy)">
+    <!-- Left Void Dagger -->
+    <g transform="translate(65, 300) rotate(30)">
+      <polygon points="35,-45 52,25 35,60 18,25" fill="url(#va-void-dagger)" stroke="#ffffff" stroke-width="1.5" />
+      <line x1="35" y1="-45" x2="35" y2="60" stroke="#ffffff" stroke-width="2.5" />
+      <!-- Dagger Hilt -->
+      <rect x="32" y="60" width="6" height="28" fill="#1e1b4b" stroke="#a855f7" stroke-width="1" />
+      <circle cx="35" cy="94" r="8" fill="none" stroke="#d8b4fe" stroke-width="2.5" />
+      <!-- Swirling Void Wisps around blade -->
+      <path d="M 15 15 C 5 30, 25 45, 35 40" fill="none" stroke="#e9d5ff" stroke-width="2" />
+    </g>
+
+    <!-- Right Void Dagger -->
+    <g transform="translate(385, 320) rotate(-30)">
+      <polygon points="35,-45 52,25 35,60 18,25" fill="url(#va-void-dagger)" stroke="#ffffff" stroke-width="1.5" />
+      <line x1="35" y1="-45" x2="35" y2="60" stroke="#ffffff" stroke-width="2.5" />
+      <!-- Dagger Hilt -->
+      <rect x="32" y="60" width="6" height="28" fill="#1e1b4b" stroke="#a855f7" stroke-width="1" />
+      <circle cx="35" cy="94" r="8" fill="none" stroke="#d8b4fe" stroke-width="2.5" />
+      <!-- Swirling Void Wisps around blade -->
+      <path d="M 55 15 C 65 30, 45 45, 35 40" fill="none" stroke="#e9d5ff" stroke-width="2" />
+    </g>
+  </g>
+
+  <!-- Ambient Dimensional Rift Particles & Embers -->
+  <g filter="url(#va-glow-soft)">
+    <circle cx="120" cy="170" r="2.5" fill="#c084fc" opacity="0.8" />
+    <circle cx="90" cy="250" r="2" fill="#f3e8ff" opacity="0.9" />
+    <circle cx="395" cy="180" r="2" fill="#c084fc" opacity="0.8" />
+    <circle cx="425" cy="260" r="3" fill="#f3e8ff" opacity="0.7" />
+    <circle cx="280" cy="385" r="2.5" fill="#a855f7" opacity="0.6" />
+    <circle cx="215" cy="425" r="2" fill="#e9d5ff" opacity="0.8" />
+    <!-- HUD Fighter Identifier -->
+    <text x="65" y="475" fill="#a855f7" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.8" letter-spacing="2">04 // NYX</text>
+    <text x="325" y="475" fill="#a855f7" font-family="'Courier New', monospace" font-weight="900" font-size="16" opacity="0.8" letter-spacing="2">VOID ASSASSIN</text>
+  </g>
+
+  <!-- Bottom Vignette / Gradient Overlay -->
+  <rect x="0" y="440" width="512" height="72" fill="url(#va-bg-base)" opacity="0.85" />
+  <line x1="40" y1="485" x2="472" y2="485" stroke="#a855f7" stroke-width="1" stroke-opacity="0.3" />
+</svg>
