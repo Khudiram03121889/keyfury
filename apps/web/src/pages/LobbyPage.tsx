@@ -123,19 +123,30 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   }, [mode, opponentName, room]);
 
   const [botDifficulty, setBotDifficulty] = useState<'novice' | 'fighter' | 'pro' | 'adaptive'>('adaptive');
+  const [pendingFight, setPendingFight] = useState<{
+    type: 'quick' | 'bot' | 'challenge';
+    botDifficulty?: 'novice' | 'fighter' | 'pro' | 'adaptive';
+  } | null>(null);
 
-  const handleQuickDuel = async () => {
+  // 1. Quick Duel Flow
+  const initiateQuickDuel = () => {
     if (activeUser.isGuest && queueType === 'ranked') {
       if (onOpenAuth) onOpenAuth('register');
       return;
     }
+    soundManager.playClick();
+    setPendingFight({ type: 'quick' });
+    setIsArenaModalOpen(true);
+  };
 
+  const executeQuickDuel = async (arenaToUse?: ArenaId) => {
+    const arenaId = arenaToUse || selectedArena;
     setMode('quick');
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, selectedArena);
+      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, arenaId);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -144,13 +155,21 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     }
   };
 
-  const handleBotDuel = async (chosenDiff: 'novice' | 'fighter' | 'pro' | 'adaptive') => {
+  // 2. Bot Duel Flow
+  const initiateBotDuel = (chosenDiff: 'novice' | 'fighter' | 'pro' | 'adaptive') => {
+    soundManager.playClick();
+    setPendingFight({ type: 'bot', botDifficulty: chosenDiff });
+    setIsArenaModalOpen(true);
+  };
+
+  const executeBotDuel = async (chosenDiff: 'novice' | 'fighter' | 'pro' | 'adaptive', arenaToUse?: ArenaId) => {
+    const arenaId = arenaToUse || selectedArena;
     setMode('bot');
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter, selectedArena);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter, arenaId);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -178,7 +197,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
   const handleRequeueFromTimeout = () => {
     setShowTimeoutModal(false);
-    handleQuickDuel();
+    initiateQuickDuel();
   };
 
   const handleBackToLobbyFromTimeout = () => {
@@ -192,14 +211,21 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setIsReady(false);
   };
 
+  // 3. Challenge Flow
+  const initiateCreateChallenge = () => {
+    soundManager.playClick();
+    setPendingFight({ type: 'challenge' });
+    setIsArenaModalOpen(true);
+  };
 
-  const handleCreateChallenge = async () => {
+  const executeCreateChallenge = async (arenaToUse?: ArenaId) => {
+    const arenaId = arenaToUse || selectedArena;
     setMode('challenge');
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, selectedArena);
+      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, arenaId);
       setServerWarming(false);
       setRoomCode(rm.id);
       attachRoomListeners(rm);
@@ -207,6 +233,20 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       setServerWarming(false);
       setErrorMsg('Failed to create private challenge arena.');
     }
+  };
+
+  const handleConfirmAndStartFight = (arenaId: ArenaId) => {
+    handleArenaSelect(arenaId);
+    if (!pendingFight) return;
+
+    if (pendingFight.type === 'quick') {
+      executeQuickDuel(arenaId);
+    } else if (pendingFight.type === 'bot') {
+      executeBotDuel(pendingFight.botDifficulty || botDifficulty, arenaId);
+    } else if (pendingFight.type === 'challenge') {
+      executeCreateChallenge(arenaId);
+    }
+    setPendingFight(null);
   };
 
   const handleJoinChallenge = async (codeToJoin?: string) => {
@@ -320,7 +360,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         e.preventDefault();
         soundManager.playClick();
         if (mode === 'select') {
-          handleQuickDuel();
+          initiateQuickDuel();
         } else if (room) {
           toggleReady();
         }
@@ -336,7 +376,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, room, isReady, handleQuickDuel, toggleReady, handleLeaveQueue, onBackToLanding]);
+  }, [mode, room, isReady, initiateQuickDuel, toggleReady, handleLeaveQueue, onBackToLanding]);
 
   return (
     <div className="lobby-container">
@@ -791,7 +831,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
               <button
                 className="glass-panel"
-                onClick={handleQuickDuel}
+                onClick={initiateQuickDuel}
                 style={{
                   padding: '24px 16px',
                   cursor: 'pointer',
@@ -862,7 +902,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
                   <button
                     className="btn-primary"
-                    onClick={() => handleBotDuel(botDifficulty)}
+                    onClick={() => initiateBotDuel(botDifficulty)}
                     style={{ width: '100%', padding: '8px', fontSize: '0.85rem', background: '#22c55e', borderColor: '#4ade80' }}
                   >
                     Start Bot Fight
@@ -872,7 +912,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
               <button
                 className="glass-panel"
-                onClick={handleCreateChallenge}
+                onClick={initiateCreateChallenge}
                 style={{
                   padding: '24px 16px',
                   cursor: 'pointer',
@@ -1037,7 +1077,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '10px' }}>
                   No player paired yet. Create a challenge link to play with a friend.
                 </p>
-                <button className="btn-primary" onClick={handleCreateChallenge} style={{ fontSize: '0.9rem', padding: '10px 20px' }}>
+                <button className="btn-primary" onClick={initiateCreateChallenge} style={{ fontSize: '0.9rem', padding: '10px 20px' }}>
                   <Link size={16} /> Create a Challenge Link
                 </button>
               </div>
@@ -1257,9 +1297,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       {/* Arena Selection Modal */}
       <ArenaSelectModal
         isOpen={isArenaModalOpen}
-        onClose={() => setIsArenaModalOpen(false)}
+        onClose={() => {
+          setIsArenaModalOpen(false);
+          setPendingFight(null);
+        }}
         selectedArenaId={selectedArena}
         onSelectArena={handleArenaSelect}
+        onStartFight={handleConfirmAndStartFight}
+        isFightLaunchFlow={Boolean(pendingFight)}
+        fightModeLabel={
+          pendingFight?.type === 'quick'
+            ? 'Quick 1v1 Duel'
+            : pendingFight?.type === 'bot'
+            ? `Solo Practice (${(pendingFight.botDifficulty || botDifficulty).toUpperCase()})`
+            : pendingFight?.type === 'challenge'
+            ? 'Private Challenge Duel'
+            : 'Duel'
+        }
       />
     </div>
   );

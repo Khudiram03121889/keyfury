@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trees, Building2, Flame, Moon, Sparkles, Check, Play } from 'lucide-react';
+import { X, Trees, Building2, Flame, Moon, Sparkles, Check, Play, Swords } from 'lucide-react';
 import {
   ArenaId,
   ArenaDefinition,
@@ -16,6 +16,9 @@ export interface ArenaSelectModalProps {
   onClose: () => void;
   selectedArenaId?: ArenaId;
   onSelectArena: (arenaId: ArenaId) => void;
+  onStartFight?: (arenaId: ArenaId) => void;
+  isFightLaunchFlow?: boolean;
+  fightModeLabel?: string;
 }
 
 const ARENA_ICONS: Record<ArenaId, React.ReactNode> = {
@@ -29,7 +32,10 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
   isOpen,
   onClose,
   selectedArenaId = DEFAULT_ARENA_ID,
-  onSelectArena
+  onSelectArena,
+  onStartFight,
+  isFightLaunchFlow = false,
+  fightModeLabel = 'Duel'
 }) => {
   const arenas = getAllArenas();
   const [focusedId, setFocusedId] = useState<ArenaId>(selectedArenaId);
@@ -90,6 +96,9 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
     soundManager.playClick();
     onSelectArena(arenaId);
     saveSelectedArena(arenaId);
+    if (isFightLaunchFlow && onStartFight) {
+      onStartFight(arenaId);
+    }
     onClose();
   };
 
@@ -155,25 +164,41 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                 color: focusedArena.theme.primaryColor
               }}
             >
-              <Sparkles size={20} />
+              {isFightLaunchFlow ? <Swords size={20} /> : <Sparkles size={20} />}
             </div>
             <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: '1.4rem',
-                  fontWeight: 900,
-                  letterSpacing: '1px',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                SELECT COMBAT ARENA
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: '1.35rem',
+                    fontWeight: 900,
+                    letterSpacing: '1px',
+                    color: '#ffffff'
+                  }}
+                >
+                  {isFightLaunchFlow ? 'CHOOSE ARENA & START DUEL' : 'SELECT COMBAT ARENA'}
+                </h2>
+                {isFightLaunchFlow && (
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      color: 'var(--accent-cyan)',
+                      fontSize: '0.72rem',
+                      fontWeight: 800
+                    }}
+                  >
+                    {fightModeLabel}
+                  </span>
+                )}
+              </div>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
-                Choose your battleground • Custom backgrounds, lighting & physics
+                {isFightLaunchFlow
+                  ? `Select your battleground, then click Start Fight to begin ${fightModeLabel}`
+                  : 'Choose your battleground • Custom backgrounds, lighting & physics'}
               </p>
             </div>
           </div>
@@ -469,44 +494,63 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
               </div>
             </div>
 
-            {/* Confirm / Select Action Button */}
+            {/* Confirm / Select / Start Fight Action Button */}
             <button
               onClick={() => handleConfirmSelection(focusedArena.id)}
               style={{
                 width: '100%',
-                padding: '14px 24px',
+                padding: '16px 24px',
                 borderRadius: '14px',
                 fontWeight: 900,
-                fontSize: '1rem',
+                fontSize: '1.08rem',
                 letterSpacing: '1px',
                 color: '#ffffff',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: isEquipped ? '#10b981' : focusedArena.theme.primaryColor,
-                boxShadow: isEquipped
+                backgroundColor: isFightLaunchFlow ? '#f97316' : isEquipped ? '#10b981' : focusedArena.theme.primaryColor,
+                boxShadow: isFightLaunchFlow
+                  ? '0 6px 25px rgba(249, 115, 22, 0.5), 0 0 20px rgba(249, 115, 22, 0.4)'
+                  : isEquipped
                   ? '0 6px 20px rgba(16, 185, 129, 0.4)'
                   : `0 6px 20px ${focusedArena.theme.primaryColor}55`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: '10px',
                 marginTop: 'auto',
                 transition: 'all 0.2s ease'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.01)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
               }}
             >
-              {isEquipped ? (
+              {isFightLaunchFlow ? (
+                <>
+                  <Swords size={22} />
+                  <span>START FIGHT • {focusedArena.name.toUpperCase()}</span>
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800
+                    }}
+                  >
+                    Enter
+                  </span>
+                </>
+              ) : isEquipped ? (
                 <>
                   <Check size={18} /> ACTIVE BATTLEGROUND
                 </>
               ) : (
                 <>
-                  <Play size={18} /> SELECT {focusedArena.name.toUpperCase()}
+                  <Play size={18} /> EQUIP {focusedArena.name.toUpperCase()}
                 </>
               )}
             </button>
