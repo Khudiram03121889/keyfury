@@ -7,7 +7,7 @@ import { soundManager } from '../audio/SoundManager';
 import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
 import { CharacterSelectModal } from '../components/character/CharacterSelectModal';
 import { ArenaSelectModal } from '../components/arena/ArenaSelectModal';
-import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefinition, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
+import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefinition, getAllArenas, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
 import { CHARACTER_PORTRAITS } from '../assets/characters';
 import { ARENA_BACKGROUNDS } from '../assets/arenas';
 
@@ -641,6 +641,153 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               </div>
             )}
 
+            {/* Pre-Game Arena Selector Grid */}
+            <div style={{ marginBottom: '28px', textAlign: 'left' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '12px',
+                padding: '0 4px'
+              }}>
+                <div style={{
+                  fontSize: '0.82rem',
+                  fontWeight: 900,
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Compass size={16} color="var(--accent-cyan)" />
+                  <span>Select Battleground Arena Before Match</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundManager.playClick();
+                    setIsArenaModalOpen(true);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent-cyan)',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Sparkles size={13} /> Full Arena Specs
+                </button>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+                gap: '12px'
+              }}>
+                {getAllArenas().map((arena, idx) => {
+                  const isSelected = arena.id === selectedArena;
+                  const bgUrl = ARENA_BACKGROUNDS[arena.id];
+
+                  return (
+                    <div
+                      key={arena.id}
+                      onClick={() => {
+                        handleArenaSelect(arena.id);
+                        soundManager.playClick();
+                      }}
+                      style={{
+                        position: 'relative',
+                        height: '92px',
+                        borderRadius: '14px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        border: isSelected
+                          ? `2px solid ${arena.theme.primaryColor}`
+                          : '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: isSelected
+                          ? `0 0 20px ${arena.theme.primaryColor}88, 0 6px 16px rgba(0,0,0,0.6)`
+                          : '0 4px 10px rgba(0,0,0,0.3)',
+                        transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                        transition: 'all 0.2s ease',
+                        padding: '10px 12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage: `url(${bgUrl})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          filter: isSelected ? 'brightness(0.75) contrast(1.1)' : 'brightness(0.35)',
+                          transition: 'filter 0.2s ease'
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(0deg, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.3) 100%)'
+                        }}
+                      />
+                      <div style={{ position: 'relative', zIndex: 2 }}>
+                        <div style={{
+                          fontSize: '0.66rem',
+                          color: isSelected ? arena.theme.accentColor : '#94a3b8',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          {arena.subtitle}
+                        </div>
+                        <div style={{
+                          fontSize: '0.86rem',
+                          fontWeight: 900,
+                          color: '#ffffff',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {arena.name}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            zIndex: 3,
+                            backgroundColor: arena.theme.primaryColor,
+                            color: '#ffffff',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 0 10px ${arena.theme.primaryColor}`
+                          }}
+                        >
+                          <Check size={12} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
               <button
                 className="glass-panel"
@@ -911,66 +1058,183 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
           </div>
         )}
 
-        {mode === 'challenge' && !serverWarming && (
-          <div>
-            <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Private Challenge Room</h2>
+        {mode === 'challenge' && !serverWarming && (() => {
+          const currentArenaDef = getArenaDefinition(selectedArena);
+          const arenaBg = ARENA_BACKGROUNDS[currentArenaDef.id];
 
-            {roomCode && (
-              <div style={{ margin: '20px 0' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Share room link or Room ID with your opponent:</span>
-                <div style={{ display: 'flex', gap: '8px', maxWidth: '520px', margin: '8px auto', flexWrap: 'wrap' }}>
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${window.location.origin}/?room=${roomCode}`}
-                    style={{
-                      flex: '1 1 200px', padding: '10px 12px', borderRadius: '8px', background: 'var(--btn-sec-bg)',
-                      border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.85rem'
+          return (
+            <div>
+              <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Private Challenge Room</h2>
+
+              {/* Selected Arena Preview & Quick-Switch in Challenge Lobby */}
+              <div
+                onClick={() => {
+                  soundManager.playClick();
+                  setIsArenaModalOpen(true);
+                }}
+                style={{
+                  maxWidth: '480px',
+                  margin: '12px auto 16px',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  height: '100px',
+                  border: `1.5px solid ${currentArenaDef.theme.primaryColor}88`,
+                  boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 20px ${currentArenaDef.theme.ambientGlow}`,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  padding: '12px 16px',
+                  textAlign: 'left'
+                }}
+              >
+                <img
+                  src={arenaBg}
+                  alt={currentArenaDef.name}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.3) 100%)' }} />
+
+                <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: currentArenaDef.theme.accentColor, fontWeight: 800, textTransform: 'uppercase' }}>
+                      ARENA • {currentArenaDef.subtitle}
+                    </div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#ffffff' }}>
+                      {currentArenaDef.name}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      soundManager.playClick();
+                      setIsArenaModalOpen(true);
                     }}
-                  />
-                  <button className="btn-secondary" onClick={copyChallengeUrl} style={{ padding: '10px 16px', fontSize: '0.85rem' }}>
-                    {copied ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
-                    {copied ? 'Copied' : 'Copy Link'}
+                    style={{ padding: '5px 10px', fontSize: '0.72rem', borderColor: `${currentArenaDef.theme.primaryColor}88` }}
+                  >
+                    <Compass size={12} color={currentArenaDef.theme.primaryColor} /> Change
                   </button>
                 </div>
               </div>
-            )}
 
-            {opponentName ? (
-              <div style={{ margin: '20px 0' }}>
-                <h3 style={{ color: '#34d399', fontSize: '1.15rem', marginBottom: '14px' }}>Opponent Joined: {opponentName}</h3>
-                <button className="btn-primary" onClick={toggleReady} style={{ padding: '12px 28px', fontSize: '1rem' }}>
-                  {isReady ? 'Ready! Waiting for opponent...' : 'Click to Ready Up'}
-                </button>
-              </div>
-            ) : (
-              <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '20px 0', fontSize: '0.88rem' }}>
-                Waiting for your opponent to open the link or enter the Room ID...
-              </p>
-            )}
+              {roomCode && (
+                <div style={{ margin: '16px 0' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Share room link or Room ID with your opponent:</span>
+                  <div style={{ display: 'flex', gap: '8px', maxWidth: '520px', margin: '8px auto', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/?room=${roomCode}`}
+                      style={{
+                        flex: '1 1 200px', padding: '10px 12px', borderRadius: '8px', background: 'var(--btn-sec-bg)',
+                        border: '1px solid var(--border-card)', color: 'var(--text-main)', fontSize: '0.85rem'
+                      }}
+                    />
+                    <button className="btn-secondary" onClick={copyChallengeUrl} style={{ padding: '10px 16px', fontSize: '0.85rem' }}>
+                      {copied ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
+                      {copied ? 'Copied' : 'Copy Link'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-            <button className="btn-secondary" onClick={cancelLobby} style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
-              Cancel Room
-            </button>
-          </div>
-        )}
+              {opponentName ? (
+                <div style={{ margin: '20px 0' }}>
+                  <h3 style={{ color: '#34d399', fontSize: '1.15rem', marginBottom: '14px' }}>Opponent Joined: {opponentName}</h3>
+                  <button className="btn-primary" onClick={toggleReady} style={{ padding: '12px 28px', fontSize: '1rem' }}>
+                    {isReady ? 'Ready! Waiting for opponent...' : 'Click to Ready Up'}
+                  </button>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '20px 0', fontSize: '0.88rem' }}>
+                  Waiting for your opponent to open the link or enter the Room ID...
+                </p>
+              )}
 
-        {mode === 'bot' && !serverWarming && (
-          <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-heading)' }}>Solo Practice vs AI Bot</h2>
-            <p style={{ color: '#4ade80', fontSize: '1.1rem', margin: '16px 0' }}>
-              Opponent Ready: Highland Bot AI
-            </p>
-            <div style={{ margin: '24px 0' }}>
-              <button className="btn-primary" onClick={toggleReady} style={{ padding: '14px 32px', fontSize: '1.1rem' }}>
-                <Swords size={20} /> {isReady ? 'Ready! Starting 3-2-1 Countdown...' : 'Ready Up & Fight Bot!'}
+              <button className="btn-secondary" onClick={cancelLobby} style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
+                Cancel Room
               </button>
             </div>
-            <button className="btn-secondary" onClick={cancelLobby}>
-              Cancel Practice
-            </button>
-          </div>
-        )}
+          );
+        })()}
+
+        {mode === 'bot' && !serverWarming && (() => {
+          const currentArenaDef = getArenaDefinition(selectedArena);
+          const arenaBg = ARENA_BACKGROUNDS[currentArenaDef.id];
+
+          return (
+            <div>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Solo Practice vs AI Bot</h2>
+              <p style={{ color: '#4ade80', fontSize: '0.95rem', margin: '4px 0 16px' }}>
+                Opponent Ready: AI Bot Fighter ({botDifficulty.toUpperCase()})
+              </p>
+
+              {/* Selected Arena Preview & Quick-Switch in Practice Lobby */}
+              <div
+                onClick={() => {
+                  soundManager.playClick();
+                  setIsArenaModalOpen(true);
+                }}
+                style={{
+                  maxWidth: '480px',
+                  margin: '0 auto 20px',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  height: '110px',
+                  border: `1.5px solid ${currentArenaDef.theme.primaryColor}88`,
+                  boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 20px ${currentArenaDef.theme.ambientGlow}`,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  padding: '14px 18px',
+                  textAlign: 'left'
+                }}
+              >
+                <img
+                  src={arenaBg}
+                  alt={currentArenaDef.name}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.3) 100%)' }} />
+
+                <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: currentArenaDef.theme.accentColor, fontWeight: 800, textTransform: 'uppercase' }}>
+                      SELECTED BATTLEGROUND • {currentArenaDef.subtitle}
+                    </div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
+                      {currentArenaDef.name}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      soundManager.playClick();
+                      setIsArenaModalOpen(true);
+                    }}
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: `${currentArenaDef.theme.primaryColor}88` }}
+                  >
+                    <Compass size={13} color={currentArenaDef.theme.primaryColor} /> Change Arena
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ margin: '24px 0' }}>
+                <button className="btn-primary" onClick={toggleReady} style={{ padding: '14px 32px', fontSize: '1.1rem' }}>
+                  <Swords size={20} /> {isReady ? 'Ready! Starting 3-2-1 Countdown...' : 'Ready Up & Fight Bot!'}
+                </button>
+              </div>
+              <button className="btn-secondary" onClick={cancelLobby}>
+                Cancel Practice
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Queue Timeout Prompt Modal */}
