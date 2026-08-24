@@ -106,24 +106,11 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(5, 7, 13, 0.88)',
-        backdropFilter: 'blur(12px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        animation: 'fadeIn 0.2s ease-out'
-      }}
+      className="modal-overlay-wrapper"
       onClick={onClose}
     >
       <div
-        className="glass-panel"
+        className="glass-panel arena-modal-dialog"
         style={{
           width: '100%',
           maxWidth: '920px',
@@ -142,7 +129,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
         {/* Modal Header */}
         <div
           style={{
-            padding: '20px 28px',
+            padding: '16px 20px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
@@ -153,41 +140,42 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
                 background: `linear-gradient(135deg, ${focusedArena.theme.primaryColor}44, ${focusedArena.theme.accentColor}22)`,
                 border: `1px solid ${focusedArena.theme.primaryColor}88`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: focusedArena.theme.primaryColor
+                color: focusedArena.theme.primaryColor,
+                flexShrink: 0
               }}
             >
-              {isFightLaunchFlow ? <Swords size={20} /> : <Sparkles size={20} />}
+              {isFightLaunchFlow ? <Swords size={18} /> : <Sparkles size={18} />}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h2
                   style={{
                     margin: 0,
-                    fontSize: '1.35rem',
+                    fontSize: '1.25rem',
                     fontWeight: 900,
-                    letterSpacing: '1px',
+                    letterSpacing: '0.5px',
                     color: '#ffffff'
                   }}
                 >
-                  {isFightLaunchFlow ? 'CHOOSE ARENA & START DUEL' : 'SELECT COMBAT ARENA'}
+                  {isFightLaunchFlow ? 'CHOOSE ARENA & FIGHT' : 'SELECT COMBAT ARENA'}
                 </h2>
                 {isFightLaunchFlow && (
                   <span
                     style={{
-                      padding: '2px 8px',
+                      padding: '2px 6px',
                       borderRadius: '6px',
                       backgroundColor: 'rgba(56, 189, 248, 0.2)',
                       border: '1px solid rgba(56, 189, 248, 0.4)',
                       color: 'var(--accent-cyan)',
-                      fontSize: '0.72rem',
+                      fontSize: '0.7rem',
                       fontWeight: 800
                     }}
                   >
@@ -195,7 +183,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                   </span>
                 )}
               </div>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
                 {isFightLaunchFlow
                   ? `Select your battleground, then click Start Fight to begin ${fightModeLabel}`
                   : 'Choose your battleground • Custom backgrounds, lighting & physics'}
@@ -212,8 +200,8 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
             style={{
               background: 'rgba(255, 255, 255, 0.06)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              padding: '8px',
+              borderRadius: '10px',
+              padding: '6px',
               color: '#94a3b8',
               cursor: 'pointer',
               display: 'flex',
@@ -221,42 +209,32 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
               justifyContent: 'center',
               transition: 'all 0.2s ease'
             }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-              e.currentTarget.style.color = '#94a3b8';
-            }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Modal Body */}
         <div
+          className="arena-body-grid"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(280px, 340px) 1fr',
-            gap: '24px',
-            padding: '24px 28px',
             overflowY: 'auto',
             flex: 1
           }}
         >
           {/* Left: 4 Arenas Grid Selector */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#64748b', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#64748b', marginBottom: '4px' }}>
               AVAILABLE BATTLEGROUNDS ({arenas.length})
             </div>
 
-            {arenas.map((arena, idx) => {
-              const isFocused = arena.id === focusedId;
-              const isSelected = arena.id === selectedArenaId;
-              const bgUrl = ARENA_BACKGROUNDS[arena.id];
+            <div className="arena-cards-grid">
+              {arenas.map((arena, idx) => {
+                const isFocused = arena.id === focusedId;
+                const isSelected = arena.id === selectedArenaId;
+                const bgUrl = ARENA_BACKGROUNDS[arena.id];
 
-              return (
+                return (
                 <div
                   key={arena.id}
                   onClick={() => {
@@ -356,6 +334,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                 </div>
               );
             })}
+            </div>
           </div>
 
           {/* Right: Detailed Arena Panoramic Showcase */}

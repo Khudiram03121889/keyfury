@@ -55,7 +55,7 @@ describe('KeyFury 4 Dynamic Combat Arenas Test Suite', () => {
       // Platform grounding metrics
       expect(arena.platformRatio).toBeGreaterThan(0.5);
       expect(arena.platformRatio).toBeLessThan(0.8);
-      expect(arena.portraitPlatformRatio).toBeGreaterThan(0.65);
+      expect(arena.portraitPlatformRatio).toBeGreaterThan(0.60);
       expect(arena.portraitPlatformRatio).toBeLessThan(0.85);
 
       // Theme colors

@@ -55,7 +55,7 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
       lightingMood: 'infernal'
     },
     platformRatio: 0.62,
-    portraitPlatformRatio: 0.70,
+    portraitPlatformRatio: 0.64,
     icon: 'Flame'
   },
   celestial_void: {

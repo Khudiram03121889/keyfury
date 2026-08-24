@@ -278,22 +278,11 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        backgroundColor: 'rgba(5, 7, 13, 0.88)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px'
-      }}
+      className="modal-overlay-wrapper"
       onClick={onClose}
     >
       <div
-        className="glass-panel modal-dialog-content"
+        className="glass-panel modal-dialog-content char-modal-dialog"
         style={{
           width: '100%',
           maxWidth: '920px',
@@ -310,7 +299,7 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
       >
         {/* Top Header */}
         <div style={{
-          padding: '18px 24px 14px 24px',
+          padding: '16px 20px 12px 20px',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           background: `linear-gradient(135deg, ${focusedChar.theme.primaryColor}22 0%, rgba(15, 23, 42, 0.95) 100%)`,
           display: 'flex',
@@ -328,15 +317,16 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: focusedChar.theme.primaryColor
+              color: focusedChar.theme.primaryColor,
+              flexShrink: 0
             }}>
               <Swords size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.5px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.5px' }}>
                 SELECT YOUR <span style={{ color: focusedChar.theme.primaryColor }}>CHAMPION</span>
               </h2>
-              <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                 Choose your fighting avatar & harness unique elemental kinetic abilities.
               </p>
             </div>
@@ -366,10 +356,10 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ padding: '16px 18px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* 4 Core Fighter Grid / Carousel */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px' }}>
                 CORE FIGHTER ROSTER (1 - 4)
               </span>
@@ -378,7 +368,7 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
+            <div className="char-roster-grid">
               {characters.map((char, index) => {
                 const isSelected = char.id === selectedCharacterId;
                 const isFocused = char.id === focusedId;
@@ -525,16 +515,16 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
           </div>
 
           {/* Focused Fighter Deep Dive & Stat Radar Panel */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px',
-            backgroundColor: 'rgba(15, 23, 42, 0.7)',
-            border: `1px solid ${focusedChar.theme.primaryColor}44`,
-            borderRadius: '16px',
-            padding: '18px',
-            position: 'relative'
-          }}>
+          <div
+            className="char-details-grid"
+            style={{
+              backgroundColor: 'rgba(15, 23, 42, 0.7)',
+              border: `1px solid ${focusedChar.theme.primaryColor}44`,
+              borderRadius: '16px',
+              padding: '16px',
+              position: 'relative'
+            }}
+          >
             {/* Left Column: Lore, Move & Live Canvas Strike */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
