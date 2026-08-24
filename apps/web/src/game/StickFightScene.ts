@@ -156,9 +156,9 @@ export class StickFightScene extends Phaser.Scene {
     if (isPortrait) {
       // In mobile portrait or compact viewports, ground fighters using arena's portrait ratio
       const portraitRatio = this.currentArenaDef?.portraitPlatformRatio ?? 0.74;
-      return Math.min(height - 40, Math.max(height * portraitRatio, height - 65));
+      return Math.min(height - 40, Math.max(height * portraitRatio, height - 70));
     }
-    const platformRatio = this.currentArenaDef?.platformRatio ?? 0.64;
+    const platformRatio = this.currentArenaDef?.platformRatio ?? 0.72;
     return height * platformRatio;
   }
 
@@ -213,21 +213,21 @@ export class StickFightScene extends Phaser.Scene {
     const isPortrait = width < height || height < 480;
 
     if (this.bgImage) {
-      if (isPortrait) {
-        const bgImgW = 1920;
-        const bgImgH = 1080;
-        const scale = Math.max(width / bgImgW, height / bgImgH);
-        const displayW = bgImgW * scale;
-        const displayH = bgImgH * scale;
-        this.bgImage.setDisplaySize(displayW, displayH);
-        const currentPlatformY = this.getPlatformY();
-        const bgPlatformOrigY = (this.currentArenaDef?.platformRatio ?? 0.64) * displayH;
-        const offsetY = currentPlatformY - bgPlatformOrigY + displayH / 2;
-        this.bgImage.setPosition(width / 2, offsetY);
-      } else {
-        this.bgImage.setDisplaySize(width, height);
-        this.bgImage.setPosition(width / 2, height / 2);
-      }
+      const bgImgW = 1376;
+      const bgImgH = 768;
+      const scale = Math.max(width / bgImgW, height / bgImgH);
+      const displayW = bgImgW * scale;
+      const displayH = bgImgH * scale;
+      this.bgImage.setDisplaySize(displayW, displayH);
+
+      const currentPlatformY = this.getPlatformY();
+      const platformRatio = isPortrait
+        ? (this.currentArenaDef?.portraitPlatformRatio ?? 0.74)
+        : (this.currentArenaDef?.platformRatio ?? 0.72);
+
+      const bgPlatformOrigY = platformRatio * displayH;
+      const offsetY = currentPlatformY - bgPlatformOrigY + displayH / 2;
+      this.bgImage.setPosition(width / 2, offsetY);
     }
   }
 
@@ -1311,19 +1311,45 @@ export class StickFightScene extends Phaser.Scene {
 
     // --- MODULAR 2D SKELETAL RIG & VECTOR MESH RENDERING ---
 
+    // 0. DYNAMIC GROUND DROP SHADOW & CONTACT AMBIENT OCCLUSION
+    const platformY = this.getPlatformY();
+    const jumpAltitude = Math.max(0, platformY - y);
+    const shadowScale = Math.max(0.35, 1 - jumpAltitude / 240);
+    const shadowAlpha = Math.max(0.08, 0.48 * shadowScale);
+
+    // Soft Elliptical Ground Drop Shadow pinned to floor
+    fxG.fillStyle(0x020617, shadowAlpha);
+    fxG.fillEllipse(x, platformY + 1, 48 * shadowScale, 12 * shadowScale);
+
+    // High-density Core Contact Shadow
+    fxG.fillStyle(0x000000, shadowAlpha * 1.3);
+    fxG.fillEllipse(x, platformY + 1, 28 * shadowScale, 6.5 * shadowScale);
+
+    // Ground Contact Foot Ambient Shadows when feet are near ground
+    if (jumpAltitude < 14) {
+      const footContactAlpha = (1 - jumpAltitude / 14) * 0.55;
+      fxG.fillStyle(0x000000, footContactAlpha);
+      fxG.fillEllipse(legL.tip.x, platformY + 1, 14, 4.5);
+      fxG.fillEllipse(legR.tip.x, platformY + 1, 16, 5);
+    }
+
     // 1. REAR LIMBS (Layer 1 - Behind Torso)
     // Rear Leg (Thigh: 11px -> 8px, Shin: 8px -> 6px)
     drawTaperedLimb(g, { x: lHipX, y: hipY }, legL.joint, 11, 8, bodyColor);
     drawTaperedLimb(g, legL.joint, legL.tip, 8, 6, bodyColor);
 
-    // Rear Foot (Tabi Boot / Armored Greave)
+    // Rear Foot (Tabi Boot / Armored Greave with flat grounded sole)
     g.fillStyle(bodyColor, 1);
     g.beginPath();
-    g.moveTo(legL.tip.x - facing * 5, legL.tip.y);
-    g.lineTo(legL.tip.x + facing * 8, legL.tip.y);
-    g.lineTo(legL.tip.x + facing * 4, legL.tip.y - 4);
+    g.moveTo(legL.tip.x - facing * 6, legL.tip.y);
+    g.lineTo(legL.tip.x + facing * 9, legL.tip.y);
+    g.lineTo(legL.tip.x + facing * 7, legL.tip.y - 5);
+    g.lineTo(legL.tip.x - facing * 5, legL.tip.y - 5);
     g.closePath();
     g.fillPath();
+    // Armored Sole Edge
+    g.lineStyle(1.5, 0x0f172a, 0.85);
+    g.lineBetween(legL.tip.x - facing * 6, legL.tip.y, legL.tip.x + facing * 9, legL.tip.y);
 
     // Rear Arm (Upper Arm: 9px -> 7px, Forearm: 7px -> 5px)
     drawTaperedLimb(g, { x: lShoulderX, y: lShoulderY }, armL.joint, 9, 7, bodyColor);
@@ -1366,14 +1392,18 @@ export class StickFightScene extends Phaser.Scene {
     drawTaperedLimb(g, { x: rHipX, y: hipY }, legR.joint, 11, 8, bodyColor);
     drawTaperedLimb(g, legR.joint, legR.tip, 8, 6, bodyColor);
 
-    // Lead Foot (Tabi Boot / Armored Greave)
+    // Lead Foot (Tabi Boot / Armored Greave with flat grounded sole)
     g.fillStyle(bodyColor, 1);
     g.beginPath();
-    g.moveTo(legR.tip.x - facing * 5, legR.tip.y);
-    g.lineTo(legR.tip.x + facing * 10, legR.tip.y);
-    g.lineTo(legR.tip.x + facing * 5, legR.tip.y - 4);
+    g.moveTo(legR.tip.x - facing * 6, legR.tip.y);
+    g.lineTo(legR.tip.x + facing * 11, legR.tip.y);
+    g.lineTo(legR.tip.x + facing * 9, legR.tip.y - 5);
+    g.lineTo(legR.tip.x - facing * 5, legR.tip.y - 5);
     g.closePath();
     g.fillPath();
+    // Armored Sole Edge
+    g.lineStyle(1.5, 0x0f172a, 0.85);
+    g.lineBetween(legR.tip.x - facing * 6, legR.tip.y, legR.tip.x + facing * 11, legR.tip.y);
 
     // Lead Arm (Upper Arm: 9px -> 7px, Forearm: 7px -> 5px)
     drawTaperedLimb(g, { x: rShoulderX, y: rShoulderY }, armR.joint, 9, 7, bodyColor);

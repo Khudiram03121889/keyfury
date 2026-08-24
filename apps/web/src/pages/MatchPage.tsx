@@ -3,7 +3,7 @@ import { Room } from 'colyseus.js';
 import Phaser from 'phaser';
 import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle } from 'lucide-react';
 import { StickFightScene, AttackKind } from '../game/StickFightScene';
-import { GuestProfile } from '../lib/supabase';
+import { GuestProfile, getSavedSelectedArena } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { RankBadge } from '../components/ranked/RankBadge';
 import { soundSynth } from '../game/audio/SoundSynth';
@@ -371,7 +371,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       sceneRef.current = sc;
       const { p1CharId, p2CharId } = getPlayerCharacterIds(room?.state || matchStateRef.current);
       sc.setCharacterSkins(p1CharId, p2CharId);
-      const rawArenaId = (room?.state as any)?.arenaId || (room as any)?.metadata?.arenaId;
+      const rawArenaId = (room?.state as any)?.arenaId || (room as any)?.metadata?.arenaId || matchStateRef.current?.arenaId || getSavedSelectedArena();
       if (rawArenaId) {
         sc.setArena(rawArenaId);
       }

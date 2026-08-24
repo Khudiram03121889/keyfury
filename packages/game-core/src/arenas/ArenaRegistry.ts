@@ -16,7 +16,7 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
       particlePalette: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
       lightingMood: 'daylight'
     },
-    platformRatio: 0.64,
+    platformRatio: 0.72,
     portraitPlatformRatio: 0.74,
     icon: 'Trees'
   },
@@ -35,8 +35,8 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
       particlePalette: ['#38bdf8', '#06b6d4', '#ec4899', '#f43f5e'],
       lightingMood: 'neon_night'
     },
-    platformRatio: 0.64,
-    portraitPlatformRatio: 0.74,
+    platformRatio: 0.73,
+    portraitPlatformRatio: 0.75,
     icon: 'Building2'
   },
   volcanic_caldera: {
@@ -54,8 +54,8 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
       particlePalette: ['#ef4444', '#f97316', '#fbbf24', '#ffedd5'],
       lightingMood: 'infernal'
     },
-    platformRatio: 0.64,
-    portraitPlatformRatio: 0.74,
+    platformRatio: 0.69,
+    portraitPlatformRatio: 0.72,
     icon: 'Flame'
   },
   celestial_void: {
@@ -73,7 +73,7 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
       particlePalette: ['#a855f7', '#8b5cf6', '#c084fc', '#e9d5ff'],
       lightingMood: 'astral'
     },
-    platformRatio: 0.64,
+    platformRatio: 0.71,
     portraitPlatformRatio: 0.74,
     icon: 'Moon'
   }

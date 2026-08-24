@@ -127,9 +127,9 @@ describe('KeyFury 4 Dynamic Combat Arenas Test Suite', () => {
 
     const highland = getArenaDefinition('highland_sanctuary');
     const desktopY = desktopHeight * highland.platformRatio;
-    expect(desktopY).toBe(580 * 0.64);
+    expect(desktopY).toBe(580 * 0.72);
 
-    const mobileY = Math.min(mobileHeight - 40, Math.max(mobileHeight * highland.portraitPlatformRatio, mobileHeight - 65));
-    expect(mobileY).toBe(635);
+    const mobileY = Math.min(mobileHeight - 40, Math.max(mobileHeight * highland.portraitPlatformRatio, mobileHeight - 70));
+    expect(mobileY).toBe(630);
   });
 });
