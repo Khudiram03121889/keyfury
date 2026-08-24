@@ -54,8 +54,8 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
       particlePalette: ['#ef4444', '#f97316', '#fbbf24', '#ffedd5'],
       lightingMood: 'infernal'
     },
-    platformRatio: 0.69,
-    portraitPlatformRatio: 0.72,
+    platformRatio: 0.62,
+    portraitPlatformRatio: 0.70,
     icon: 'Flame'
   },
   celestial_void: {
