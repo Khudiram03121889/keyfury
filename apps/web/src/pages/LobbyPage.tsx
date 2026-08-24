@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Room } from 'colyseus.js';
-import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords, Sparkles } from 'lucide-react';
+import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords, Sparkles, MapPin, Compass } from 'lucide-react';
 import { joinQuickQueue, createChallengeRoom, joinChallengeRoom, startBotDuel, fetchLiveServerStats } from '../lib/colyseus';
-import { GuestProfile, UserProfile, getSavedSelectedCharacter, saveSelectedCharacter, updateUserProfile } from '../lib/supabase';
+import { GuestProfile, UserProfile, getSavedSelectedCharacter, saveSelectedCharacter, getSavedSelectedArena, saveSelectedArena, updateUserProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
 import { CharacterSelectModal } from '../components/character/CharacterSelectModal';
-import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID } from '@keyfury/game-core';
+import { ArenaSelectModal } from '../components/arena/ArenaSelectModal';
+import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefinition, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
 import { CHARACTER_PORTRAITS } from '../assets/characters';
+import { ARENA_BACKGROUNDS } from '../assets/arenas';
 
 interface LobbyPageProps {
   guest: GuestProfile;
@@ -31,7 +33,9 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   const [mode, setMode] = useState<'select' | 'quick' | 'challenge' | 'bot'>(initialRoomCode ? 'challenge' : 'select');
   const [queueType] = useState<'casual' | 'ranked'>('ranked');
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterId>(() => activeUser.selectedCharacter || activeUser.characterId || getSavedSelectedCharacter());
+  const [selectedArena, setSelectedArena] = useState<ArenaId>(() => getSavedSelectedArena());
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState<boolean>(false);
+  const [isArenaModalOpen, setIsArenaModalOpen] = useState<boolean>(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [roomCode, setRoomCode] = useState<string>(initialRoomCode || '');
   const [inputCode, setInputCode] = useState<string>('');
@@ -59,6 +63,11 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       selectedCharacter: newCharId,
       characterId: newCharId
     });
+  };
+
+  const handleArenaSelect = (newArenaId: ArenaId) => {
+    setSelectedArena(newArenaId);
+    saveSelectedArena(newArenaId);
   };
 
   // Real live online server stats state
@@ -126,7 +135,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter);
+      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, selectedArena);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -141,7 +150,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter, selectedArena);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -157,7 +166,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter, selectedArena);
       setServerWarming(false);
       attachRoomListeners(rm);
       rm.send('ready', {});
@@ -190,7 +199,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     setServerWarming(true);
 
     try {
-      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter);
+      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, selectedArena);
       setServerWarming(false);
       setRoomCode(rm.id);
       attachRoomListeners(rm);
@@ -386,102 +395,193 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         </div>
       </div>
 
-      {/* Active Champion Lobby Banner */}
-      {(() => {
-        const activeFighter = getCharacterDefinition(selectedCharacter);
-        const portraitSrc = CHARACTER_PORTRAITS[activeFighter.id] || `/assets/characters/${activeFighter.portraitAssetKey}.svg`;
-        const ARCHETYPE_ICONS: Record<string, string> = {
-          shadow_ronin: '⚔️',
-          cyber_valkyrie: '🥊',
-          volt_shinobi: '⚡',
-          void_assassin: '🗡️'
-        };
-        const archetypeIcon = ARCHETYPE_ICONS[activeFighter.id] || '⚔️';
+      {/* Active Champion & Active Arena Selection Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '18px' }}>
+        {/* Active Champion Lobby Banner */}
+        {(() => {
+          const activeFighter = getCharacterDefinition(selectedCharacter);
+          const portraitSrc = CHARACTER_PORTRAITS[activeFighter.id] || `/assets/characters/${activeFighter.portraitAssetKey}.svg`;
+          const ARCHETYPE_ICONS: Record<string, string> = {
+            shadow_ronin: '⚔️',
+            cyber_valkyrie: '🥊',
+            volt_shinobi: '⚡',
+            void_assassin: '🗡️'
+          };
+          const archetypeIcon = ARCHETYPE_ICONS[activeFighter.id] || '⚔️';
 
-        return (
-          <div
-            className="glass-panel"
-            onClick={() => {
-              soundManager.playClick();
-              setIsCharacterModalOpen(true);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 18px',
-              borderRadius: '14px',
-              marginBottom: '18px',
-              cursor: 'pointer',
-              border: `1px solid ${activeFighter.theme.primaryColor}88`,
-              boxShadow: `0 0 20px ${activeFighter.theme.glowColor}`,
-              background: `linear-gradient(135deg, ${activeFighter.theme.primaryColor}18 0%, rgba(15, 23, 42, 0.85) 100%)`,
-              transition: 'all 0.25s ease'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{
-                width: '46px',
-                height: '46px',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                backgroundColor: 'rgba(10, 15, 26, 0.8)',
-                border: `1px solid ${activeFighter.theme.primaryColor}`,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <img
-                  src={portraitSrc}
-                  alt={activeFighter.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{
-                  fontSize: '0.72rem',
-                  color: activeFighter.theme.primaryColor,
-                  fontWeight: 800,
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <span>ACTIVE CHAMPION</span>
-                  <span>•</span>
-                  <span>{archetypeIcon} {activeFighter.archetypeLabel}</span>
-                </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-heading)', marginTop: '1px' }}>
-                  {activeFighter.name} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>"{activeFighter.codename}"</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={(e) => {
-                e.stopPropagation();
+          return (
+            <div
+              className="glass-panel"
+              onClick={() => {
                 soundManager.playClick();
                 setIsCharacterModalOpen(true);
               }}
               style={{
-                padding: '8px 14px',
-                fontSize: '0.8rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                borderColor: `${activeFighter.theme.primaryColor}66`
+                justifyContent: 'space-between',
+                padding: '12px 18px',
+                borderRadius: '14px',
+                cursor: 'pointer',
+                border: `1px solid ${activeFighter.theme.primaryColor}88`,
+                boxShadow: `0 0 20px ${activeFighter.theme.glowColor}`,
+                background: `linear-gradient(135deg, ${activeFighter.theme.primaryColor}18 0%, rgba(15, 23, 42, 0.85) 100%)`,
+                transition: 'all 0.25s ease'
               }}
             >
-              <Sparkles size={14} color={activeFighter.theme.primaryColor} />
-              <span>Change Champion</span>
-            </button>
-          </div>
-        );
-      })()}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  backgroundColor: 'rgba(10, 15, 26, 0.8)',
+                  border: `1px solid ${activeFighter.theme.primaryColor}`,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img
+                    src={portraitSrc}
+                    alt={activeFighter.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{
+                    fontSize: '0.72rem',
+                    color: activeFighter.theme.primaryColor,
+                    fontWeight: 800,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <span>CHAMPION</span>
+                    <span>•</span>
+                    <span>{archetypeIcon} {activeFighter.archetypeLabel}</span>
+                  </div>
+                  <div style={{ fontSize: '1.02rem', fontWeight: 900, color: 'var(--text-heading)', marginTop: '1px' }}>
+                    {activeFighter.name}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  soundManager.playClick();
+                  setIsCharacterModalOpen(true);
+                }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  borderColor: `${activeFighter.theme.primaryColor}66`
+                }}
+              >
+                <Sparkles size={13} color={activeFighter.theme.primaryColor} />
+                <span>Change</span>
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* Active Combat Arena Banner */}
+        {(() => {
+          const activeArenaDef = getArenaDefinition(selectedArena);
+          const arenaBg = ARENA_BACKGROUNDS[activeArenaDef.id];
+
+          return (
+            <div
+              className="glass-panel"
+              onClick={() => {
+                soundManager.playClick();
+                setIsArenaModalOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 18px',
+                borderRadius: '14px',
+                cursor: 'pointer',
+                border: `1px solid ${activeArenaDef.theme.primaryColor}88`,
+                boxShadow: `0 0 20px ${activeArenaDef.theme.ambientGlow}`,
+                background: `linear-gradient(135deg, ${activeArenaDef.theme.primaryColor}18 0%, rgba(15, 23, 42, 0.85) 100%)`,
+                transition: 'all 0.25s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  backgroundColor: 'rgba(10, 15, 26, 0.8)',
+                  border: `1px solid ${activeArenaDef.theme.primaryColor}`,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img
+                    src={arenaBg}
+                    alt={activeArenaDef.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{
+                    fontSize: '0.72rem',
+                    color: activeArenaDef.theme.primaryColor,
+                    fontWeight: 800,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <span>BATTLEGROUND</span>
+                    <span>•</span>
+                    <span>{activeArenaDef.subtitle}</span>
+                  </div>
+                  <div style={{ fontSize: '1.02rem', fontWeight: 900, color: 'var(--text-heading)', marginTop: '1px' }}>
+                    {activeArenaDef.name}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  soundManager.playClick();
+                  setIsArenaModalOpen(true);
+                }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  borderColor: `${activeArenaDef.theme.primaryColor}66`
+                }}
+              >
+                <Compass size={13} color={activeArenaDef.theme.primaryColor} />
+                <span>Change</span>
+              </button>
+            </div>
+          );
+        })()}
+      </div>
 
       <div className="glass-panel" style={{ padding: '24px 18px', textAlign: 'center' }}>
         {mode === 'select' && (
@@ -888,6 +988,14 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         onClose={() => setIsCharacterModalOpen(false)}
         selectedCharacterId={selectedCharacter}
         onSelectCharacter={handleCharacterSelect}
+      />
+
+      {/* Arena Selection Modal */}
+      <ArenaSelectModal
+        isOpen={isArenaModalOpen}
+        onClose={() => setIsArenaModalOpen(false)}
+        selectedArenaId={selectedArena}
+        onSelectArena={handleArenaSelect}
       />
     </div>
   );

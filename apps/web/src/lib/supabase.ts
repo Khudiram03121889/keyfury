@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { RankTier, getRankTier } from '../components/ranked/RankBadge';
-import { CharacterId, DEFAULT_CHARACTER_ID, isValidCharacterId } from '@keyfury/game-core';
+import { CharacterId, DEFAULT_CHARACTER_ID, isValidCharacterId, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -9,9 +9,10 @@ export const supabase: SupabaseClient | null =
   supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 export const SELECTED_CHARACTER_KEY = 'keyfury_selected_character';
+export const SELECTED_ARENA_KEY = 'keyfury_selected_arena';
 
 export function getSavedSelectedCharacter(): CharacterId {
-  if (typeof window === 'undefined') return DEFAULT_CHARACTER_ID;
+  if (typeof localStorage === 'undefined') return DEFAULT_CHARACTER_ID;
   try {
     const saved = localStorage.getItem(SELECTED_CHARACTER_KEY);
     if (saved && isValidCharacterId(saved)) {
@@ -22,11 +23,29 @@ export function getSavedSelectedCharacter(): CharacterId {
 }
 
 export function saveSelectedCharacter(charId: CharacterId): void {
-  if (typeof window === 'undefined') return;
+  if (typeof localStorage === 'undefined') return;
   try {
     if (isValidCharacterId(charId)) {
       localStorage.setItem(SELECTED_CHARACTER_KEY, charId);
     }
+  } catch (_e) {}
+}
+
+export function getSavedSelectedArena(): ArenaId {
+  if (typeof localStorage === 'undefined') return DEFAULT_ARENA_ID;
+  try {
+    const saved = localStorage.getItem(SELECTED_ARENA_KEY);
+    if (saved && (saved === 'highland_sanctuary' || saved === 'cyber_rooftop' || saved === 'volcanic_caldera' || saved === 'celestial_void')) {
+      return saved as ArenaId;
+    }
+  } catch (_e) {}
+  return DEFAULT_ARENA_ID;
+}
+
+export function saveSelectedArena(arenaId: ArenaId): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(SELECTED_ARENA_KEY, arenaId);
   } catch (_e) {}
 }
 

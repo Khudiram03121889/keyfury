@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
-import highlandBgUrl from '../assets/highland_bg.jpg';
+import {
+  highlandSanctuaryUrl,
+  cyberRooftopUrl,
+  volcanicCalderaUrl,
+  celestialVoidUrl
+} from '../assets/arenas/index';
 import {
   solve2BoneIK,
   solveSpineCurve,
@@ -13,8 +18,11 @@ import {
   checkOBBvsOBB,
   getMoveSpec,
   getCharacterDefinition,
+  getArenaDefinition,
   type CharacterDefinition,
   type CharacterId,
+  type ArenaDefinition,
+  type ArenaId,
   type FightingMoveName,
   type OBBHitbox,
   type CircleHurtbox,
@@ -63,6 +71,10 @@ export class StickFightScene extends Phaser.Scene {
   public p2CharId: CharacterId = 'cyber_valkyrie';
   public p1CharDef: CharacterDefinition = getCharacterDefinition('shadow_ronin');
   public p2CharDef: CharacterDefinition = getCharacterDefinition('cyber_valkyrie');
+
+  // Modular Arena Environment Definition
+  public currentArenaId: ArenaId = 'highland_sanctuary';
+  public currentArenaDef: ArenaDefinition = getArenaDefinition('highland_sanctuary');
 
   private p1Timer?: Phaser.Time.TimerEvent;
   private p2Timer?: Phaser.Time.TimerEvent;
@@ -128,7 +140,12 @@ export class StickFightScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('highland_bg', highlandBgUrl);
+    this.load.image('arena_highland_sanctuary', highlandSanctuaryUrl);
+    this.load.image('arena_cyber_rooftop', cyberRooftopUrl);
+    this.load.image('arena_volcanic_caldera', volcanicCalderaUrl);
+    this.load.image('arena_celestial_void', celestialVoidUrl);
+    // Legacy fallback support
+    this.load.image('highland_bg', highlandSanctuaryUrl);
   }
 
   public getPlatformY(): number {
@@ -137,10 +154,12 @@ export class StickFightScene extends Phaser.Scene {
     const isPortrait = width < height || height < 480;
 
     if (isPortrait) {
-      // In mobile portrait or compact viewports, ground fighters at ~76% of height (leaving headroom for jumps and top HUD)
-      return Math.min(height - 40, Math.max(height * 0.74, height - 65));
+      // In mobile portrait or compact viewports, ground fighters using arena's portrait ratio
+      const portraitRatio = this.currentArenaDef?.portraitPlatformRatio ?? 0.74;
+      return Math.min(height - 40, Math.max(height * portraitRatio, height - 65));
     }
-    return height * 0.64;
+    const platformRatio = this.currentArenaDef?.platformRatio ?? 0.64;
+    return height * platformRatio;
   }
 
   create() {
@@ -149,9 +168,11 @@ export class StickFightScene extends Phaser.Scene {
     const width = this.cameras.main.width || 1024;
     const height = this.cameras.main.height || 580;
 
-    // Background Image
+    // Background Image for Active Arena
     try {
-      this.bgImage = this.add.image(width / 2, height / 2, 'highland_bg');
+      const textureKey = `arena_${this.currentArenaId}`;
+      const validKey = this.textures.exists(textureKey) ? textureKey : 'arena_highland_sanctuary';
+      this.bgImage = this.add.image(width / 2, height / 2, validKey);
       this.bgImage.setOrigin(0.5, 0.5);
       this.handleResize();
       this.bgImage.setDepth(1);
@@ -200,7 +221,7 @@ export class StickFightScene extends Phaser.Scene {
         const displayH = bgImgH * scale;
         this.bgImage.setDisplaySize(displayW, displayH);
         const currentPlatformY = this.getPlatformY();
-        const bgPlatformOrigY = 0.64 * displayH;
+        const bgPlatformOrigY = (this.currentArenaDef?.platformRatio ?? 0.64) * displayH;
         const offsetY = currentPlatformY - bgPlatformOrigY + displayH / 2;
         this.bgImage.setPosition(width / 2, offsetY);
       } else {
@@ -493,6 +514,26 @@ export class StickFightScene extends Phaser.Scene {
    */
   public getCharacterSkins(): { p1: CharacterDefinition; p2: CharacterDefinition } {
     return { p1: this.p1CharDef, p2: this.p2CharDef };
+  }
+
+  /**
+   * Dynamically sets and loads the active arena environment.
+   */
+  public setArena(arenaId?: string): void {
+    this.currentArenaDef = getArenaDefinition(arenaId);
+    this.currentArenaId = this.currentArenaDef.id;
+    const textureKey = `arena_${this.currentArenaId}`;
+    if (this.bgImage && this.textures.exists(textureKey)) {
+      this.bgImage.setTexture(textureKey);
+      this.handleResize();
+    }
+  }
+
+  /**
+   * Retrieves current active arena definition.
+   */
+  public getArena(): ArenaDefinition {
+    return this.currentArenaDef;
   }
 
   /**

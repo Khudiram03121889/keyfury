@@ -11,7 +11,10 @@ import {
   PlayerCombatState,
   CombatEventLog,
   MATCH_RULES,
-  getAllCharacters
+  getAllCharacters,
+  getRandomArenaId,
+  DEFAULT_ARENA_ID,
+  type ArenaId
 } from '@keyfury/game-core';
 import { ClientMessageSchema, ServerEvent, EloResult } from '@keyfury/protocol';
 import { CONTENT_VERSION } from '@keyfury/content';
@@ -51,6 +54,7 @@ export class CombatRoomState extends Schema {
   @type('boolean') isChallenge: boolean = false;
   @type('string') roomCode: string = '';
   @type('boolean') isPaused: boolean = false;
+  @type('string') arenaId: string = 'highland_sanctuary';
 }
 
 function generateRoomCode(): string {
@@ -130,12 +134,13 @@ export class CombatRoom extends Room<CombatRoomState> {
     return true;
   }
 
-  onCreate(options: { isChallenge?: boolean; withBot?: boolean; botDifficulty?: BotDifficulty }) {
+  onCreate(options: { isChallenge?: boolean; withBot?: boolean; botDifficulty?: BotDifficulty; arenaId?: string }) {
     this.setState(new CombatRoomState());
     this.state.matchId = this.roomId;
     this.state.deckSeed = `deck-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     this.state.isChallenge = !!options.isChallenge;
     this.hasBotOpponent = !!options.withBot;
+    this.state.arenaId = options?.arenaId || getRandomArenaId();
     if (options.botDifficulty) {
       this.botDifficulty = options.botDifficulty;
     }
@@ -143,7 +148,8 @@ export class CombatRoom extends Room<CombatRoomState> {
     this.setMetadata({
       isChallenge: !!options.isChallenge,
       withBot: !!options.withBot,
-      isQuickDuel: !options.isChallenge && !options.withBot
+      isQuickDuel: !options.isChallenge && !options.withBot,
+      arenaId: this.state.arenaId
     });
 
     if (this.state.isChallenge) {

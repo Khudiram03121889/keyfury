@@ -6,3 +6,4 @@ export * from './combat/MoveSetManager.js';
 export * from './combat/HitboxManager.js';
 export * from './combat/ImpactFeedbackManager.js';
 export * from './characters/index.js';
+export * from './arenas/index.js';

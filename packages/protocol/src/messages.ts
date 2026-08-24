@@ -73,6 +73,7 @@ export interface MatchStateSnapshot {
   players: Record<string, PlayerSnapshot>;
   winnerSessionId?: string;
   endReason?: 'time' | 'knockout' | 'forfeit' | 'disconnect' | 'draw';
+  arenaId?: string;
 }
 
 export type ServerEvent =

@@ -4,24 +4,28 @@ const serverUrl = import.meta.env.VITE_GAME_SERVER_URL || 'ws://localhost:2567';
 
 export const colyseusClient = new ColyseusClient(serverUrl);
 
-export async function joinQuickQueue(profileId: string, displayName: string, mmr?: number, characterId?: string): Promise<Room> {
+export async function joinQuickQueue(profileId: string, displayName: string, mmr?: number, characterId?: string, arenaId?: string): Promise<Room> {
   const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
+  const activeArena = arenaId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_arena') : null) || undefined;
   return await colyseusClient.joinOrCreate('duel_room', {
     profileId,
     displayName,
     mmr,
     characterId: activeChar,
+    arenaId: activeArena,
     isChallenge: false
   });
 }
 
-export async function createChallengeRoom(profileId: string, displayName: string, mmr?: number, characterId?: string): Promise<Room> {
+export async function createChallengeRoom(profileId: string, displayName: string, mmr?: number, characterId?: string, arenaId?: string): Promise<Room> {
   const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
+  const activeArena = arenaId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_arena') : null) || undefined;
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
     mmr,
     characterId: activeChar,
+    arenaId: activeArena,
     isChallenge: true
   });
 }
@@ -41,14 +45,17 @@ export async function startBotDuel(
   displayName: string,
   botDifficulty: 'novice' | 'fighter' | 'pro' | 'adaptive' = 'adaptive',
   mmr?: number,
-  characterId?: string
+  characterId?: string,
+  arenaId?: string
 ): Promise<Room> {
   const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
+  const activeArena = arenaId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_arena') : null) || undefined;
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
     mmr,
     characterId: activeChar,
+    arenaId: activeArena,
     isChallenge: false,
     withBot: true,
     botDifficulty

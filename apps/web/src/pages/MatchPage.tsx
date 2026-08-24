@@ -7,6 +7,7 @@ import { GuestProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { RankBadge } from '../components/ranked/RankBadge';
 import { soundSynth } from '../game/audio/SoundSynth';
+import { getArenaDefinition, type ArenaDefinition } from '@keyfury/game-core';
 
 interface MatchPageProps {
   room: Room;
@@ -370,6 +371,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       sceneRef.current = sc;
       const { p1CharId, p2CharId } = getPlayerCharacterIds(room?.state || matchStateRef.current);
       sc.setCharacterSkins(p1CharId, p2CharId);
+      const rawArenaId = (room?.state as any)?.arenaId || (room as any)?.metadata?.arenaId;
+      if (rawArenaId) {
+        sc.setArena(rawArenaId);
+      }
       sc.handleResize?.();
 
       if (phaserContainerRef.current && typeof ResizeObserver !== 'undefined') {
@@ -395,6 +400,13 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       sceneRef.current = null;
     };
   }, []);
+
+  // Sync arena changes dynamically if room state changes
+  useEffect(() => {
+    if (sceneRef.current && matchState?.arenaId) {
+      sceneRef.current.setArena(matchState.arenaId);
+    }
+  }, [matchState?.arenaId]);
 
   // Keep a real input focused during combat. Phaser owns the canvas, so a
   // focused input is more reliable than relying on canvas/window key events.
@@ -1062,20 +1074,45 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         )}
 
         {/* Countdown Overlay */}
-        {countdown !== null && countdown > 0 && (
-          <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(7, 23, 10, 0.88)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(10px)', zIndex: 20
-          }}>
-            <span style={{ fontSize: '1.4rem', color: '#4ade80', textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '8px' }}>
-              FIGHTERS READY
-            </span>
-            <div style={{ fontSize: '7rem', fontWeight: 900, color: '#4ade80', fontFamily: 'var(--font-mono)' }}>
-              {countdown}
+        {countdown !== null && countdown > 0 && (() => {
+          const rawArena = matchState?.arenaId || (room as any)?.metadata?.arenaId || 'highland_sanctuary';
+          const arenaDef = getArenaDefinition(rawArena);
+
+          return (
+            <div style={{
+              position: 'absolute', inset: 0, background: 'rgba(7, 12, 20, 0.9)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(10px)', zIndex: 20
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                borderRadius: '12px',
+                backgroundColor: `${arenaDef.theme.primaryColor}22`,
+                border: `1px solid ${arenaDef.theme.primaryColor}88`,
+                color: arenaDef.theme.primaryColor,
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                letterSpacing: '1.2px',
+                textTransform: 'uppercase',
+                marginBottom: '16px',
+                boxShadow: `0 0 20px ${arenaDef.theme.ambientGlow}`
+              }}>
+                <span>ARENA: {arenaDef.name}</span>
+                <span>•</span>
+                <span>{arenaDef.subtitle}</span>
+              </div>
+              <span style={{ fontSize: '1.4rem', color: '#4ade80', textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '8px' }}>
+                FIGHTERS READY
+              </span>
+              <div style={{ fontSize: '7rem', fontWeight: 900, color: '#4ade80', fontFamily: 'var(--font-mono)' }}>
+                {countdown}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* AI Bot Paused Overlay */}
         {isPaused && !showStatsOverlay && !isMatchEndedRef.current && (
