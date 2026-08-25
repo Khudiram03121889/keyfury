@@ -412,10 +412,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
   // focused input is more reliable than relying on canvas/window key events.
   useEffect(() => {
     if (matchState?.status === 'in_progress') {
-      typingInputRef.current?.focus();
+      typingInputRef.current?.focus({ preventScroll: true });
       const interval = setInterval(() => {
         if (document.activeElement !== typingInputRef.current && matchStateRef.current?.status === 'in_progress') {
-          typingInputRef.current?.focus();
+          typingInputRef.current?.focus({ preventScroll: true });
         }
       }, 500);
       return () => clearInterval(interval);
@@ -518,35 +518,26 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
 
     if (isPaused) return;
 
-    // Soft keyboards on Android Gboard / iOS IME send 'Unidentified' or keycode 229; onInput/onChange handles extraction
-    if (event.key === 'Unidentified' || event.key === '229') return;
-
-    // Only accept typing input when match is actively in progress on live room state
-    if (room.state?.status !== 'in_progress') {
-      console.log('[CLIENT KEY DROPPED - status not in_progress]', room.state?.status);
-      return;
+    // Global Pause hotkey toggle (P key) in Singleplayer Bot Matches
+    if (event.key === 'p' || event.key === 'P') {
+      const isBotModeActive = (room as any)?.metadata?.withBot || matchStateRef.current?.players?.get('bot-ai-opponent');
+      if (isBotModeActive) {
+        event.preventDefault();
+        handleTogglePause();
+        return;
+      }
     }
 
-    const combatEvent = event as KeyboardEvent & { keyfuryHandled?: boolean };
-    if (combatEvent.keyfuryHandled) return;
-    if (event.ctrlKey || event.altKey || event.metaKey) return;
-    combatEvent.keyfuryHandled = true;
-    if (event.key.length > 1 && event.key !== 'Spacebar' && event.key !== ' ') return;
-
-    let char = event.key;
-    if (char === 'Spacebar' || char === ' ') {
-      char = ' ';
+    // Single character typing during active battle
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      handleKeyPress(event.key);
     }
-
-    // Allow all single printable ASCII characters (letters, numbers, space, hyphens '-', and symbols)
-    if (char.length !== 1 || !/^[ -~]$/.test(char)) return;
-
-    event.preventDefault();
-    handleKeyPress(char);
   };
 
   const handleCombatInput = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    handleCombatKey(event.nativeEvent);
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      handleKeyPress(event.key);
+    }
   };
 
   useEffect(() => {
@@ -591,12 +582,14 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
     <div style={{
       width: '100vw',
       height: keyboardOffset > 0 ? `${visibleHeight}px` : '100dvh',
-      maxHeight: '100%',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: keyboardOffset > 0 ? 'auto' : 0,
       padding: '0',
       boxSizing: 'border-box',
       overflow: 'hidden',
-      position: 'fixed',
-      inset: 0,
       background: '#1e293b'
     }}>
       {/* Viewport Arena Box */}
@@ -604,14 +597,14 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         ref={mainBoxRef}
         tabIndex={-1}
         onTouchStart={() => {
-          typingInputRef.current?.focus();
+          typingInputRef.current?.focus({ preventScroll: true });
         }}
         onClick={() => {
-          typingInputRef.current?.focus();
+          typingInputRef.current?.focus({ preventScroll: true });
         }}
         onMouseDown={(event) => {
           event.preventDefault();
-          typingInputRef.current?.focus();
+          typingInputRef.current?.focus({ preventScroll: true });
         }}
         style={{
           position: 'relative',
@@ -630,9 +623,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           ref={phaserContainerRef}
           style={{
             width: '100%',
-            flex: keyboardOffset > 0 || viewportWidth < 768 ? '1 1 0' : '1 1 100%',
+            flex: '1 1 0',
             minHeight: 0,
-            position: 'relative'
+            position: 'relative',
+            overflow: 'hidden'
           }}
         />
         
@@ -659,19 +653,20 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           onChange={handleInputDOMEvent}
           onKeyDown={handleCombatInput}
           style={{
-            position: 'fixed',
-            bottom: '-100px',
-            left: '-100px',
-            width: '1px',
-            height: '1px',
-            opacity: 0,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0.001,
+            fontSize: '16px',
             border: 'none',
             background: 'transparent',
             color: 'transparent',
             outline: 'none',
             cursor: 'default',
             pointerEvents: 'none',
-            zIndex: -1
+            zIndex: 1
           }}
         />
 

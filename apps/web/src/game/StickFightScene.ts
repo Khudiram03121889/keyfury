@@ -208,8 +208,11 @@ export class StickFightScene extends Phaser.Scene {
   public handleResize() {
     if (!this.cameras?.main) return;
     this.cameras.main.setRoundPixels(true);
-    const width = this.cameras.main.width || (this.scale?.width as number) || 1024;
-    const height = this.cameras.main.height || (this.scale?.height as number) || 580;
+    const width = (this.scale?.width as number) || this.cameras.main.width || 1024;
+    const height = (this.scale?.height as number) || this.cameras.main.height || 580;
+    this.cameras.main.setSize(width, height);
+    this.cameras.main.setViewport(0, 0, width, height);
+
     const isPortrait = width < height || height < 480;
 
     if (this.bgImage) {
@@ -228,6 +231,7 @@ export class StickFightScene extends Phaser.Scene {
       const bgPlatformOrigY = platformRatio * displayH;
       const offsetY = currentPlatformY - bgPlatformOrigY + displayH / 2;
       this.bgImage.setPosition(width / 2, offsetY);
+      this.bgImage.setVisible(true);
     }
   }
 
