@@ -35,13 +35,16 @@ import { SpatialHashGrid } from '../render/SpatialHashGrid';
 import { ParticlePool, Vector2Pool, HitboxPool, type PooledParticle } from '../render/ObjectPool';
 import { DebugOverlayRenderer } from '../render/DebugOverlayRenderer';
 import {
+  CharacterRigRenderer,
   drawTaperedLimb,
   drawCharacterHeadgear,
   drawCharacterPauldronsAndTorso,
   drawCharacterGauntletsAndWeapons,
   drawCharacterWaistAndScarf,
-  drawCharacterAttackVFX
+  drawCharacterAttackVFX,
+  type SolvedKinematics
 } from './character/CharacterRigRenderer';
+import { ModularAtlasManager } from './character/ModularAtlasManager';
 
 export type AttackKind = 'jab' | 'kick' | 'jump_kick' | 'uppercut' | 'heavy' | 'knockdown';
 export type FighterState =
@@ -62,6 +65,9 @@ export class StickFightScene extends Phaser.Scene {
   private p1FxGraphics?: Phaser.GameObjects.Graphics;
   private p2FxGraphics?: Phaser.GameObjects.Graphics;
   private debugGraphics?: Phaser.GameObjects.Graphics;
+  public characterRigRenderer: CharacterRigRenderer = new CharacterRigRenderer();
+  public p1RigContainer?: Phaser.GameObjects.Container;
+  public p2RigContainer?: Phaser.GameObjects.Container;
 
   private p1State: FighterState = 'idle';
   private p2State: FighterState = 'idle';
@@ -146,6 +152,12 @@ export class StickFightScene extends Phaser.Scene {
     this.load.image('arena_celestial_void', celestialVoidUrl);
     // Legacy fallback support
     this.load.image('highland_bg', highlandSanctuaryUrl);
+
+    // Preload Modular Character Texture Atlases for all 4 Core Fighters
+    ModularAtlasManager.preloadInScene(this, 'shadow_ronin');
+    ModularAtlasManager.preloadInScene(this, 'cyber_valkyrie');
+    ModularAtlasManager.preloadInScene(this, 'volt_shinobi');
+    ModularAtlasManager.preloadInScene(this, 'void_assassin');
   }
 
   public getPlatformY(): number {
@@ -195,6 +207,19 @@ export class StickFightScene extends Phaser.Scene {
 
     this.debugGraphics = this.add.graphics();
     this.debugGraphics.setDepth(40);
+
+    // Ingest preloaded JSON atlas metadata & register frame slices
+    ModularAtlasManager.registerPreloadedAtlases(this);
+
+    // Instantiate dedicated 20-layer rig containers for P1 and P2
+    this.p1RigContainer = this.characterRigRenderer.createFighterRigContainer(this, this.p1CharId);
+    if (this.p1RigContainer && typeof this.p1RigContainer.setDepth === 'function') {
+      this.p1RigContainer.setDepth(10);
+    }
+    this.p2RigContainer = this.characterRigRenderer.createFighterRigContainer(this, this.p2CharId);
+    if (this.p2RigContainer && typeof this.p2RigContainer.setDepth === 'function') {
+      this.p2RigContainer.setDepth(10);
+    }
 
     // Initialize ragdoll skeleton bounds
     const platformY = this.getPlatformY();
@@ -1335,6 +1360,46 @@ export class StickFightScene extends Phaser.Scene {
       fxG.fillStyle(0x000000, footContactAlpha);
       fxG.fillEllipse(legL.tip.x, platformY + 1, 14, 4.5);
       fxG.fillEllipse(legR.tip.x, platformY + 1, 16, 5);
+    }
+
+    // 0.5 TEXTURED SKELETAL RIG RENDERING (If Texture Atlas Loaded)
+    const rigContainer = isP1 ? this.p1RigContainer : this.p2RigContainer;
+    const kinematics: SolvedKinematics = {
+      head: { x: finalHeadX, y: finalHeadY },
+      neck: { x: finalNeckX, y: finalNeckY },
+      hip: { x: finalHipX, y: finalHipY },
+      lShoulder: { x: lShoulderX, y: lShoulderY },
+      rShoulder: { x: rShoulderX, y: rShoulderY },
+      lHip: { x: lHipX, y: hipY },
+      rHip: { x: rHipX, y: hipY },
+      armL,
+      armR,
+      legL,
+      legR,
+      facing: facing as 1 | -1,
+      ragdoll
+    };
+
+    if (rigContainer) {
+      if (ModularAtlasManager.isAtlasLoaded(this, activeCharDef.id)) {
+        if (typeof rigContainer.setVisible === 'function') {
+          rigContainer.setVisible(true);
+        }
+        this.characterRigRenderer.renderTexturedFighter(
+          this,
+          rigContainer,
+          activeCharDef.id,
+          state,
+          kinematics,
+          time
+        );
+        drawCharacterAttackVFX(fxG, activeCharDef, state, finalNeckX, finalNeckY, finalHipX, finalHipY, armR, legR, facing, time);
+        return;
+      } else {
+        if (typeof rigContainer.setVisible === 'function') {
+          rigContainer.setVisible(false);
+        }
+      }
     }
 
     // 1. REAR LIMBS (Layer 1 - Behind Torso)

@@ -1,78 +1,102 @@
-# Project: KeyFury 2D Character Roster System
+# Project: KeyFury Character Rigging & Visual Overhaul
 
 ## Architecture
-KeyFury is a real-time 1v1 cyberpunk typing combat duel built with TypeScript monorepo architecture:
-- `packages/game-core`: Unified source of truth for combat calculations, 2-bone IK solvers, ragdoll physics, typing decks, and the Character Registry.
-- `packages/protocol`: Message schemas, Colyseus room state interfaces, snapshot data structures, and queue options.
-- `apps/game-server`: Colyseus multiplayer authoritative server managing `CombatRoom` and `DuelRoom`, state synchronization, and bot matchmaking.
-- `apps/web`: React 18 + Vite frontend with Phaser 3 combat arena (`StickFightScene`), procedural audio synthesis (`SoundManager`, `SoundSynth`), glassmorphism UI, and local state persistence.
+
+KeyFury is a real-time 1v1 cyberpunk typing combat game built on Phaser 3 (WebGL/Canvas), React 19, TypeScript, and Colyseus.
+This project overhauls all 4 core fighters (Shadow Ronin, Cyber Valkyrie, Volt Shinobi, Void Assassin) from procedural geometric vector stickmen into premier 2D high-fidelity realistic cybernetic warriors using a modular skeletal texture atlas quad pipeline bound directly to analytical 2-bone inverse kinematics (`solve2BoneIK`), spine curve solvers (`solveSpineCurve`), and Verlet ragdoll physics (`RagdollSystem`).
+
+### High-Level Component Flow
+1. **Asset Pipeline & Storage**:
+   - High-fidelity 2D cybernetic textures packed into JSON-based texture atlases (`/assets/characters/<characterId>/atlas.png` + `atlas.json`) under `apps/web/public/assets/characters/`.
+   - Atlas slices include 14-19 isolated anatomical parts per fighter: Head/Visor, Torso/Chest, Pelvis/Waist, Upper Arms (Lead/Rear), Forearms (Lead/Rear), Hands/Gauntlets, Thighs (Lead/Rear), Shins (Lead/Rear), Boots/Greaves, Pauldrons/Armor, Signature Weapon (Base + Glow), and Flowing Accessories (Scarf/Cape).
+2. **Modular Skeletal Quad Renderer (`CharacterRigRenderer.ts`)**:
+   - Computes 2D bone transforms using existing `@keyfury/game-core` kinematics (`solve2BoneIK`, `solveSpineCurve`, `RagdollSystem`).
+   - Maps each anatomical part to a textured quad / sprite quad positioned at joint pivots with concentric circular joint caps at `(0.5, 0.15)` for seamless rotation without clipping or seams.
+   - Enforces a 20-layer strict Z-ordering hierarchy (Rear Limbs -> Torso/Head -> Lead Limbs/Weapons -> Additive Glow).
+   - Renders dual-layer energetic weapons with `Phaser.BlendModes.ADD` for vibrant neon weapon glows and triggers elemental particles via `ObjectPool.ts`.
+3. **Kinematics & Gameplay Invariants**:
+   - Zero modifications to core combat timing, typing advance distances, OBB CCD collision hitboxes, or ragdoll impulse transfers.
+   - 100% backward-compatible fallback to vector rendering if texture atlases are loading or unavailable.
+4. **Performance & Packaging Budget**:
+   - WebGL draw calls $\le 2$ per fighter via batched sprite rendering.
+   - CPU frame time $< 0.5\text{ms}$ at steady 60 FPS on desktop web and mobile WebView (Capacitor).
+   - Total character asset payload $< 5\text{ MB}$.
+
+---
 
 ## Feature Inventory
+
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| F1 | 4 Core Fighter Definitions | Data models for Shadow Ronin, Cyber Valkyrie, Volt Shinobi, Void Assassin with IDs, archetypes, lore, attributes, visual themes, and particle palettes | M1 | Survey |
-| F2 | Character Registry & Lookup API | `CHARACTER_REGISTRY`, `getCharacterDefinition`, `getAllCharacters`, and `isValidCharacterId` with safe fallback to `shadow_ronin` | M1 | Survey |
-| F3 | High-Resolution SVG Portrait Assets | 512x512 vector portrait art files for all 4 fighters in `apps/web/src/assets/characters/` with index map | M1 | Survey |
-| F4 | Character Registry Unit Tests | Comprehensive test suite in `packages/game-core/tests/characters.test.ts` verifying registry completeness, stat bounds, and fallbacks | M1 | Survey |
-| F5 | Character Select Modal UI | `apps/web/src/components/character/CharacterSelectModal.tsx` with carousel/grid cards, archetype badges, stats radar, and elemental borders | M2 | Survey |
-| F6 | Live Strike Preview & Audio Feedback | Interactive "Test Strike" canvas animation triggering elemental particle bursts and procedural audio synthesis on selection | M2 | Survey |
-| F7 | Active Champion Lobby Integration | Prominent Active Champion banner in `LobbyPage.tsx` displaying portrait, archetype, and quick-swap modal launcher | M2 | Survey |
-| F8 | Local State & Profile Persistence | `localStorage` persistence under `keyfury_selected_character` integrated with `UserProfile` and `GuestProfile` | M2 | Survey |
-| F9 | Modular 2D Skeletal Rigs & Vector Meshes | Dynamic vector rendering in `StickFightScene.ts` adapting helmets/visors, pauldrons, gauntlets, and scarves to each fighter | M3 | Survey |
-| F10 | 100% Combat Mechanics Preservation | Flawless preservation of `solve2BoneIK`, `solveSpineCurve`, typing advance, all strike states (`jab`, `kick`, `jump_kick`, `uppercut`, `heavy`, `hit`), and `RagdollSystem` KO tumbling | M3 | Survey |
-| F11 | Elemental Particle VFX via ObjectPool | Character-specific particle bursts (Azure Plasma, Crimson Energy, Electric Gold Lightning, Void Purple Wisps) via `ParticlePool` | M3 | Survey |
-| F12 | Protocol & Server State Sync | `characterId` field in `packages/protocol` (`PlayerSnapshot`, `RankedQueueOptions`) and `apps/game-server` (`CombatRoom.ts` `PlayerState`) | M4 | Survey |
-| F13 | Multiplayer Matchmaking & Bot Selection | `apps/web/src/lib/colyseus.ts` passing `characterId` across quick duels, challenge rooms, and AI bot duels (bot auto-selecting distinct character) | M4 | Survey |
-| F14 | Match Arena Character Skin Ingestion | `MatchPage.tsx` extracting P1 and P2 `characterId` from session state and injecting into `StickFightScene` | M4 | Survey |
-| F15 | End-to-End Test Suite & Verification | Comprehensive test suite (Tiers 1-4) covering registry, UI, physics, and multiplayer state + zero TypeScript errors on full build | M5 | Survey |
+| 1 | Modular Skeletal Quad Engine | Texture quad mesh / sprite renderer bound to `solve2BoneIK` and `RagdollSystem` with concentric joint overlap | M0 | Survey R1 |
+| 2 | Atlas Loading & Preloader Integration | Preload and parse character texture atlases in Phaser 3 with fallback handling | M0 | Survey R2 |
+| 3 | 20-Layer Z-Order Matrix & Additive Glow | Strict depth layering and WebGL additive blending for signature weapons | M0 | Survey R1 |
+| 4 | Shadow Ronin (Kage) Visual Atlas & Rigging | High-res cyber-samurai modular atlas (Kabuto helm, visor, cuirass, azure katana, scarf) | M1 | Survey R1/R3 |
+| 5 | Shadow Ronin Visual & Combat Verification | Unit tests, 10 combat poses verification, azure plasma katana glow, zero IK clipping | M1 | Survey R3/R4 |
+| 6 | Cyber Valkyrie (Freya) Visual Atlas & Rigging | High-res exo-brawler modular atlas (Winged helm, crimson power core, hydraulic fists, greaves) | M2 | Survey R1/R3 |
+| 7 | Cyber Valkyrie Visual & Combat Verification | Unit tests, 10 combat poses verification, crimson hydraulic energy FX, zero IK clipping | M2 | Survey R3/R4 |
+| 8 | Volt Shinobi (Raijin) Visual Atlas & Rigging | High-res cyber-ninja modular atlas (Mempo HUD visor, sleek stealth cuirass, lightning kunai, bracers) | M3 | Survey R1/R3 |
+| 9 | Volt Shinobi Visual & Combat Verification | Unit tests, 10 combat poses verification, amber lightning sparks, zero IK clipping | M3 | Survey R3/R4 |
+| 10 | Void Assassin (Nyx) Visual Atlas & Rigging | High-res void stalker modular atlas (Amethyst shadow cowl, stealth cuirass, dual void daggers, shadow cape) | M4 | Survey R1/R3 |
+| 11 | Void Assassin Visual & Combat Verification | Unit tests, 10 combat poses verification, amethyst aura & void rift FX, zero IK clipping | M4 | Survey R3/R4 |
+| 12 | 40-Pose Combat Visual Matrix Harness | Automated visual test harness verifying all 4 fighters $\times$ 10 combat states | M5 | Survey R4 |
+| 13 | 60 FPS Combat Performance & WebGL Draw Call Benchmark | Benchmark sustaining 60 FPS, $< 1\text{ms}$ frame time, $\le 15$ total draw calls, zero GC allocations | M5 | Survey R4 |
+| 14 | Monorepo Regression Gate & Final Polish | Pass 100% of Vitest suites (`packages/game-core`, `apps/web`, `apps/game-server`, root E2E) | M5 | Survey R4 |
+
+---
 
 ## Milestones
-| # | Name | Scope | Dependencies | Status |
-|---|------|-------|-------------|--------|
-| M1 | Core Fighter Definitions & SVG Character Art | `packages/game-core/src/characters/`, `packages/game-core/src/index.ts`, `apps/web/src/assets/characters/*.svg`, `packages/game-core/tests/characters.test.ts` | none | DONE |
-| M2 | Character Selection UI & State Persistence | `apps/web/src/components/character/CharacterSelectModal.tsx`, `apps/web/src/pages/LobbyPage.tsx`, `apps/web/src/lib/supabase.ts` | M1 | DONE |
-| M3 | Phaser 2D Skeletal Rigs & Elemental VFX | `apps/web/src/game/StickFightScene.ts`, `apps/web/src/game/scenes/CombatScene.ts`, `apps/web/src/render/ObjectPool.ts` | M1 | DONE |
-| M4 | Colyseus Multiplayer Sync & Match Arena | `packages/protocol/src/messages.ts`, `apps/game-server/src/rooms/CombatRoom.ts`, `apps/game-server/src/rooms/DuelRoom.ts`, `apps/web/src/lib/colyseus.ts`, `apps/web/src/pages/MatchPage.tsx` | M1, M2, M3 | DONE |
-| M5 | E2E Integration & Verification Hardening | Full workspace build (`pnpm build`), unit test suites pass, E2E test suite validation (Tiers 1-4), adversarial test hardening (Tier 5) | M1, M2, M3, M4 | DONE |
+
+| # | Name | Scope | Dependencies | Status | Key Outputs |
+|---|------|-------|-------------|--------|-------------|
+| M0 | Core Modular Skeletal Texture Engine | Implement `ModularAtlasManager`, textured quad limb/torso/head binding in `CharacterRigRenderer`, joint cap overlap, Z-order layering, and additive blend pipeline | none | **DONE** | `ModularAtlasManager.ts`, `CharacterRigRenderer.ts`, 49 unit tests, 0 build errors |
+| M1 | Shadow Ronin (Kage) Character Overhaul | Generate & slice high-res Kage atlas, bind to skeletal rig, configure azure plasma katana glow & scarf physics, verify 10 combat poses & unit tests | M0 | **DONE** | `/assets/characters/shadow_ronin/` (PNG+JSON), 57 Kage tests, visual screenshots |
+| M2 | Cyber Valkyrie (Freya) Character Overhaul | Generate & slice high-res Freya atlas, bind to skeletal rig, configure crimson hydraulic gauntlets & power core, verify 10 combat poses & unit tests | M1 | **IN_PROGRESS** | `/assets/characters/cyber_valkyrie/`, Freya test suites, visual verification |
+| M3 | Volt Shinobi (Raijin) Character Overhaul | Generate & slice high-res Raijin atlas, bind to skeletal rig, configure amber lightning kunai & mempo HUD, verify 10 combat poses & unit tests | M2 | PLANNED | `/assets/characters/volt_shinobi/`, Raijin test suites, visual screenshots |
+| M4 | Void Assassin (Nyx) Character Overhaul | Generate & slice high-res Nyx atlas, bind to skeletal rig, configure amethyst void daggers & shadow cowl, verify 10 combat poses & unit tests | M3 | PLANNED | `/assets/characters/void_assassin/`, Nyx test suites, visual screenshots |
+| M5 | E2E Visual Matrix, 60 FPS Benchmark & Polish | 40-pose visual regression test suite, 60 FPS / WebGL draw call performance benchmarks, monorepo test suite pass with 0 regressions | M4 | PLANNED | `tests/e2e/`, 60 FPS benchmarks, clean builds |
+
+---
 
 ## Interface Contracts
 
-### `packages/game-core` ↔ `apps/web` & `apps/game-server`
-- `CharacterId`: `'shadow_ronin' | 'cyber_valkyrie' | 'volt_shinobi' | 'void_assassin'`
-- `CharacterDefinition`: `{ id, name, codename, title, archetype, archetypeLabel, tagline, lore, element, attributes, theme, gear, signatureMove, signatureQuote, portraitAssetKey, avatarIcon }`
-- `getCharacterDefinition(id?: string | null): CharacterDefinition`
-- `getAllCharacters(): CharacterDefinition[]`
-- `isValidCharacterId(id: unknown): id is CharacterId`
+### 1. `ModularAtlasManager` (`apps/web/src/game/character/ModularAtlasManager.ts`)
+```typescript
+export interface AtlasPartRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pivotX: number;
+  pivotY: number;
+}
 
-### `packages/protocol` ↔ `apps/game-server` ↔ `apps/web`
-- `PlayerSnapshot`: includes `characterId?: string`
-- `RankedQueueOptions`: includes `characterId?: string`
-- `CombatRoom.onJoin(client, options)`: extracts `options.characterId`, stores in `PlayerState.characterId`
-- `CombatRoom.spawnBotOpponent()`: assigns distinct `characterId` (e.g. `'cyber_valkyrie'`) to bot `PlayerState`
+export interface CharacterAtlasMetadata {
+  characterId: 'shadow_ronin' | 'cyber_valkyrie' | 'volt_shinobi' | 'void_assassin';
+  version: string;
+  image: string;
+  parts: Record<string, AtlasPartRect>;
+}
 
-### `apps/web` UI ↔ Phaser `StickFightScene`
-- `StickFightScene.setCharacterSkins(p1CharacterId: string, p2CharacterId: string): void`
-- `StickFightScene.drawFighter(graphics, x, y, facing, pose, characterDef, isP1)`
-- `StickFightScene.spawnImpactParticleBurst(x, y, palette, isHeavy, count)`
+export class ModularAtlasManager {
+  static loadAtlas(scene: Phaser.Scene, characterId: string): Promise<boolean>;
+  static preloadInScene(scene: Phaser.Scene, characterId: string): void;
+  static registerPreloadedAtlases(scene: Phaser.Scene): void;
+  static getPartFrame(scene: Phaser.Scene, characterId: string, partName: string): Phaser.Textures.Frame | null;
+  static isAtlasLoaded(scene: Phaser.Scene, characterId: string): boolean;
+  static unloadAtlas(scene: Phaser.Scene, characterId: string): void;
+}
+```
 
-## Code Layout
-- `packages/game-core/src/characters/CharacterTypes.ts` - TypeScript interfaces and types
-- `packages/game-core/src/characters/CharacterRegistry.ts` - 4 core fighter configurations & helpers
-- `packages/game-core/src/characters/index.ts` - Barrel exports
-- `packages/game-core/src/index.ts` - Top-level package export
-- `packages/game-core/tests/characters.test.ts` - Unit tests for registry
-- `apps/web/src/assets/characters/shadow-ronin.svg` - Shadow Ronin portrait art
-- `apps/web/src/assets/characters/cyber-valkyrie.svg` - Cyber Valkyrie portrait art
-- `apps/web/src/assets/characters/volt-shinobi.svg` - Volt Shinobi portrait art
-- `apps/web/src/assets/characters/void-assassin.svg` - Void Assassin portrait art
-- `apps/web/src/assets/characters/index.ts` - Asset index mapping
-- `apps/web/src/components/character/CharacterSelectModal.tsx` - Character select modal component
-- `apps/web/src/pages/LobbyPage.tsx` - Lobby page with Active Champion badge
-- `apps/web/src/lib/supabase.ts` - Storage helpers & user profile state
-- `apps/web/src/game/StickFightScene.ts` - Phaser combat scene with 2D modular skeletal rigs & elemental VFX
-- `apps/web/src/game/scenes/CombatScene.ts` - CombatScene wrapper
-- `packages/protocol/src/messages.ts` - Colyseus protocol message schemas
-- `apps/game-server/src/rooms/CombatRoom.ts` - Server room state and player character assignment
-- `apps/game-server/src/rooms/DuelRoom.ts` - Server duel room export
-- `apps/web/src/lib/colyseus.ts` - Matchmaking client functions passing characterId
-- `apps/web/src/pages/MatchPage.tsx` - Match page extracting character IDs and passing to Phaser
+### 2. `CharacterRigRenderer` Quad Binding Contract (`apps/web/src/game/character/CharacterRigRenderer.ts`)
+```typescript
+export class CharacterRigRenderer {
+  renderTexturedFighter(
+    scene: Phaser.Scene,
+    container: Phaser.GameObjects.Container,
+    characterId: string,
+    state: FighterCombatState,
+    kinematics: SolvedKinematics
+  ): void;
+}
+```
