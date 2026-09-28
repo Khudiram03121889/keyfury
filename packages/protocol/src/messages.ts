@@ -26,12 +26,23 @@ export const ClientMessageTogglePauseSchema = z.object({
   type: z.literal('toggle_pause')
 });
 
+export const ClientMessageSkipIntroSchema = z.object({
+  type: z.literal('skip_intro')
+});
+
+export const ClientMessageUpdateOptionsSchema = z.object({
+  type: z.literal('update_options'),
+  botDifficulty: z.enum(['novice', 'fighter', 'pro', 'adaptive']).optional()
+});
+
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   ClientMessageReadySchema,
   ClientMessageKeyIntentSchema,
   ClientMessageRematchVoteSchema,
   ClientMessageLeaveMatchSchema,
-  ClientMessageTogglePauseSchema
+  ClientMessageTogglePauseSchema,
+  ClientMessageSkipIntroSchema,
+  ClientMessageUpdateOptionsSchema
 ]);
 
 export type ClientMessageReady = z.infer<typeof ClientMessageReadySchema>;
@@ -39,9 +50,11 @@ export type ClientMessageKeyIntent = z.infer<typeof ClientMessageKeyIntentSchema
 export type ClientMessageRematchVote = z.infer<typeof ClientMessageRematchVoteSchema>;
 export type ClientMessageLeaveMatch = z.infer<typeof ClientMessageLeaveMatchSchema>;
 export type ClientMessageTogglePause = z.infer<typeof ClientMessageTogglePauseSchema>;
+export type ClientMessageSkipIntro = z.infer<typeof ClientMessageSkipIntroSchema>;
+export type ClientMessageUpdateOptions = z.infer<typeof ClientMessageUpdateOptionsSchema>;
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 
-export type AttackKind = 'jab' | 'kick' | 'heavy';
+export type AttackKind = 'jab' | 'kick' | 'heavy' | 'weapon';
 
 export interface PlayerSnapshot {
   sessionId: string;
@@ -76,17 +89,20 @@ export interface MatchStateSnapshot {
   arenaId?: string;
 }
 
+export type FinisherTier = 'none' | 'power_strike' | 'weapon_finisher' | 'overdrive';
+
 export type ServerEvent =
   | { type: 'match_snapshot'; snapshot: MatchStateSnapshot }
   | { type: 'key_accepted'; playerId: string; seq: number; char: string; wordIndex: number; charIndex: number }
-  | { type: 'key_error'; playerId: string; seq: number; comboReset: boolean; wordIndex: number; charIndex: number }
-  | { type: 'word_completed'; playerId: string; word: string; wordIndex: number; nextWordIndex: number; nextCharIndex: number; attackKind: AttackKind; damage: number; newHealth: number; newCombo: number }
+  | { type: 'key_error'; playerId: string; seq: number; comboReset: boolean; wordIndex: number; charIndex: number; newHealth?: number }
+  | { type: 'word_completed'; playerId: string; word: string; wordIndex: number; nextWordIndex: number; nextCharIndex: number; attackKind: AttackKind; damage: number; newHealth: number; newCombo: number; comboBonus?: number; finisherTier?: FinisherTier }
   | { type: 'player_disconnect'; playerId: string; gracePeriodSeconds: number }
   | { type: 'player_reconnect'; playerId: string }
   | { type: 'match_start'; countdownSeconds: number }
   | { type: 'match_end'; winnerSessionId?: string; reason: string; summary: MatchStateSnapshot }
   | { type: 'rematch_update'; votes: Record<string, boolean> }
-  | { type: 'bot_fallback'; message: string };
+  | { type: 'bot_fallback'; message: string }
+  | { type: 'options_updated'; botDifficulty: 'novice' | 'fighter' | 'pro' | 'adaptive' };
 
 export type RankTier = 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond' | 'Master' | 'Grandmaster';
 

@@ -307,6 +307,11 @@ export class ModularAtlasManager {
 
     const texture = scene?.textures?.get(texKey);
     if (texture) {
+      if (typeof (texture as any).setFilter === 'function') {
+        const phaserGlobal = typeof window !== 'undefined' ? (window as any).Phaser : undefined;
+        const filterMode = phaserGlobal?.Textures?.FilterMode?.LINEAR ?? 1;
+        (texture as any).setFilter(filterMode);
+      }
       for (const [partName, rect] of Object.entries(metadata.parts)) {
         if (typeof (texture as any).add === 'function') {
           const frame = (texture as any).add(partName, 0, rect.x, rect.y, rect.w, rect.h);

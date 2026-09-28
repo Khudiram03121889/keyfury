@@ -79,9 +79,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ guest, onPlayClick }) 
               soundManager.playClick();
               onPlayClick();
             }}
+            data-testid="start-game-btn"
+            aria-label="Start Game"
             style={{ fontSize: 'clamp(1.05rem, 3vw, 1.3rem)', padding: '14px 32px' }}
           >
-            <Swords size={22} /> Play a Duel <span className="kbd-badge">Enter</span>
+            <Swords size={22} /> Start Game • Play a Duel <span className="kbd-badge">Enter</span>
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
             <span><Keyboard size={14} style={{ verticalAlign: 'middle' }} /> Physical QWERTY Desktop Required</span>

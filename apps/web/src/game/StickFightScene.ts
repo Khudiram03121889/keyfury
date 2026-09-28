@@ -46,7 +46,7 @@ import {
 } from './character/CharacterRigRenderer';
 import { ModularAtlasManager } from './character/ModularAtlasManager';
 
-export type AttackKind = 'jab' | 'kick' | 'jump_kick' | 'uppercut' | 'heavy' | 'knockdown';
+export type AttackKind = 'jab' | 'kick' | 'jump_kick' | 'uppercut' | 'heavy' | 'weapon' | 'knockdown';
 export type FighterState =
   | 'idle'
   | 'step'
@@ -153,11 +153,11 @@ export class StickFightScene extends Phaser.Scene {
     // Legacy fallback support
     this.load.image('highland_bg', highlandSanctuaryUrl);
 
-    // Preload Modular Character Texture Atlases for all 4 Core Fighters
+    // Cyber Valkyrie and Shadow Ronin have real modular atlases. The other
+    // fighters deliberately retain their vector fallback until their own
+    // atlases exist; do not request missing JSON/PNG files from Vite.
     ModularAtlasManager.preloadInScene(this, 'shadow_ronin');
     ModularAtlasManager.preloadInScene(this, 'cyber_valkyrie');
-    ModularAtlasManager.preloadInScene(this, 'volt_shinobi');
-    ModularAtlasManager.preloadInScene(this, 'void_assassin');
   }
 
   public getPlatformY(): number {
@@ -698,14 +698,18 @@ export class StickFightScene extends Phaser.Scene {
         case 'heavy':
           damage = Math.floor(Math.random() * 10) + 28;
           break;
+        case 'weapon':
+          damage = 35;
+          break;
         case 'knockdown':
           damage = 50;
           break;
       }
     }
+    const finalDamage = damage ?? 15;
 
     // Select dynamic move pose & visual move title based on move bucket + combo level
-    let moveState: FighterState = attackKind;
+    let moveState: FighterState = attackKind === 'weapon' ? 'heavy' : attackKind;
     let moveTitle = 'JAB';
     let color = attackerCharDef.theme.primaryColor;
 
@@ -733,6 +737,10 @@ export class StickFightScene extends Phaser.Scene {
         moveTitle = 'HEAVY IMPACT';
         color = attackerCharDef.theme.accentColor;
       }
+    } else if (attackKind === 'weapon') {
+      moveState = 'heavy';
+      moveTitle = attackerCharDef.signatureMove ? attackerCharDef.signatureMove.toUpperCase() : 'WEAPON SURGE';
+      color = attackerCharDef.theme.accentColor;
     } else if (attackKind === 'knockdown') {
       moveState = 'knockdown';
       moveTitle = 'K.O.!';
@@ -857,13 +865,13 @@ export class StickFightScene extends Phaser.Scene {
       : Math.max(minX, Math.min(maxX, currentP1X));
     const targetY = this.getPlatformY() - (isAerial ? 120 : 140);
     const comboLabel = comboStreak >= 6 ? ` 🔥 COMBO x${comboStreak}!` : '';
-    const labelText = `${moveTitle} -${damage}${comboLabel}`;
+    const labelText = `${moveTitle} -${finalDamage}${comboLabel}`;
 
     const isCrit = isHeavyMove || (customDamage !== undefined && customDamage >= 25) || comboStreak >= 5;
 
     this.impactFeedback.processImpact(
       { x: defenderX, y: targetY },
-      damage,
+      finalDamage,
       isCrit ? 100 : isHeavyMove ? 80 : 30,
       100,
       { x: isLeft ? 15 : -15, y: -5 }
@@ -1225,13 +1233,44 @@ export class StickFightScene extends Phaser.Scene {
     let rFootX = rHipX + facing * 20; // Lead foot
     let rFootY = y;
 
+    // Cyber Valkyrie's reference design is a tall, front-facing exo-armour
+    // stance with both gauntlets naturally at the hips. The default fighter
+    // guard was built for a narrow side-on stick figure and forced her hands
+    // over the breastplate. Keep the combat states below intact: they replace
+    // these neutral targets for jabs, kicks, heavies, hits and knockdowns.
+    if (activeCharDef.id === 'cyber_valkyrie') {
+      // Heroic athletic exoskeleton proportions directly matching atlas-v3-consistent-source.png
+      hipY = y - 76;
+      neckX = x;
+      neckY = y - 136;
+      headX = neckX;
+      headY = neckY - 20;
+      // Anatomical shoulder span: rear shoulder on left flank, lead shoulder on right flank
+      lShoulderX = neckX - facing * 26;
+      lShoulderY = neckY + 8;
+      rShoulderX = neckX + facing * 20;
+      rShoulderY = neckY + 12;
+      hipX = x;
+      lHipX = hipX - facing * 12;
+      rHipX = hipX + facing * 12;
+      if (state === 'idle') {
+        // Dynamic, open brawler stance: lead hand extended forward at guard height, rear fist protecting flank
+        lHandX = lShoulderX - facing * 12;
+        lHandY = lShoulderY + 28;
+        rHandX = rShoulderX + facing * 26;
+        rHandY = rShoulderY + 18;
+        lFootX = lHipX - facing * 10;
+        rFootX = rHipX + facing * 20;
+      }
+    }
+
     // 2. Dynamic Poses for Fighter States (Stable Spine Axis & Crisp Limb Strikes)
     if (state === 'step') {
       if (stepToggle) {
-        rHandX = neckX + facing * 36;
+        rHandX = neckX + facing * 44;
         rHandY = neckY + 2;
       } else {
-        lHandX = neckX + facing * 30;
+        lHandX = neckX + facing * 36;
         lHandY = neckY + 4;
       }
     } else if (state === 'windup') {
@@ -1239,43 +1278,43 @@ export class StickFightScene extends Phaser.Scene {
       rHandY = neckY + 8;
     } else if (state === 'jab') {
       // Crisp lead punch extension from shoulder with solid spine
-      rHandX = neckX + facing * 44;
+      rHandX = neckX + facing * 54;
       rHandY = neckY - 2;
-      lHandX = neckX + facing * 6;
+      lHandX = neckX + facing * 8;
       lHandY = neckY + 8;
     } else if (state === 'kick') {
       neckX = x - facing * 2;
       headX = x - facing * 4;
 
-      rFootX = hipX + facing * 48;
-      rFootY = hipY - 18;
+      rFootX = hipX + facing * 58;
+      rFootY = hipY - 20;
 
       lHandX = neckX - facing * 8;
       lHandY = neckY + 8;
     } else if (state === 'jump_kick') {
-      rFootX = hipX + facing * 50;
+      rFootX = hipX + facing * 60;
       rFootY = hipY - 6;
 
-      lFootX = hipX - facing * 18;
-      lFootY = hipY + 20;
+      lFootX = hipX - facing * 20;
+      lFootY = hipY + 24;
 
       rHandX = neckX - facing * 8;
       rHandY = neckY + 10;
-      lHandX = neckX + facing * 16;
+      lHandX = neckX + facing * 20;
       lHandY = neckY - 4;
     } else if (state === 'uppercut') {
-      rHandX = neckX + facing * 16;
-      rHandY = neckY - 48;
+      rHandX = neckX + facing * 20;
+      rHandY = neckY - 56;
 
       lHandX = neckX - facing * 8;
       lHandY = neckY + 8;
     } else if (state === 'heavy') {
-      lHandX = neckX + facing * 38;
+      lHandX = neckX + facing * 46;
       lHandY = neckY - 6;
-      rHandX = neckX + facing * 44;
+      rHandX = neckX + facing * 54;
       rHandY = neckY - 2;
 
-      rFootX = hipX + facing * 24;
+      rFootX = hipX + facing * 28;
       rFootY = y;
     } else if (state === 'hit') {
       neckX = x - facing * 6;
@@ -1304,14 +1343,16 @@ export class StickFightScene extends Phaser.Scene {
       rHandY = y - 6;
     }
 
-    // 3. Solve 2-Bone IK Solvers
-    // Upper Arm = 24px, Forearm = 24px; Thigh = 30px, Shin = 30px
-    // Arm elbows point DOWN (+facing). Knee joints flex FORWARD (-facing).
-    const armL = solve2BoneIK({ x: lShoulderX, y: lShoulderY }, { x: lHandX, y: lHandY }, 24, 24, facing as 1 | -1);
-    const armR = solve2BoneIK({ x: rShoulderX, y: rShoulderY }, { x: rHandX, y: rHandY }, 24, 24, facing as 1 | -1);
+    const armLen1 = activeCharDef.id === 'cyber_valkyrie' ? 26 : 24;
+    const armLen2 = activeCharDef.id === 'cyber_valkyrie' ? 26 : 24;
+    const legLen1 = activeCharDef.id === 'cyber_valkyrie' ? 40 : 30;
+    const legLen2 = activeCharDef.id === 'cyber_valkyrie' ? 40 : 30;
 
-    const legL = solve2BoneIK({ x: lHipX, y: hipY }, { x: lFootX, y: lFootY }, 30, 30, -facing as 1 | -1);
-    const legR = solve2BoneIK({ x: rHipX, y: hipY }, { x: rFootX, y: rFootY }, 30, 30, -facing as 1 | -1);
+    const armL = solve2BoneIK({ x: lShoulderX, y: lShoulderY }, { x: lHandX, y: lHandY }, armLen1, armLen2, facing as 1 | -1);
+    const armR = solve2BoneIK({ x: rShoulderX, y: rShoulderY }, { x: rHandX, y: rHandY }, armLen1, armLen2, facing as 1 | -1);
+
+    const legL = solve2BoneIK({ x: lHipX, y: hipY }, { x: lFootX, y: lFootY }, legLen1, legLen2, -facing as 1 | -1);
+    const legR = solve2BoneIK({ x: rHipX, y: hipY }, { x: rFootX, y: rFootY }, legLen1, legLen2, -facing as 1 | -1);
 
     // KO fall rotation matrix
     let finalHeadX = headX;
@@ -1381,25 +1422,18 @@ export class StickFightScene extends Phaser.Scene {
     };
 
     if (rigContainer) {
-      if (ModularAtlasManager.isAtlasLoaded(this, activeCharDef.id)) {
-        if (typeof rigContainer.setVisible === 'function') {
-          rigContainer.setVisible(true);
-        }
-        this.characterRigRenderer.renderTexturedFighter(
-          this,
-          rigContainer,
-          activeCharDef.id,
-          state,
-          kinematics,
-          time
-        );
-        drawCharacterAttackVFX(fxG, activeCharDef, state, finalNeckX, finalNeckY, finalHipX, finalHipY, armR, legR, facing, time);
-        return;
-      } else {
-        if (typeof rigContainer.setVisible === 'function') {
-          rigContainer.setVisible(false);
-        }
+      if (typeof rigContainer.setVisible === 'function') {
+        rigContainer.setVisible(true);
       }
+      this.characterRigRenderer.renderVectorFallback(
+        this,
+        rigContainer,
+        activeCharDef.id,
+        state,
+        kinematics,
+        time
+      );
+      return;
     }
 
     // 1. REAR LIMBS (Layer 1 - Behind Torso)

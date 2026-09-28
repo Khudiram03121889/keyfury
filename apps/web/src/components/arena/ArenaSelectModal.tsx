@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Trees, Building2, Flame, Moon, Sparkles, Check, Play, Swords } from 'lucide-react';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
   ArenaId,
   ArenaDefinition,
@@ -9,7 +11,19 @@ import {
 } from '@keyfury/game-core';
 import { ARENA_BACKGROUNDS } from '../../assets/arenas';
 import { soundManager } from '../../audio/SoundManager';
-import { saveSelectedArena } from '../../lib/supabase';
+import { saveSelectedArena, saveSelectedCameraAngle, getSavedSelectedCameraAngle } from '../../lib/supabase';
+import {
+  ARENA_DEFINITIONS,
+  resolveArenaId,
+  CameraAngle,
+  CameraViewOption,
+  CAMERA_VIEWS,
+  getCameraTransformForAngle,
+} from '../../render/ThreeCombatArena';
+import { Character3DFighter } from '../../game/character/Character3DController';
+
+export type { CameraAngle, CameraViewOption };
+export { CAMERA_VIEWS, getCameraTransformForAngle };
 
 export interface ArenaSelectModalProps {
   isOpen: boolean;
@@ -21,12 +35,19 @@ export interface ArenaSelectModalProps {
   fightModeLabel?: string;
 }
 
+export function getCleanArenaName(name: string): string {
+  return name.replace(/\s*\(?(3D|True\s*3D)\)?/gi, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 const ARENA_ICONS: Record<ArenaId, React.ReactNode> = {
   highland_sanctuary: <Trees size={18} />,
   cyber_rooftop: <Building2 size={18} />,
   volcanic_caldera: <Flame size={18} />,
   celestial_void: <Moon size={18} />
 };
+
+// Global GLTF scene cache to ensure instant arena switching with zero reload lag
+const gltfSceneCache = new Map<string, THREE.Group>();
 
 export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
   isOpen,
@@ -39,25 +60,362 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
 }) => {
   const arenas = getAllArenas();
   const [focusedId, setFocusedId] = useState<ArenaId>(selectedArenaId);
+  const [cameraAngle, setCameraAngle] = useState<CameraAngle>('front');
+  const [webglSupported, setWebglSupported] = useState<boolean>(true);
 
-  // Sync focused arena when modal opens or selected prop changes
+  // Sync focused arena when modal opens or selected prop changes (defaults to front zoom view)
   useEffect(() => {
     if (isOpen) {
       setFocusedId(selectedArenaId || DEFAULT_ARENA_ID);
+      setCameraAngle('front');
     }
   }, [isOpen, selectedArenaId]);
 
   const focusedArena: ArenaDefinition = getArenaDefinition(focusedId);
 
-  // Keyboard navigation for cycling arenas
+  // Three.js 3D Viewport refs
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const arenaModelRef = useRef<THREE.Object3D | null>(null);
+  const p1FighterRef = useRef<Character3DFighter | null>(null);
+  const p2FighterRef = useRef<Character3DFighter | null>(null);
+  const animFrameIdRef = useRef<number | null>(null);
+
+  const targetCamPos = useRef<THREE.Vector3>(new THREE.Vector3());
+  const targetCamLookAt = useRef<THREE.Vector3>(new THREE.Vector3());
+  const currentCamLookAt = useRef<THREE.Vector3>(new THREE.Vector3());
+
+  // Setup Three.js scene and 3D preview
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const container = canvasContainerRef.current;
+    if (!container) return;
+
+    let destroyed = false;
+    let renderer: THREE.WebGLRenderer | null = null;
+
+    try {
+      const width = container.clientWidth || 460;
+      const height = container.clientHeight || 280;
+
+      const def = ARENA_DEFINITIONS[resolveArenaId(focusedId)];
+      const initialTransform = getCameraTransformForAngle(focusedId, cameraAngle);
+
+      targetCamPos.current.set(initialTransform.pos[0], initialTransform.pos[1], initialTransform.pos[2]);
+      targetCamLookAt.current.set(initialTransform.lookAt[0], initialTransform.lookAt[1], initialTransform.lookAt[2]);
+      currentCamLookAt.current.copy(targetCamLookAt.current);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(def.skyColor);
+      sceneRef.current = scene;
+
+      const camera = new THREE.PerspectiveCamera(initialTransform.fov, width / height, 0.1, 1000);
+      camera.position.copy(targetCamPos.current);
+      camera.lookAt(currentCamLookAt.current);
+      cameraRef.current = camera;
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+        alpha: false
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
+      setWebglSupported(true);
+
+      // Studio Lighting Rig
+      const ambLight = new THREE.AmbientLight(0xffffff, def.ambientIntensity);
+      scene.add(ambLight);
+
+      const keyLight = new THREE.DirectionalLight(0xffffff, def.keyIntensity);
+      keyLight.position.set(def.keyPos[0], def.keyPos[1], def.keyPos[2]);
+      keyLight.castShadow = true;
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0xddeeff, 0.45);
+      fillLight.position.set(0, 3, 7);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(def.rimColor, def.rimIntensity);
+      rimLight.position.set(def.rimPos[0], def.rimPos[1], def.rimPos[2]);
+      scene.add(rimLight);
+
+      // Load 3D Sparring Fighters in Zoomed-in Combat Stance
+      const fighterLoader = new GLTFLoader();
+      const p1 = new Character3DFighter('ronin', 'left', fighterLoader);
+      p1.baseY = def.fighterFloorY;
+      p1.group.position.set(-1.40, def.fighterFloorY, 0);
+      p1.setEntranceProgress(1.0);
+      scene.add(p1.group);
+      p1FighterRef.current = p1;
+
+      const p2 = new Character3DFighter('valkyrie', 'right', fighterLoader);
+      p2.baseY = def.fighterFloorY;
+      p2.group.position.set(1.40, def.fighterFloorY, 0);
+      p2.setEntranceProgress(1.0);
+      scene.add(p2.group);
+      p2FighterRef.current = p2;
+
+      // Helper to apply LookDev calibrations
+      const calibrateModel = (obj: THREE.Object3D) => {
+        obj.traverse((child) => {
+          if ((child as any).isLight) {
+            (child as THREE.Light).intensity = 0;
+            (child as THREE.Light).visible = false;
+          }
+          if ((child as THREE.Mesh).isMesh) {
+            const m = child as THREE.Mesh;
+            m.receiveShadow = true;
+            m.castShadow = true;
+            if (m.material) {
+              const mats = Array.isArray(m.material) ? m.material : [m.material];
+              mats.forEach((mat) => {
+                const stdMat = mat as THREE.MeshStandardMaterial;
+                stdMat.depthWrite = true;
+                const name = stdMat.name || '';
+                if (name.includes('Facade')) {
+                  stdMat.emissive.setHex(0x02050e);
+                  stdMat.emissiveIntensity = 0.2;
+                  stdMat.color.setHex(0x0a101f);
+                } else if (name.includes('Sign_') || name.includes('Temple_Seal') || name === 'Mat_Magic_Floor') {
+                  stdMat.emissiveIntensity = 1.0;
+                } else if (name.includes('Volcanic_Sky_Dome')) {
+                  stdMat.emissive.setHex(0x140502);
+                  stdMat.emissiveIntensity = 1.0;
+                  stdMat.color.setHex(0x140502);
+                } else if (name.includes('Volcanic_Smoke')) {
+                  stdMat.emissive.setHex(0x000000);
+                  stdMat.color.setHex(0x28201e);
+                  stdMat.roughness = 0.95;
+                } else if (name.includes('Lava') || name.includes('Magma') || name.includes('Fireball')) {
+                  if (name === 'Mat_Convective_Magma_Lake') {
+                    stdMat.emissive.setHex(0xff4500);
+                    stdMat.emissiveIntensity = 2.0;
+                  } else if (name === 'Mat_Lava_Eruption') {
+                    stdMat.emissive.setHex(0xff2200);
+                    stdMat.emissiveIntensity = 2.8;
+                  } else {
+                    stdMat.emissive.setHex(0xff3700);
+                    stdMat.emissiveIntensity = 2.4;
+                  }
+                } else if (name.includes('Crystal')) {
+                  stdMat.emissive.setHex(0x9d4edd);
+                  stdMat.emissiveIntensity = 1.4;
+                }
+                if (stdMat.roughness !== undefined && stdMat.roughness < 0.25) {
+                  stdMat.roughness = 0.28;
+                }
+              });
+            }
+          }
+        });
+      };
+
+      // Load Arena GLB (or clone from cache)
+      const cached = gltfSceneCache.get(def.glb);
+      if (cached) {
+        const clone = cached.clone(true);
+        calibrateModel(clone);
+        scene.add(clone);
+        arenaModelRef.current = clone;
+      } else {
+        const loader = new GLTFLoader();
+        loader.load(def.glb, (gltf) => {
+          if (destroyed) return;
+          calibrateModel(gltf.scene);
+          gltfSceneCache.set(def.glb, gltf.scene);
+          scene.add(gltf.scene);
+          arenaModelRef.current = gltf.scene;
+        }, undefined, () => {
+          // If GLB loading fails, fallback gracefully
+          setWebglSupported(false);
+        });
+      }
+
+      let lastTime = performance.now();
+      let combatActionTimer = 0;
+      let combatActionStep = 0;
+
+      // Render & lerp loop with animated sparring fighters
+      const render = (now: number) => {
+        if (destroyed || !rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+        const delta = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
+
+        // Dynamic sparring combat moves sequence between fighters
+        combatActionTimer += delta;
+        if (combatActionTimer >= 2.2) {
+          combatActionTimer = 0;
+          combatActionStep = (combatActionStep + 1) % 4;
+          if (combatActionStep === 0) {
+            p1.playJab();
+            setTimeout(() => { if (!destroyed) p2.playHitLight(); }, 120);
+          } else if (combatActionStep === 1) {
+            p2.playKick();
+            setTimeout(() => { if (!destroyed) p1.playHitLight(); }, 160);
+          } else if (combatActionStep === 2) {
+            p1.playHeavy();
+            setTimeout(() => { if (!destroyed) p2.playHitHeavy(); }, 280);
+          } else {
+            p2.playJab();
+            setTimeout(() => { if (!destroyed) p1.playHitLight(); }, 120);
+          }
+        }
+
+        p1.update(delta, now * 0.001);
+        p2.update(delta, now * 0.001);
+
+        const cam = cameraRef.current;
+        cam.position.lerp(targetCamPos.current, 0.14);
+        currentCamLookAt.current.lerp(targetCamLookAt.current, 0.14);
+        cam.lookAt(currentCamLookAt.current);
+
+        rendererRef.current.render(sceneRef.current, cam);
+        animFrameIdRef.current = requestAnimationFrame(render);
+      };
+      animFrameIdRef.current = requestAnimationFrame(render);
+
+      // Handle dynamic resize
+      const handleResize = () => {
+        if (!container || !rendererRef.current || !cameraRef.current) return;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+          cameraRef.current.aspect = w / h;
+          cameraRef.current.updateProjectionMatrix();
+          rendererRef.current.setSize(w, h);
+        }
+      };
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        destroyed = true;
+        window.removeEventListener('resize', handleResize);
+        if (animFrameIdRef.current) {
+          cancelAnimationFrame(animFrameIdRef.current);
+          animFrameIdRef.current = null;
+        }
+        if (renderer) {
+          renderer.dispose();
+          rendererRef.current = null;
+        }
+        if (p1FighterRef.current) {
+          sceneRef.current?.remove(p1FighterRef.current.group);
+          p1FighterRef.current = null;
+        }
+        if (p2FighterRef.current) {
+          sceneRef.current?.remove(p2FighterRef.current.group);
+          p2FighterRef.current = null;
+        }
+        if (sceneRef.current) {
+          sceneRef.current.clear();
+          sceneRef.current = null;
+        }
+        arenaModelRef.current = null;
+        cameraRef.current = null;
+      };
+    } catch (_err) {
+      setWebglSupported(false);
+      return;
+    }
+  }, [isOpen, focusedId]);
+
+  // Update camera target coordinates whenever cameraAngle or focusedId changes
+  useEffect(() => {
+    if (!isOpen) return;
+    const transform = getCameraTransformForAngle(focusedId, cameraAngle);
+    targetCamPos.current.set(transform.pos[0], transform.pos[1], transform.pos[2]);
+    targetCamLookAt.current.set(transform.lookAt[0], transform.lookAt[1], transform.lookAt[2]);
+    if (cameraRef.current) {
+      cameraRef.current.fov = transform.fov;
+      cameraRef.current.updateProjectionMatrix();
+    }
+  }, [isOpen, focusedId, cameraAngle]);
+
+  // Keyboard navigation for cycling arenas and camera views
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         soundManager.playClick();
         onClose();
+        return;
+      }
+
+      // Camera preset angle hotkeys: F, B, L, R, S, T, W, V / Tab / Space
+      const keyLower = e.key.toLowerCase();
+      if (keyLower === 'f') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('front');
+        saveSelectedCameraAngle('front');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 'b') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('back');
+        saveSelectedCameraAngle('back');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 'l') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('left');
+        saveSelectedCameraAngle('left');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 'r') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('right');
+        saveSelectedCameraAngle('right');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 's') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('spider_cam');
+        saveSelectedCameraAngle('spider_cam');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 't') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('focused_60');
+        saveSelectedCameraAngle('focused_60');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 'w') {
+        e.preventDefault();
+        e.stopPropagation();
+        setCameraAngle('wide_front');
+        saveSelectedCameraAngle('wide_front');
+        soundManager.playClick();
+        return;
+      } else if (keyLower === 'v' || e.key === 'Tab' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        const angles: CameraAngle[] = CAMERA_VIEWS.map((v) => v.id);
+        const nextIdx = (angles.indexOf(cameraAngle) + 1) % angles.length;
+        setCameraAngle(angles[nextIdx]);
+        saveSelectedCameraAngle(angles[nextIdx]);
+        soundManager.playClick();
         return;
       }
 
@@ -82,13 +440,14 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
         }
       } else if (e.key === 'Enter') {
         e.preventDefault();
+        e.stopPropagation();
         handleConfirmSelection(focusedId);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, focusedId, arenas, onClose]);
+  }, [isOpen, focusedId, arenas, cameraAngle, onClose]);
 
   if (!isOpen) return null;
 
@@ -96,6 +455,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
     soundManager.playClick();
     onSelectArena(arenaId);
     saveSelectedArena(arenaId);
+    saveSelectedCameraAngle(cameraAngle);
     if (isFightLaunchFlow && onStartFight) {
       onStartFight(arenaId);
     }
@@ -302,7 +662,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                       </div>
                       <div>
                         <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>{arena.name}</span>
+                          <span>{getCleanArenaName(arena.name)}</span>
                           <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: 'rgba(0,0,0,0.5)', padding: '1px 5px', borderRadius: '4px' }}>
                             [{idx + 1}]
                           </span>
@@ -339,45 +699,160 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
 
           {/* Right: Detailed Arena Panoramic Showcase */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Cinematic Stage Preview Banner */}
+            {/* Cinematic 3D Multi-Angle Preview Banner */}
             <div
               style={{
                 position: 'relative',
                 width: '100%',
-                height: '240px',
+                height: '280px',
                 borderRadius: '20px',
                 overflow: 'hidden',
                 border: `1.5px solid ${focusedArena.theme.primaryColor}66`,
-                boxShadow: `0 12px 30px rgba(0,0,0,0.6), 0 0 30px ${focusedArena.theme.ambientGlow}`
+                boxShadow: `0 12px 30px rgba(0,0,0,0.6), 0 0 30px ${focusedArena.theme.ambientGlow}`,
+                backgroundColor: '#050b18'
               }}
+              data-testid="arena-3d-preview-container"
+              data-active-view={cameraAngle}
             >
-              <img
-                src={ARENA_BACKGROUNDS[focusedArena.id]}
-                alt={focusedArena.name}
+              {/* 3D WebGL Canvas Viewport or Fallback Image */}
+              {webglSupported ? (
+                <div
+                  ref={canvasContainerRef}
+                  style={{ width: '100%', height: '100%', display: 'block' }}
+                />
+              ) : (
+                <img
+                  src={ARENA_BACKGROUNDS[focusedArena.id]}
+                  alt={getCleanArenaName(focusedArena.name)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                />
+              )}
+
+              {/* Preset Camera Angle Tabs & Active Badge */}
+              <div
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block'
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  right: '12px',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '6px',
+                  flexWrap: 'wrap'
                 }}
-              />
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '4px',
+                    backgroundColor: 'rgba(9, 13, 22, 0.90)',
+                    backdropFilter: 'blur(8px)',
+                    padding: '4px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    flexWrap: 'wrap'
+                  }}
+                >
+                  {CAMERA_VIEWS.map((view) => {
+                    const isActive = cameraAngle === view.id;
+                    return (
+                      <button
+                        key={view.id}
+                        type="button"
+                        data-testid={`camera-view-${view.id}`}
+                        aria-label={`${view.label} camera view`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCameraAngle(view.id);
+                          saveSelectedCameraAngle(view.id);
+                          soundManager.playClick();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '4px 8px',
+                          borderRadius: '7px',
+                          border: isActive
+                            ? `1.5px solid ${focusedArena.theme.primaryColor}`
+                            : '1px solid transparent',
+                          background: isActive
+                            ? `${focusedArena.theme.primaryColor}33`
+                            : 'transparent',
+                          color: isActive ? '#ffffff' : '#94a3b8',
+                          fontSize: '0.72rem',
+                          fontWeight: isActive ? 800 : 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <span>{view.icon}</span>
+                        <span>{view.label}</span>
+                        <span style={{
+                          fontSize: '0.60rem',
+                          opacity: 0.65,
+                          backgroundColor: 'rgba(0,0,0,0.4)',
+                          padding: '1px 4px',
+                          borderRadius: '4px'
+                        }}>
+                          [{view.hotkey}]
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div
+                  style={{
+                    backgroundColor: 'rgba(9, 13, 22, 0.88)',
+                    backdropFilter: 'blur(8px)',
+                    border: `1px solid ${focusedArena.theme.primaryColor}66`,
+                    borderRadius: '8px',
+                    padding: '4px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    fontSize: '0.70rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    color: focusedArena.theme.accentColor
+                  }}
+                >
+                  <span>{CAMERA_VIEWS.find((v) => v.id === cameraAngle)?.angleDeg || 'ACTIVE VIEW'}</span>
+                </div>
+              </div>
+
+              {/* Bottom Subtle Gradient for Text Readability */}
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(0deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.2) 60%, transparent 100%)'
+                  pointerEvents: 'none',
+                  background: 'linear-gradient(0deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.25) 40%, transparent 70%)'
                 }}
               />
 
+              {/* Arena Info Overlay */}
               <div
                 style={{
                   position: 'absolute',
-                  bottom: '16px',
-                  left: '20px',
-                  right: '20px',
+                  bottom: '14px',
+                  left: '18px',
+                  right: '18px',
                   display: 'flex',
                   alignItems: 'flex-end',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  pointerEvents: 'none',
+                  zIndex: 5
                 }}
               >
                 <div>
@@ -391,28 +866,28 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                       backgroundColor: `${focusedArena.theme.primaryColor}33`,
                       border: `1px solid ${focusedArena.theme.primaryColor}88`,
                       color: focusedArena.theme.primaryColor,
-                      fontSize: '0.75rem',
+                      fontSize: '0.72rem',
                       fontWeight: 800,
                       textTransform: 'uppercase',
-                      marginBottom: '6px'
+                      marginBottom: '4px'
                     }}
                   >
                     {ARENA_ICONS[focusedArena.id]}
                     <span>{focusedArena.subtitle}</span>
                   </div>
-                  <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
-                    {focusedArena.name}
+                  <h3 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 900, color: '#ffffff' }}>
+                    {getCleanArenaName(focusedArena.name)}
                   </h3>
                 </div>
 
                 <div
                   style={{
-                    padding: '4px 12px',
+                    padding: '4px 10px',
                     borderRadius: '8px',
-                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    backgroundColor: 'rgba(0,0,0,0.65)',
                     backdropFilter: 'blur(6px)',
                     border: '1px solid rgba(255,255,255,0.1)',
-                    fontSize: '0.75rem',
+                    fontSize: '0.72rem',
                     color: '#94a3b8'
                   }}
                 >
@@ -509,7 +984,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
               {isFightLaunchFlow ? (
                 <>
                   <Swords size={22} />
-                  <span>START FIGHT • {focusedArena.name.toUpperCase()}</span>
+                  <span>START FIGHT • {getCleanArenaName(focusedArena.name).toUpperCase()}</span>
                   <span
                     style={{
                       marginLeft: '6px',
@@ -529,7 +1004,7 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Play size={18} /> EQUIP {focusedArena.name.toUpperCase()}
+                  <Play size={18} /> EQUIP {getCleanArenaName(focusedArena.name).toUpperCase()}
                 </>
               )}
             </button>

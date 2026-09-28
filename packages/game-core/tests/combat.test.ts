@@ -9,6 +9,7 @@ import {
   getTypingProgress,
   getActiveKeyHighlight,
   calculateMatchEndComparison,
+  getBotDifficultyConfig,
   MATCH_RULES
 } from '../src/combat.js';
 
@@ -42,18 +43,35 @@ describe('Combat Logic & Sequence Validation', () => {
     expect(getAttackKind('cat')).toBe('jab');
     expect(getAttackKind('warrior')).toBe('kick'); // 7 chars -> kick
     expect(getAttackKind('keyboard')).toBe('heavy'); // 8 chars -> heavy
+    expect(getAttackKind('championship')).toBe('weapon'); // 12 chars -> weapon
+    expect(getAttackKind('keyboard', 3)).toBe('weapon'); // 8 chars with combo 3 -> weapon
 
     expect(calculateDamage('cat', 0).totalDamage).toBe(MATCH_RULES.JAB_BASE_DAMAGE);
     expect(calculateDamage('warrior', 0).totalDamage).toBe(MATCH_RULES.KICK_BASE_DAMAGE);
     expect(calculateDamage('keyboard', 0).totalDamage).toBe(MATCH_RULES.HEAVY_BASE_DAMAGE);
+    expect(calculateDamage('championship', 0).totalDamage).toBe(MATCH_RULES.WEAPON_BASE_DAMAGE);
   });
 
-  it('applies the fixed +5 combo bonus only after more than five clean words (6th word onward)', () => {
-    const beforeCombo = calculateDamage('cat', MATCH_RULES.COMBO_REQUIRED_WORDS - 1);
+  it('applies tiered combo milestone bonuses (3x Power Strike, 5x Weapon Finisher, 8x Overdrive)', () => {
+    const beforeCombo = calculateDamage('cat', 2);
     expect(beforeCombo.totalDamage).toBe(MATCH_RULES.JAB_BASE_DAMAGE);
+    expect(beforeCombo.comboBonus).toBe(0);
+    expect(beforeCombo.finisherTier).toBe('none');
 
-    const activeCombo = calculateDamage('cat', MATCH_RULES.COMBO_REQUIRED_WORDS);
-    expect(activeCombo.totalDamage).toBe(MATCH_RULES.JAB_BASE_DAMAGE + MATCH_RULES.MAX_COMBO_BONUS);
+    const powerStrike = calculateDamage('cat', 3);
+    expect(powerStrike.totalDamage).toBe(MATCH_RULES.KICK_BASE_DAMAGE + MATCH_RULES.COMBO_POWER_STRIKE_BONUS); // cat upgraded to kick on combo
+    expect(powerStrike.comboBonus).toBe(MATCH_RULES.COMBO_POWER_STRIKE_BONUS);
+    expect(powerStrike.finisherTier).toBe('power_strike');
+
+    const weaponFinisher = calculateDamage('cat', 5);
+    expect(weaponFinisher.totalDamage).toBe(MATCH_RULES.WEAPON_BASE_DAMAGE + MATCH_RULES.COMBO_WEAPON_FINISHER_BONUS);
+    expect(weaponFinisher.comboBonus).toBe(MATCH_RULES.COMBO_WEAPON_FINISHER_BONUS);
+    expect(weaponFinisher.finisherTier).toBe('weapon_finisher');
+
+    const overdrive = calculateDamage('cat', 8);
+    expect(overdrive.totalDamage).toBe(MATCH_RULES.WEAPON_BASE_DAMAGE + MATCH_RULES.COMBO_OVERDRIVE_BONUS);
+    expect(overdrive.comboBonus).toBe(MATCH_RULES.COMBO_OVERDRIVE_BONUS);
+    expect(overdrive.finisherTier).toBe('overdrive');
   });
 
   it('deals the same damage when either fighter completes the same word', () => {
@@ -173,6 +191,61 @@ describe('Highland Arena Sentence & Typing Progress Features', () => {
     expect(stats.player1Stats.wpm).toBeGreaterThan(0);
     expect(stats.player1Stats.accuracy).toBe(100);
     expect(stats.winnerSessionId).toBe('p1');
+  });
+
+  it('allows instantaneous re-type after wrong key with zero lockout', () => {
+    const p1 = createInitialPlayerCombatState('p1');
+    const p2 = createInitialPlayerCombatState('p2');
+    const words = ['cat '];
+
+    p1.combo = 4;
+    const now = Date.now();
+
+    // 1. Wrong key input resets combo and does NOT set future stun lockout
+    const wrongRes = processKeyIntent(p1, p2, 'z', words, now, 1);
+    expect(wrongRes.success).toBe(false);
+    expect(p1.combo).toBe(0);
+    expect(p1.stunnedUntilMs).toBe(0);
+
+    // 2. Immediately next millisecond, correct key is processed successfully
+    const correctRes = processKeyIntent(p1, p2, 'c', words, now + 1, 2);
+    expect(correctRes.success).toBe(true);
+    expect(correctRes.type).toBe('char_advanced');
+    expect(p1.wordTypedCharCount).toBe(1);
+  });
+
+  it('configures bot difficulty levels with user-specified accuracy targets', () => {
+    // Novice: 35 WPM, competitive accuracy
+    const novice = getBotDifficultyConfig('novice');
+    expect(novice.targetWpm).toBe(35);
+    expect(novice.accuracyMin).toBeGreaterThanOrEqual(0.94);
+    expect(novice.accuracyMax).toBeLessThanOrEqual(0.97);
+
+    // Fighter: 60 WPM, 97% to 98.5% accuracy
+    const fighter = getBotDifficultyConfig('fighter');
+    expect(fighter.targetWpm).toBe(60);
+    expect(fighter.accuracyMin).toBeGreaterThanOrEqual(0.96);
+    expect(fighter.accuracyMax).toBeLessThanOrEqual(0.99);
+
+    // Pro: 90 WPM, 99% to 100% accuracy
+    const pro = getBotDifficultyConfig('pro');
+    expect(pro.targetWpm).toBe(90);
+    expect(pro.accuracyMin).toBeGreaterThanOrEqual(0.98);
+    expect(pro.accuracyMax).toBeLessThanOrEqual(1.00);
+
+    // Adaptive: dynamically scales to player WPM and maintains solid duel pressure
+    const adaptiveBase = getBotDifficultyConfig('adaptive', 55, 0.96, 0);
+    expect(adaptiveBase.targetWpm).toBe(55);
+    expect(adaptiveBase.accuracyMin).toBeGreaterThanOrEqual(0.95);
+    expect(adaptiveBase.accuracyMax).toBeLessThanOrEqual(0.995);
+
+    // Rubber-banding: player trailing (-30 HP) softens bot accuracy slightly
+    const adaptiveTrailing = getBotDifficultyConfig('adaptive', 55, 0.96, -30);
+    expect(adaptiveTrailing.accuracyMin).toBeLessThan(adaptiveBase.accuracyMin);
+
+    // Rubber-banding: player leading (+30 HP) sharpens bot accuracy
+    const adaptiveLeading = getBotDifficultyConfig('adaptive', 55, 0.96, 30);
+    expect(adaptiveLeading.accuracyMax).toBeGreaterThanOrEqual(adaptiveBase.accuracyMax);
   });
 });
 

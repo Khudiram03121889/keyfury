@@ -18,6 +18,9 @@ export interface CharacterSelectModalProps {
   onClose: () => void;
   selectedCharacterId?: CharacterId;
   onSelectCharacter: (characterId: CharacterId) => void;
+  isFightLaunchFlow?: boolean;
+  fightModeLabel?: string;
+  onConfirmLaunch?: (characterId: CharacterId) => void;
 }
 
 const ARCHETYPE_ICONS: Record<CharacterId, string> = {
@@ -31,7 +34,10 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
   isOpen,
   onClose,
   selectedCharacterId = DEFAULT_CHARACTER_ID,
-  onSelectCharacter
+  onSelectCharacter,
+  isFightLaunchFlow = false,
+  fightModeLabel = 'Duel',
+  onConfirmLaunch
 }) => {
   const characters = getAllCharacters();
   const [focusedId, setFocusedId] = useState<CharacterId>(selectedCharacterId);
@@ -269,6 +275,9 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
     soundSynth.playKOChime(true);
     saveSelectedCharacter(charId);
     onSelectCharacter(charId);
+    if (isFightLaunchFlow && onConfirmLaunch) {
+      onConfirmLaunch(charId);
+    }
     onClose();
   };
 
@@ -323,11 +332,31 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
               <Swords size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.5px' }}>
-                SELECT YOUR <span style={{ color: focusedChar.theme.primaryColor }}>CHAMPION</span>
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-heading)', margin: 0, letterSpacing: '-0.5px' }}>
+                  {isFightLaunchFlow ? 'STEP 2 OF 2: CHOOSE CHAMPION' : 'SELECT YOUR '}
+                  {!isFightLaunchFlow && <span style={{ color: focusedChar.theme.primaryColor }}>CHAMPION</span>}
+                </h2>
+                {isFightLaunchFlow && (
+                  <span
+                    style={{
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      color: 'var(--accent-cyan)',
+                      fontSize: '0.7rem',
+                      fontWeight: 800
+                    }}
+                  >
+                    {fightModeLabel}
+                  </span>
+                )}
+              </div>
               <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                Choose your fighting avatar & harness unique elemental kinetic abilities.
+                {isFightLaunchFlow
+                  ? `Select your champion, then confirm to enter ${fightModeLabel}`
+                  : 'Choose your fighting avatar & harness unique elemental kinetic abilities.'}
               </p>
             </div>
           </div>
@@ -724,8 +753,8 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
               data-testid="confirm-character-selection-btn"
               onClick={() => handleConfirmSelection(focusedId)}
               style={{
-                backgroundColor: isEquipped ? '#10b981' : focusedChar.theme.primaryColor,
-                color: '#090d16',
+                backgroundColor: isFightLaunchFlow ? '#f97316' : isEquipped ? '#10b981' : focusedChar.theme.primaryColor,
+                color: isFightLaunchFlow ? '#ffffff' : '#090d16',
                 border: 'none',
                 borderRadius: '10px',
                 padding: '8px 20px',
@@ -735,13 +764,19 @@ export const CharacterSelectModal: React.FC<CharacterSelectModalProps> = ({
                 alignItems: 'center',
                 gap: '8px',
                 cursor: 'pointer',
-                boxShadow: isEquipped
+                boxShadow: isFightLaunchFlow
+                  ? '0 0 20px rgba(249, 115, 22, 0.5)'
+                  : isEquipped
                   ? '0 0 20px rgba(16, 185, 129, 0.5)'
                   : `0 0 20px ${focusedChar.theme.glowColor}`,
                 transition: 'all 0.2s ease'
               }}
             >
-              {isEquipped ? (
+              {isFightLaunchFlow ? (
+                <>
+                  <Swords size={16} /> START MATCH • {focusedChar.name.toUpperCase()}
+                </>
+              ) : isEquipped ? (
                 <>
                   <Check size={16} strokeWidth={3} /> Active Champion (Equipped)
                 </>

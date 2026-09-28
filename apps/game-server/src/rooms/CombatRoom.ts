@@ -7,6 +7,7 @@ import {
   processKeyIntent,
   calculateWpmAndAccuracy,
   getBotInputIntervalMs,
+  getBotDifficultyConfig,
   BotDifficulty,
   PlayerCombatState,
   CombatEventLog,
@@ -55,6 +56,7 @@ export class CombatRoomState extends Schema {
   @type('string') roomCode: string = '';
   @type('boolean') isPaused: boolean = false;
   @type('string') arenaId: string = 'highland_sanctuary';
+  @type('boolean') inputEnabled: boolean = false;
 }
 
 function generateRoomCode(): string {
@@ -169,6 +171,8 @@ export class CombatRoom extends Room<CombatRoomState> {
     this.onMessage('rematch_vote', (client, message) => this.handleClientMessage(client, 'rematch_vote', message));
     this.onMessage('leave_match', (client, message) => this.handleClientMessage(client, 'leave_match', message));
     this.onMessage('toggle_pause', (client, message) => this.handleClientMessage(client, 'toggle_pause', message));
+    this.onMessage('skip_intro', (client, message) => this.handleClientMessage(client, 'skip_intro', message));
+    this.onMessage('update_options', (client, message) => this.handleClientMessage(client, 'update_options', message));
 
     console.log(`[CombatRoom] Created room ${this.roomId} (challenge=${this.state.isChallenge}, bot=${this.hasBotOpponent})`);
   }
@@ -201,15 +205,45 @@ export class CombatRoom extends Room<CombatRoomState> {
   private startCountdown() {
     this.generateRoomDeck();
     this.state.status = 'countdown';
-    this.state.countdownSeconds = 3;
+    this.state.inputEnabled = false;
+    // Synchronized countdown window: 8 seconds (matching cinematic entrance & standoff)
+    this.state.countdownSeconds = 8;
+
+    console.log(`[ENTRANCE_START] timestamp=${new Date().toISOString()} map=${this.state.arenaId} room=${this.roomId}`);
+    console.log(`[COUNTDOWN_START] timestamp=${new Date().toISOString()} count=3 room=${this.roomId}`);
+    console.log(`[INPUT_CONTROL] disabled=true participant=human timestamp=${new Date().toISOString()} reason=entrance_and_countdown`);
+    console.log(`[INPUT_CONTROL] disabled=true participant=bot timestamp=${new Date().toISOString()} reason=entrance_and_countdown`);
+
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = undefined;
+    }
 
     this.countdownInterval = setInterval(() => {
       this.state.countdownSeconds--;
       if (this.state.countdownSeconds <= 0) {
-        if (this.countdownInterval) clearInterval(this.countdownInterval);
-        this.startMatch();
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+          this.countdownInterval = undefined;
+        }
+        // In bot matches, wait for human client intro/countdown completion via skip_intro
+        // or the 30s safety timeout to prevent premature bot typing while human loads/watches intro
+        if (!this.hasBotOpponent) {
+          this.startMatch();
+        }
       }
     }, 1000);
+
+    // In bot matches, set a safety fallback timeout (30s) in case client disconnects
+    if (this.hasBotOpponent) {
+      if (this.botFallbackTimeout) clearTimeout(this.botFallbackTimeout);
+      this.botFallbackTimeout = setTimeout(() => {
+        if (this.state.status === 'countdown') {
+          console.log(`[CombatRoom] Bot match countdown safety timeout reached in room ${this.roomId}, starting match`);
+          this.startMatch();
+        }
+      }, 30000);
+    }
   }
 
   onJoin(client: Client, options: { profileId?: string; displayName?: string; withBot?: boolean; botDifficulty?: BotDifficulty; mmr?: number; level?: number; matchesPlayed?: number; characterId?: string }) {
@@ -478,6 +512,39 @@ export class CombatRoom extends Room<CombatRoomState> {
       case 'toggle_pause':
         this.handleTogglePause(client);
         break;
+      case 'skip_intro':
+        this.handleSkipIntro(client);
+        break;
+      case 'update_options':
+        this.handleUpdateOptions(client, msg);
+        break;
+    }
+  }
+
+  private handleUpdateOptions(_client: Client, msg: { botDifficulty?: BotDifficulty }) {
+    if (msg.botDifficulty && ['novice', 'fighter', 'pro', 'adaptive'].includes(msg.botDifficulty)) {
+      this.botDifficulty = msg.botDifficulty;
+      console.log(`[CombatRoom] Updated bot difficulty in room ${this.roomId} to ${this.botDifficulty}`);
+      this.broadcast('server_event', {
+        type: 'options_updated',
+        botDifficulty: this.botDifficulty
+      } as any);
+    }
+  }
+
+  private handleSkipIntro(_client: Client) {
+    if (this.state.status === 'countdown') {
+      console.log(`[CombatRoom] Skip intro / countdown complete requested in room ${this.roomId}, starting match immediately`);
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+        this.countdownInterval = undefined;
+      }
+      if (this.botFallbackTimeout) {
+        clearTimeout(this.botFallbackTimeout);
+        this.botFallbackTimeout = undefined;
+      }
+      this.state.countdownSeconds = 0;
+      this.startMatch();
     }
   }
 
@@ -511,9 +578,15 @@ export class CombatRoom extends Room<CombatRoomState> {
 
   private startMatch() {
     this.state.status = 'in_progress';
+    this.state.inputEnabled = true;
     this.state.remainingSeconds = MATCH_RULES.MATCH_DURATION_SECONDS;
     this.matchStartedAt = Date.now();
     this.eventLog = [];
+
+    console.log(`[COUNTDOWN_END] timestamp=${new Date().toISOString()} room=${this.roomId}`);
+    console.log(`[FIGHT_START] timestamp=${new Date().toISOString()} map=${this.state.arenaId} room=${this.roomId}`);
+    console.log(`[INPUT_CONTROL] enabled=true participant=human timestamp=${new Date().toISOString()}`);
+    console.log(`[INPUT_CONTROL] enabled=true participant=bot timestamp=${new Date().toISOString()}`);
 
     this.broadcast('server_event', { type: 'match_start', countdownSeconds: 0 } as ServerEvent);
 
@@ -550,16 +623,30 @@ export class CombatRoom extends Room<CombatRoomState> {
   private startBotTypingLoop() {
     const botSessionId = 'bot-ai-opponent';
     let seq = 0;
+    let botStartTime = Date.now();
+    let botKeyIndex = 0;
+    let lastDifficulty = this.botDifficulty;
+
+    let botJustMadeTypo = false;
 
     const scheduleNextKey = () => {
-      if (this.matchEnded || this.state.status !== 'in_progress') {
+      if (this.matchEnded || this.state.status !== 'in_progress' || !this.state.inputEnabled) {
         if (this.botInterval) clearTimeout(this.botInterval);
         return;
       }
 
       if (this.state.isPaused) {
+        botStartTime += 200;
         this.botInterval = setTimeout(scheduleNextKey, 200);
         return;
+      }
+
+      // Check if difficulty changed on the fly
+      if (lastDifficulty !== this.botDifficulty) {
+        lastDifficulty = this.botDifficulty;
+        botStartTime = Date.now();
+        botKeyIndex = 0;
+        botJustMadeTypo = false;
       }
 
       const botCombat = this.combatStates.get(botSessionId);
@@ -572,72 +659,127 @@ export class CombatRoom extends Room<CombatRoomState> {
       const targetChar = currentWord[botCombat.wordTypedCharCount];
       if (!targetChar) return;
 
+      if (!this.state.inputEnabled || this.state.status !== 'in_progress') {
+        console.warn(`[BOT_INPUT_BLOCKED] Bot typing blocked: inputEnabled=${this.state.inputEnabled} timestamp=${new Date().toISOString()}`);
+        return;
+      }
+
       seq++;
+      botKeyIndex++;
 
       let humanId = '';
       let humanCombat: PlayerCombatState | undefined;
       let humanWpm = 40;
+      let humanAccuracy = 0.95;
+      let humanHp = 200;
 
       this.combatStates.forEach((cs, sId) => {
         if (sId !== botSessionId) {
           humanId = sId;
           humanCombat = cs;
+          humanHp = cs.health;
           const hState = this.state.players.get(sId);
-          if (hState && hState.acceptedWpm > 0) {
-            humanWpm = hState.acceptedWpm;
+          if (hState) {
+            if (hState.acceptedWpm > 0) humanWpm = hState.acceptedWpm;
+            if (hState.accuracy > 0) humanAccuracy = hState.accuracy / 100;
           }
         }
       });
 
       if (!humanCombat) return;
 
-      const res = processKeyIntent(botCombat, humanCombat, targetChar, this.words, Date.now(), seq);
+      const hpDiff = humanHp - botCombat.health;
+      const botConfig = getBotDifficultyConfig(this.botDifficulty, humanWpm, humanAccuracy, hpDiff);
 
-      if (res.success) {
-        if (res.type === 'char_advanced') {
-          botState.wordTypedCharCount = res.charIndex;
-          this.broadcast('server_event', {
-            type: 'key_accepted',
-            playerId: botSessionId,
-            seq,
-            char: targetChar,
-            wordIndex: res.wordIndex,
-            charIndex: res.charIndex
-          } as ServerEvent);
-        } else if (res.type === 'word_completed') {
-          botState.activeWordIndex = botCombat.activeWordIndex;
-          botState.wordTypedCharCount = 0;
-          botState.combo = res.newCombo;
-          botState.highestCombo = botCombat.highestCombo;
-          botState.wordsCompleted = botCombat.wordsCompleted;
+      // Determine accuracy roll for this keystroke
+      const accuracyTarget = botConfig.accuracyMin === botConfig.accuracyMax
+        ? botConfig.accuracyMin
+        : botConfig.accuracyMin + Math.random() * (botConfig.accuracyMax - botConfig.accuracyMin);
 
-          const humanState = this.state.players.get(humanId);
-          if (humanState) {
-            humanState.health = humanCombat.health;
-          }
+      // Check if bot makes a mistake (never make consecutive typos on same character)
+      let isTypo = false;
+      if (!botJustMadeTypo && Math.random() > accuracyTarget) {
+        isTypo = true;
+        botJustMadeTypo = true;
+      } else {
+        botJustMadeTypo = false;
+      }
 
-          this.broadcast('server_event', {
-            type: 'word_completed',
-            playerId: botSessionId,
-            word: res.word,
-            wordIndex: res.wordIndex,
-            nextWordIndex: botCombat.activeWordIndex,
-            nextCharIndex: botCombat.wordTypedCharCount,
-            attackKind: res.attackKind,
-            damage: res.damageDealt,
-            newHealth: humanCombat.health,
-            newCombo: res.newCombo
-          } as ServerEvent);
+      let keyToType = targetChar;
+      if (isTypo) {
+        const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+        const candidate = alphabet.replace(targetChar.toLowerCase(), '');
+        keyToType = candidate[Math.floor(Math.random() * candidate.length)] || 'x';
+      }
 
-          if (humanCombat.health <= 0) {
-            if (this.botInterval) clearTimeout(this.botInterval);
-            this.resolveKnockout(botSessionId);
-            return;
-          }
+      console.log(`[BOT_KEY_TYPED] char=${keyToType} isTypo=${isTypo} target=${targetChar} timestamp=${new Date().toISOString()}`);
+
+      const botHealthBefore = botCombat.health;
+      const res = processKeyIntent(botCombat, humanCombat, keyToType, this.words, Date.now(), seq);
+
+      if (!res.success) {
+        // Prevent bot from taking self-inflicted damage on typos (bot health is strictly reduced by opponent hits)
+        botCombat.health = botHealthBefore;
+        botState.health = botHealthBefore;
+        botState.combo = 0;
+        this.broadcast('server_event', {
+          type: 'key_error',
+          playerId: botSessionId,
+          seq,
+          comboReset: true,
+          wordIndex: botCombat.activeWordIndex,
+          charIndex: botCombat.wordTypedCharCount,
+          newHealth: botCombat.health
+        } as ServerEvent);
+      } else if (res.type === 'char_advanced') {
+        botState.wordTypedCharCount = res.charIndex;
+        this.broadcast('server_event', {
+          type: 'key_accepted',
+          playerId: botSessionId,
+          seq,
+          char: targetChar,
+          wordIndex: res.wordIndex,
+          charIndex: res.charIndex
+        } as ServerEvent);
+      } else if (res.type === 'word_completed') {
+        botState.activeWordIndex = botCombat.activeWordIndex;
+        botState.wordTypedCharCount = 0;
+        botState.combo = res.newCombo;
+        botState.highestCombo = botCombat.highestCombo;
+        botState.wordsCompleted = botCombat.wordsCompleted;
+
+        const humanState = this.state.players.get(humanId);
+        if (humanState) {
+          humanState.health = humanCombat.health;
+        }
+
+        this.broadcast('server_event', {
+          type: 'word_completed',
+          playerId: botSessionId,
+          word: res.word,
+          wordIndex: res.wordIndex,
+          nextWordIndex: botCombat.activeWordIndex,
+          nextCharIndex: botCombat.wordTypedCharCount,
+          attackKind: res.attackKind,
+          damage: res.damageDealt,
+          newHealth: humanCombat.health,
+          newCombo: res.newCombo,
+          comboBonus: res.comboBonus,
+          finisherTier: res.finisherTier
+        } as ServerEvent);
+
+        if (humanCombat.health <= 0) {
+          if (this.botInterval) clearTimeout(this.botInterval);
+          this.resolveKnockout(botSessionId);
+          return;
         }
       }
 
-      const delayMs = getBotInputIntervalMs(this.botDifficulty, humanWpm);
+      // Exact WPM calculation with drift-compensated scheduling
+      // interval = 60000 / (targetWpm * 5) = 12000 / targetWpm
+      const charIntervalMs = 12000 / botConfig.targetWpm;
+      const nextExpectedTime = botStartTime + (botKeyIndex * charIntervalMs);
+      const delayMs = Math.max(5, Math.round(nextExpectedTime - Date.now()));
       this.botInterval = setTimeout(scheduleNextKey, delayMs);
     };
 
@@ -645,7 +787,10 @@ export class CombatRoom extends Room<CombatRoomState> {
   }
 
   private handleKeyIntent(client: Client, seq: number, key: string, _clientTimeMs: number) {
-    if (this.matchEnded || this.state.status !== 'in_progress' || this.state.isPaused) return;
+    if (this.matchEnded || this.state.status !== 'in_progress' || !this.state.inputEnabled || this.state.isPaused) {
+      console.warn(`[INPUT_BLOCKED] Key from ${client.sessionId} blocked: status=${this.state.status}, inputEnabled=${this.state.inputEnabled} timestamp=${new Date().toISOString()}`);
+      return;
+    }
 
     const pState = this.state.players.get(client.sessionId);
     const pCombat = this.combatStates.get(client.sessionId);
@@ -672,15 +817,24 @@ export class CombatRoom extends Room<CombatRoomState> {
       if (res.comboReset) {
         pState.combo = 0;
       }
+      pState.health = pCombat.health;
 
-      this.broadcast('server_event', {
-        type: 'key_error',
-        playerId: client.sessionId,
-        seq,
-        comboReset: res.comboReset,
-        wordIndex: pCombat.activeWordIndex,
-        charIndex: pCombat.wordTypedCharCount
-      } as ServerEvent);
+      if (res.reason === 'wrong_key') {
+        this.broadcast('server_event', {
+          type: 'key_error',
+          playerId: client.sessionId,
+          seq,
+          comboReset: res.comboReset,
+          wordIndex: pCombat.activeWordIndex,
+          charIndex: pCombat.wordTypedCharCount,
+          newHealth: pCombat.health
+        } as ServerEvent);
+
+        if (pCombat.health <= 0) {
+          if (this.botInterval) clearTimeout(this.botInterval);
+          this.resolveKnockout(opponentId);
+        }
+      }
       return;
     }
 
@@ -716,7 +870,9 @@ export class CombatRoom extends Room<CombatRoomState> {
         attackKind: res.attackKind,
         damage: res.damageDealt,
         newHealth: oppCombat.health,
-        newCombo: res.newCombo
+        newCombo: res.newCombo,
+        comboBonus: res.comboBonus,
+        finisherTier: res.finisherTier
       } as ServerEvent);
 
       if (oppCombat.health <= 0) {
@@ -904,7 +1060,7 @@ export class CombatRoom extends Room<CombatRoomState> {
 
       this.broadcast('server_event', {
         type: 'match_start',
-        countdownSeconds: 3
+        countdownSeconds: 8
       } as ServerEvent);
     }
   }

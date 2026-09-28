@@ -35,7 +35,7 @@ export function getSavedSelectedArena(): ArenaId {
   if (typeof localStorage === 'undefined') return DEFAULT_ARENA_ID;
   try {
     const saved = localStorage.getItem(SELECTED_ARENA_KEY);
-    if (saved && (saved === 'highland_sanctuary' || saved === 'cyber_rooftop' || saved === 'volcanic_caldera' || saved === 'celestial_void')) {
+    if (saved && (saved === 'cyber_rooftop' || saved === 'celestial_void' || saved === 'volcanic_caldera' || saved === 'highland_sanctuary')) {
       return saved as ArenaId;
     }
   } catch (_e) {}
@@ -46,6 +46,26 @@ export function saveSelectedArena(arenaId: ArenaId): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(SELECTED_ARENA_KEY, arenaId);
+  } catch (_e) {}
+}
+
+export const SELECTED_CAMERA_ANGLE_KEY = 'keyfury_selected_camera_angle';
+
+export function getSavedSelectedCameraAngle(): string {
+  if (typeof localStorage === 'undefined') return 'front';
+  try {
+    const saved = localStorage.getItem(SELECTED_CAMERA_ANGLE_KEY);
+    if (saved && ['front', 'left', 'right', 'spider_cam', 'focused_60', 'back', 'wide_front'].includes(saved)) {
+      return saved;
+    }
+  } catch (_e) {}
+  return 'front';
+}
+
+export function saveSelectedCameraAngle(angle: string): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(SELECTED_CAMERA_ANGLE_KEY, angle);
   } catch (_e) {}
 }
 

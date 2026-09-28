@@ -79,7 +79,7 @@ export const ARENA_REGISTRY: Record<ArenaId, ArenaDefinition> = {
   }
 };
 
-export const DEFAULT_ARENA_ID: ArenaId = 'highland_sanctuary';
+export const DEFAULT_ARENA_ID: ArenaId = 'cyber_rooftop';
 
 export function getArenaDefinition(id?: string | null): ArenaDefinition {
   if (id && id in ARENA_REGISTRY) {

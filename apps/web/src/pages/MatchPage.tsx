@@ -3,27 +3,58 @@ import { Room } from 'colyseus.js';
 import Phaser from 'phaser';
 import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle } from 'lucide-react';
 import { StickFightScene, AttackKind } from '../game/StickFightScene';
-import { GuestProfile, getSavedSelectedArena } from '../lib/supabase';
+import { GuestProfile, getSavedSelectedArena, getSavedSelectedCameraAngle } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { RankBadge } from '../components/ranked/RankBadge';
 import { soundSynth } from '../game/audio/SoundSynth';
 import { getArenaDefinition, type ArenaDefinition } from '@keyfury/game-core';
+import { ThreeCombatArena, ThreeCombatArenaRef } from '../render/ThreeCombatArena';
 
-interface MatchPageProps {
+export interface MatchPageProps {
   room: Room;
   guest: GuestProfile;
   onMatchComplete: (resultData: any) => void;
+  use3D?: boolean;
+  threeArenaRef?: React.MutableRefObject<ThreeCombatArenaRef | null>;
 }
 
-export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMatchComplete }) => {
+export const MatchPage: React.FC<MatchPageProps> = ({
+  room,
+  guest: _guest,
+  onMatchComplete,
+  use3D = true,
+  threeArenaRef: externalThreeArenaRef,
+}) => {
+  const is3DMode = use3D !== false;
   const phaserContainerRef = useRef<HTMLDivElement>(null);
   const mainBoxRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<StickFightScene | null>(null);
+  const internalThreeArenaRef = useRef<ThreeCombatArenaRef | null>(null);
+  const threeArenaRef = externalThreeArenaRef || internalThreeArenaRef;
+
+  // 3D Cinematic Entrance & Countdown Synchronization
+  const [isIntroComplete, setIsIntroComplete] = useState<boolean>(() => !is3DMode);
+
+  useEffect(() => {
+    console.log(`[ENTRANCE_START] Client entrance started: map=${matchState?.arenaId || (room as any)?.metadata?.arenaId || getSavedSelectedArena() || 'cyber_rooftop'} timestamp=${new Date().toISOString()}`);
+    console.log(`[INPUT_CONTROL] disabled=true participant=human timestamp=${new Date().toISOString()} reason=entrance_and_countdown`);
+  }, []);
+
+  const handleIntroComplete = React.useCallback(() => {
+    setIsIntroComplete(true);
+    console.log(`[COUNTDOWN_END] Client countdown finished: timestamp=${new Date().toISOString()}`);
+    console.log(`[FIGHT_START] Client fight scene activated: timestamp=${new Date().toISOString()}`);
+    if (room?.state?.status === 'countdown') {
+      try {
+        room.send('skip_intro', {});
+      } catch (_e) {}
+    }
+  }, [room]);
 
   const [matchState, setMatchState] = useState<any>(() => room?.state || null);
   const [countdown, setCountdown] = useState<number | null>(3);
-  const [remainingTime, setRemainingTime] = useState<number>(90);
+  const [remainingTime, setRemainingTime] = useState<number>(60);
   const [muted, setMuted] = useState<boolean>(() => soundManager.isMuted());
   const prevStatusRef = useRef<string>(room?.state?.status || 'lobby');
 
@@ -34,6 +65,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({ room, guest: _guest, onMat
 
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(() => room?.state?.isPaused || false);
+  const [currentBotDifficulty, setCurrentBotDifficulty] = useState<string>(() => (room as any)?.options?.botDifficulty || 'adaptive');
 
   const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
@@ -187,7 +219,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       setMatchState(room.state);
       if (sceneRef.current) {
         const { p1CharId, p2CharId } = getPlayerCharacterIds(room.state);
-        sceneRef.current.setCharacterSkins(p1CharId, p2CharId);
+        sceneRef.current?.setCharacterSkins(p1CharId, p2CharId);
       }
       if (room.state.words && Array.isArray(Array.from(room.state.words))) {
         wordsRef.current = Array.from(room.state.words);
@@ -211,7 +243,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
 
       const { p1CharId, p2CharId } = getPlayerCharacterIds(state);
       if (sceneRef.current) {
-        sceneRef.current.setCharacterSkins(p1CharId, p2CharId);
+        sceneRef.current?.setCharacterSkins(p1CharId, p2CharId);
       }
 
       // Play round start bell on transition to in_progress
@@ -234,7 +266,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
 
         if (sceneRef.current) {
           const mySide: 'left' | 'right' = me.side || 'left';
-          sceneRef.current.updateCombo(mySide, me.combo || 0);
+          sceneRef.current?.updateCombo(mySide, me.combo || 0);
         }
       }
 
@@ -276,9 +308,16 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           }
         }
 
-        // Trigger KO slow-mo sequence in Phaser
-        if (sceneRef.current) {
-          sceneRef.current.triggerKOSequence(loserSide, winnerSide, () => {
+        // Trigger KO slow-mo sequence in 3D Arena & Phaser
+        if (threeArenaRef.current) {
+          threeArenaRef.current.triggerKnockout(loserSide);
+          threeArenaRef.current.triggerVictory(winnerSide);
+          threeArenaRef.current.triggerScreenShake?.(0.35);
+          setTimeout(() => {
+            setShowStatsOverlay(true);
+          }, 1800);
+        } else if (sceneRef.current) {
+          sceneRef.current?.triggerKOSequence(loserSide, winnerSide, () => {
             setShowStatsOverlay(true);
           });
         } else {
@@ -303,26 +342,53 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         sceneRef.current?.updateTypingProgress(side, event.charIndex, eventWord.length);
         sceneRef.current?.triggerKeystrokeJuice(side, event.charIndex, eventWord.length, senderPlayer?.combo || 0, senderPlayer?.wpm);
 
+        // Immediate 3D martial responsiveness on letter input
+        threeArenaRef.current?.triggerKeystroke(side);
+
         if (isMyEvent) {
           syncLocalProgress(event.wordIndex, event.charIndex);
         }
       } else if (event.type === 'word_completed') {
         const attackKind: AttackKind = event.attackKind || 'jab';
-        const isHeavyAttack = attackKind === 'kick' || attackKind === 'heavy' || attackKind === 'uppercut';
+        const isWeaponAttack = attackKind === 'weapon';
+        const finisherTier = event.finisherTier || (event.newCombo && event.newCombo >= 8 ? 'overdrive' : (event.newCombo && event.newCombo >= 5 ? 'weapon_finisher' : (event.newCombo && event.newCombo >= 3 ? 'power_strike' : 'none')));
+        const isFinisher = finisherTier !== 'none';
+        const isHeavyAttack = isWeaponAttack || isFinisher || attackKind === 'kick' || attackKind === 'heavy' || (attackKind as string) === 'uppercut';
+        const tier = isWeaponAttack || finisherTier === 'weapon_finisher' || finisherTier === 'overdrive'
+          ? 'weapon'
+          : (attackKind === 'kick' ? 'kick' : (attackKind === 'heavy' || finisherTier === 'power_strike' || (attackKind as string) === 'uppercut' ? 'heavy' : 'jab'));
 
         // Play punchy impact sound on word completion
         soundManager.playHit(isHeavyAttack);
 
-        if (event.newCombo && event.newCombo >= 2) {
+        if (finisherTier === 'overdrive') {
+          soundSynth.playHeavyImpact(true);
+          soundSynth.playCriticalHit();
+        } else if (finisherTier === 'weapon_finisher' || isWeaponAttack) {
+          soundSynth.playHeavyImpact(true);
+          soundSynth.playCriticalHit();
+        } else if (finisherTier === 'power_strike') {
+          soundSynth.playHeavyImpact(false);
+          soundSynth.playComboHit(event.newCombo || 3);
+        } else if (event.newCombo && event.newCombo >= 2) {
           soundSynth.playComboHit(event.newCombo);
         }
 
-        if (isHeavyAttack) {
+        if (isHeavyAttack && finisherTier === 'none' && !isWeaponAttack) {
           soundSynth.playHeavyImpact(attackKind === 'heavy');
         }
 
-        if (event.damage && event.damage >= 25) {
+        if (event.damage && event.damage >= 25 && finisherTier === 'none') {
           soundSynth.playCriticalHit();
+        }
+
+        // Trigger 3D Martial Strike & Reaction
+        threeArenaRef.current?.triggerAttack(side, tier);
+        threeArenaRef.current?.triggerHit(side === 'left' ? 'right' : 'left', isHeavyAttack ? 'heavy' : 'light');
+
+        if (isHeavyAttack || (event.damage && event.damage >= 25)) {
+          const shake = finisherTier === 'overdrive' ? 0.35 : (finisherTier === 'weapon_finisher' || isWeaponAttack ? 0.32 : (tier === 'heavy' || finisherTier === 'power_strike' ? 0.24 : 0.20));
+          threeArenaRef.current?.triggerScreenShake?.(shake);
         }
 
         sceneRef.current?.triggerAttack(side, attackKind, event.damage, event.newCombo || 0);
@@ -330,29 +396,52 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         if (isMyEvent) {
           syncLocalProgress(event.nextWordIndex, event.nextCharIndex);
         }
-      } else if (event.type === 'key_error' && isMyEvent) {
-        soundSynth.playKeyError();
-        const now = Date.now();
-        stunnedUntilMsRef.current = now + 500;
-        syncAndResetInput();
-        syncLocalProgress(event.wordIndex, event.charIndex);
-        setIsErrorFlash(true);
-        sceneRef.current?.triggerStun(mySide);
-        setTimeout(() => setIsErrorFlash(false), 500);
+      } else if (event.type === 'key_error') {
+        const errorSide: 'left' | 'right' = event.playerId
+          ? (room.state?.players?.get(event.playerId)?.side || (isMyEvent ? mySide : (mySide === 'left' ? 'right' : 'left')))
+          : (isMyEvent ? mySide : (mySide === 'left' ? 'right' : 'left'));
+
+        if (isMyEvent) {
+          soundSynth.playKeyError();
+          stunnedUntilMsRef.current = 0; // Angle 1: Zero input freeze, instant re-type
+          syncAndResetInput();
+          syncLocalProgress(event.wordIndex, event.charIndex);
+          setIsErrorFlash(true);
+          setTimeout(() => setIsErrorFlash(false), 150);
+        }
+
+        // Trigger visual guard stumble on 3D model & 2D scene for the errant fighter
+        sceneRef.current?.triggerStun(errorSide);
+        threeArenaRef.current?.triggerHit(errorSide, 'light');
+      } else if ((event as any).type === 'options_updated') {
+        if ((event as any).botDifficulty) {
+          setCurrentBotDifficulty((event as any).botDifficulty);
+        }
       }
     });
   }, [room, onMatchComplete]);
 
-  // Initialize Phaser Scene ONCE when container is mounted in DOM
+  // Initialize Phaser Scene ONCE when container is mounted in DOM (only in 2D mode)
   useEffect(() => {
+    if (is3DMode) {
+      // 3D WebGL mode is active: Deactivate legacy Phaser 2D loop to eliminate CPU/GPU overhead and maintain 60 FPS
+      return;
+    }
     if (!phaserContainerRef.current || phaserGameRef.current) return;
 
-    const config: Phaser.Types.Core.GameConfig = {
+    const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+    const config: any = {
       type: Phaser.AUTO,
       parent: phaserContainerRef.current,
       width: phaserContainerRef.current.clientWidth || window.innerWidth,
       height: phaserContainerRef.current.clientHeight || window.innerHeight,
       backgroundColor: '#1e293b',
+      resolution: dpr,
+      render: {
+        antialias: true,
+        antialiasGL: true,
+        roundPixels: false
+      },
       scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -399,28 +488,39 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       phaserGameRef.current = null;
       sceneRef.current = null;
     };
-  }, []);
+  }, [is3DMode]);
 
-  // Sync arena changes dynamically if room state changes
+  // Sync arena changes dynamically if room state changes (2D fallback)
   useEffect(() => {
-    if (sceneRef.current && matchState?.arenaId) {
-      sceneRef.current.setArena(matchState.arenaId);
+    if (!is3DMode && sceneRef.current && matchState?.arenaId) {
+      sceneRef.current?.setArena(matchState.arenaId);
     }
-  }, [matchState?.arenaId]);
+  }, [is3DMode, matchState?.arenaId]);
 
-  // Keep a real input focused during combat. Phaser owns the canvas, so a
-  // focused input is more reliable than relying on canvas/window key events.
+  // Keep typing input focused during combat once intro completes or in 2D mode
   useEffect(() => {
-    if (matchState?.status === 'in_progress') {
-      typingInputRef.current?.focus({ preventScroll: true });
+    const canType = (!is3DMode || isIntroComplete) &&
+      matchState?.status === 'in_progress' &&
+      matchState?.inputEnabled !== false;
+    if (canType) {
+      console.log(`[INPUT_CONTROL] enabled=true participant=human timestamp=${new Date().toISOString()}`);
+      if (typingInputRef.current) {
+        typingInputRef.current.disabled = false;
+        typingInputRef.current.focus({ preventScroll: true });
+      }
       const interval = setInterval(() => {
-        if (document.activeElement !== typingInputRef.current && matchStateRef.current?.status === 'in_progress') {
+        const liveStatus = matchStateRef.current?.status;
+        const liveInputEnabled = matchStateRef.current?.inputEnabled;
+        const liveCanType = (!is3DMode || isIntroComplete) &&
+          liveStatus === 'in_progress' &&
+          liveInputEnabled !== false;
+        if (document.activeElement !== typingInputRef.current && liveCanType) {
           typingInputRef.current?.focus({ preventScroll: true });
         }
       }, 500);
       return () => clearInterval(interval);
     }
-  }, [matchState?.status]);
+  }, [matchState?.status, matchState?.inputEnabled, is3DMode, isIntroComplete]);
 
   // Capture phase is intentional: Phaser can consume keyboard events from its
   // canvas before React sees them. Listening on window makes typing work after
@@ -428,7 +528,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
   // focus.
   const handleKeyPress = (char: string) => {
     if (showStatsOverlay || isMatchEndedRef.current || isPaused) return;
-    if (room.state?.status !== 'in_progress') return;
+    if (is3DMode && !isIntroComplete) return;
+    const status = room.state?.status;
+    if (status !== 'in_progress' || matchState?.inputEnabled === false || room.state?.inputEnabled === false) return;
+    if (Date.now() < stunnedUntilMsRef.current) return;
 
     let keyChar = char;
     if (keyChar === 'Spacebar' || keyChar === ' ') {
@@ -454,7 +557,12 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
     }
   };
 
-  const handleInputDOMEvent = (e: React.FormEvent<HTMLInputElement> | React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputDOMEvent = (e: React.FormEvent<HTMLInputElement>) => {
+    if (is3DMode && !isIntroComplete) {
+      syncAndResetInput();
+      return;
+    }
+
     const target = e.target as HTMLInputElement;
     const newVal = target.value || '';
     const oldVal = lastInputValueRef.current;
@@ -506,6 +614,21 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       }
     }
 
+    // Skip intro in 3D mode when user presses Enter or Space during entrance sequence
+    if (is3DMode && !isIntroComplete) {
+      if (event.key === ' ' || event.key === 'Spacebar' || event.key === 'Enter') {
+        event.preventDefault();
+        threeArenaRef.current?.skipIntro();
+        handleIntroComplete();
+        return;
+      }
+      // Strictly suppress and block any other typing keystrokes during entrance
+      if (event.key !== 'Escape') {
+        event.preventDefault();
+        return;
+      }
+    }
+
     if (event.key === 'Escape') {
       event.preventDefault();
       if (isBotMode) {
@@ -518,32 +641,30 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
 
     if (isPaused) return;
 
-    // Global Pause hotkey toggle (P key) in Singleplayer Bot Matches
-    if (event.key === 'p' || event.key === 'P') {
-      const isBotModeActive = (room as any)?.metadata?.withBot || matchStateRef.current?.players?.get('bot-ai-opponent');
-      if (isBotModeActive) {
-        event.preventDefault();
-        handleTogglePause();
-        return;
-      }
+    // Ignore soft-keyboard IME dummy events (handled by DOM input event)
+    if (event.key === 'Unidentified' || event.key === '229') return;
+
+    // Deduplication guard
+    if ((event as any).keyfuryHandled) return;
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+    let char = event.key;
+    if (char === 'Spacebar' || char === ' ') {
+      char = ' ';
     }
 
-    // Single character typing during active battle
-    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      handleKeyPress(event.key);
-    }
-  };
-
-  const handleCombatInput = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      handleKeyPress(event.key);
+    // Single printable character typing during active battle
+    if (char.length === 1 && /^[ -~]$/.test(char)) {
+      (event as any).keyfuryHandled = true;
+      event.preventDefault();
+      handleKeyPress(char);
     }
   };
 
   useEffect(() => {
     window.addEventListener('keydown', handleCombatKey, true);
     return () => window.removeEventListener('keydown', handleCombatKey, true);
-  }, [room, showStatsOverlay, completedState, isBotMode, isPaused]);
+  }, [room, showStatsOverlay, completedState, isBotMode, isPaused, is3DMode, isIntroComplete, handleIntroComplete]);
 
   if (!matchState) {
     return (
@@ -597,14 +718,14 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         ref={mainBoxRef}
         tabIndex={-1}
         onTouchStart={() => {
-          typingInputRef.current?.focus({ preventScroll: true });
+          if (!is3DMode || isIntroComplete) typingInputRef.current?.focus({ preventScroll: true });
         }}
         onClick={() => {
-          typingInputRef.current?.focus({ preventScroll: true });
+          if (!is3DMode || isIntroComplete) typingInputRef.current?.focus({ preventScroll: true });
         }}
         onMouseDown={(event) => {
           event.preventDefault();
-          typingInputRef.current?.focus({ preventScroll: true });
+          if (!is3DMode || isIntroComplete) typingInputRef.current?.focus({ preventScroll: true });
         }}
         style={{
           position: 'relative',
@@ -618,9 +739,8 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           flexDirection: 'column'
         }}
       >
-        {/* Phaser Canvas (Upper Fight Arena) */}
+        {/* 3D Combat Arena (Three.js WebGL Engine) or 2D Phaser Container */}
         <div
-          ref={phaserContainerRef}
           style={{
             width: '100%',
             flex: '1 1 0',
@@ -628,7 +748,26 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             position: 'relative',
             overflow: 'hidden'
           }}
-        />
+        >
+          {is3DMode ? (
+            <ThreeCombatArena
+              ref={threeArenaRef}
+              arenaId={matchState?.arenaId || (room as any)?.metadata?.arenaId || getSavedSelectedArena() || 'cyber_rooftop'}
+              initialCameraAngle="front"
+              p1CharId={getPlayerCharacterIds(matchState || room?.state).p1CharId}
+              p2CharId={getPlayerCharacterIds(matchState || room?.state).p2CharId}
+              isBotMatch={isBotMode}
+              onIntroComplete={handleIntroComplete}
+              currentWord={currentWord}
+              typedCharIndex={typedCharIndex}
+              isErrorFlash={isErrorFlash}
+              p2Word={wordsList[rightPlayer?.activeWordIndex ?? 0] || ''}
+              p2CharIndex={rightPlayer?.wordTypedCharCount ?? 0}
+            />
+          ) : (
+            <div ref={phaserContainerRef} style={{ width: '100%', height: '100%' }} />
+          )}
+        </div>
         
         <input
           ref={typingInputRef}
@@ -636,6 +775,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           type="text"
           name="combat_keystroke_input"
           id="combat_keystroke_input"
+          disabled={is3DMode && !isIntroComplete}
           inputMode="text"
           autoCapitalize="off"
           autoCorrect="off"
@@ -650,8 +790,6 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           data-enable-grammarly="false"
           value=""
           onInput={handleInputDOMEvent}
-          onChange={handleInputDOMEvent}
-          onKeyDown={handleCombatInput}
           style={{
             position: 'absolute',
             top: 0,
@@ -665,7 +803,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             color: 'transparent',
             outline: 'none',
             cursor: 'default',
-            pointerEvents: 'none',
+            pointerEvents: is3DMode && !isIntroComplete ? 'none' : 'auto',
             zIndex: 1
           }}
         />
@@ -711,6 +849,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                 boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)'
               }} />
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', fontSize: viewportWidth < 600 ? '0.62rem' : '0.68rem', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontWeight: 700, color: '#38bdf8' }}>{leftPlayer?.acceptedWpm ?? 0} WPM</span>
+              <span style={{ fontWeight: 700, color: '#34d399' }}>{Math.round(leftPlayer?.accuracy ?? 100)}%</span>
+            </div>
           </div>
 
           {/* Top-Center: Digital Match Timer */}
@@ -748,18 +890,45 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             </button>
 
             {isBotMode && (
-              <button
-                onClick={handleTogglePause}
-                style={{
-                  background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
-                  color: '#eab308', borderRadius: '8px', padding: '4px 8px',
-                  fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-                }}
-                title={isPaused ? 'Resume' : 'Pause'}
-              >
-                {isPaused ? <Play size={14} /> : <Pause size={14} />}
-                <span className="nav-btn-text">{isPaused ? 'RESUME' : 'PAUSE'}</span>
-              </button>
+              <>
+                <button
+                  onClick={handleTogglePause}
+                  style={{
+                    background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
+                    color: '#eab308', borderRadius: '8px', padding: '4px 8px',
+                    fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  }}
+                  title={isPaused ? 'Resume' : 'Pause'}
+                >
+                  {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                  <span className="nav-btn-text">{isPaused ? 'RESUME' : 'PAUSE'}</span>
+                </button>
+                <select
+                  aria-label="Bot Difficulty"
+                  value={currentBotDifficulty}
+                  onChange={(e) => {
+                    const val = e.target.value as any;
+                    setCurrentBotDifficulty(val);
+                    room.send('update_options', { botDifficulty: val });
+                  }}
+                  style={{
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    color: 'var(--accent-cyan)',
+                    borderRadius: '8px',
+                    padding: '3px 6px',
+                    fontSize: viewportWidth < 600 ? '0.62rem' : '0.70rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="adaptive" style={{ background: '#0f172a', color: '#fff' }}>⚡ Adaptive</option>
+                  <option value="novice" style={{ background: '#0f172a', color: '#fff' }}>🛡️ Novice (35)</option>
+                  <option value="fighter" style={{ background: '#0f172a', color: '#fff' }}>⚔️ Fighter (60)</option>
+                  <option value="pro" style={{ background: '#0f172a', color: '#fff' }}>🔥 Pro (90)</option>
+                </select>
+              </>
             )}
 
             {!isBotMode && (
@@ -806,6 +975,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                 boxShadow: '0 0 10px rgba(239, 68, 68, 0.8)'
               }} />
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', fontSize: viewportWidth < 600 ? '0.62rem' : '0.68rem', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontWeight: 700, color: '#38bdf8' }}>{rightPlayer?.acceptedWpm ?? 0} WPM</span>
+              <span style={{ fontWeight: 700, color: '#34d399' }}>{Math.round(rightPlayer?.accuracy ?? 100)}%</span>
+            </div>
           </div>
         </div>
 
@@ -813,8 +986,14 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         {!showStatsOverlay && (
           <div
             id="active-typing-banner"
-            onTouchStart={() => typingInputRef.current?.focus()}
-            onClick={() => typingInputRef.current?.focus()}
+            data-testid="typing-deck"
+            aria-disabled={is3DMode && !isIntroComplete}
+            onTouchStart={() => {
+              if (!is3DMode || isIntroComplete) typingInputRef.current?.focus();
+            }}
+            onClick={() => {
+              if (!is3DMode || isIntroComplete) typingInputRef.current?.focus();
+            }}
             style={{
               position: keyboardOffset > 0 || viewportWidth < 768 ? 'relative' : 'absolute',
               bottom: keyboardOffset > 0 || viewportWidth < 768 ? '0px' : '16px',
@@ -829,20 +1008,46 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               maxWidth: '1080px',
               padding: viewportWidth < 600 ? '2px 8px 6px 8px' : '0 16px 14px 16px',
               boxSizing: 'border-box',
-              flexShrink: 0
+              flexShrink: 0,
+              opacity: is3DMode && !isIntroComplete ? 0.35 : 1,
+              pointerEvents: is3DMode && !isIntroComplete ? 'none' : 'auto',
+              transition: 'opacity 0.25s ease'
             }}
           >
-            {/* Combo Indicator pill */}
+            {/* Combo Indicator pill - Model 1 Tiered Milestone Finishers */}
             {myCombo >= 3 && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '2px 8px', borderRadius: '999px',
-                background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
-                color: '#ffffff', fontWeight: 900, fontSize: viewportWidth < 600 ? '0.68rem' : '0.78rem',
-                letterSpacing: '1px', textTransform: 'uppercase',
-                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.6)'
-              }}>
-                <Flame size={13} /> COMBO STREAK x{myCombo}! (+5 DMG)
+              <div
+                data-testid="combo-indicator"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  background: myCombo >= 8
+                    ? 'linear-gradient(90deg, #8b5cf6, #ec4899, #f43f5e)'
+                    : myCombo >= 5
+                    ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                    : 'linear-gradient(90deg, #f59e0b, #d97706)',
+                  color: '#ffffff',
+                  fontWeight: 900,
+                  fontSize: viewportWidth < 600 ? '0.68rem' : '0.8rem',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  boxShadow: myCombo >= 8
+                    ? '0 0 16px rgba(236, 72, 153, 0.7), 0 4px 14px rgba(139, 92, 246, 0.6)'
+                    : myCombo >= 5
+                    ? '0 0 14px rgba(239, 68, 68, 0.7), 0 4px 12px rgba(220, 38, 38, 0.5)'
+                    : '0 4px 12px rgba(245, 158, 11, 0.6)'
+                }}
+              >
+                {myCombo >= 8 ? (
+                  <>⚡ OVERDRIVE x{myCombo}! (+12 DMG)</>
+                ) : myCombo >= 5 ? (
+                  <>🗡️ WEAPON FINISHER x{myCombo}! (+8 DMG)</>
+                ) : (
+                  <>💥 POWER STRIKE x{myCombo}! (+4 DMG)</>
+                )}
               </div>
             )}
 
@@ -890,6 +1095,8 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                     return (
                       <span
                         key={`line1-char-${charIdx}`}
+                        className={isCurrent ? 'typing-caret' : undefined}
+                        data-testid={isCurrent ? 'typing-caret' : undefined}
                         style={{
                           color: isPast ? '#4ade80' : isCurrent ? (isErrorFlash ? '#ffffff' : '#0f172a') : 'var(--text-main)',
                           background: isCurrent ? (isErrorFlash ? '#ef4444' : '#eab308') : 'transparent',
@@ -1068,46 +1275,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           </div>
         )}
 
-        {/* Countdown Overlay */}
-        {countdown !== null && countdown > 0 && (() => {
-          const rawArena = matchState?.arenaId || (room as any)?.metadata?.arenaId || 'highland_sanctuary';
-          const arenaDef = getArenaDefinition(rawArena);
 
-          return (
-            <div style={{
-              position: 'absolute', inset: 0, background: 'rgba(7, 12, 20, 0.9)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              backdropFilter: 'blur(10px)', zIndex: 20
-            }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 16px',
-                borderRadius: '12px',
-                backgroundColor: `${arenaDef.theme.primaryColor}22`,
-                border: `1px solid ${arenaDef.theme.primaryColor}88`,
-                color: arenaDef.theme.primaryColor,
-                fontSize: '0.85rem',
-                fontWeight: 800,
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                marginBottom: '16px',
-                boxShadow: `0 0 20px ${arenaDef.theme.ambientGlow}`
-              }}>
-                <span>ARENA: {arenaDef.name}</span>
-                <span>•</span>
-                <span>{arenaDef.subtitle}</span>
-              </div>
-              <span style={{ fontSize: '1.4rem', color: '#4ade80', textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '8px' }}>
-                FIGHTERS READY
-              </span>
-              <div style={{ fontSize: '7rem', fontWeight: 900, color: '#4ade80', fontFamily: 'var(--font-mono)' }}>
-                {countdown}
-              </div>
-            </div>
-          );
-        })()}
 
         {/* AI Bot Paused Overlay */}
         {isPaused && !showStatsOverlay && !isMatchEndedRef.current && (

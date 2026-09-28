@@ -6,8 +6,8 @@ import { GuestProfile, UserProfile, getSavedSelectedCharacter, saveSelectedChara
 import { soundManager } from '../audio/SoundManager';
 import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
 import { CharacterSelectModal } from '../components/character/CharacterSelectModal';
-import { ArenaSelectModal } from '../components/arena/ArenaSelectModal';
-import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefinition, getAllArenas, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
+import { ArenaSelectModal, getCleanArenaName } from '../components/arena/ArenaSelectModal';
+import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefinition, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
 import { CHARACTER_PORTRAITS } from '../assets/characters';
 import { ARENA_BACKGROUNDS } from '../assets/arenas';
 
@@ -126,6 +126,8 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   const [pendingFight, setPendingFight] = useState<{
     type: 'quick' | 'bot' | 'challenge';
     botDifficulty?: 'novice' | 'fighter' | 'pro' | 'adaptive';
+    stage?: 'arena' | 'character';
+    arenaId?: ArenaId;
   } | null>(null);
 
   // 1. Quick Duel Flow
@@ -135,18 +137,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       return;
     }
     soundManager.playClick();
-    setPendingFight({ type: 'quick' });
-    setIsArenaModalOpen(true);
+    setPendingFight(null);
+    executeQuickDuel();
   };
 
-  const executeQuickDuel = async (arenaToUse?: ArenaId) => {
+  const executeQuickDuel = async (arenaToUse?: ArenaId, charToUse?: CharacterId) => {
     const arenaId = arenaToUse || selectedArena;
+    const charId = charToUse || selectedCharacter;
     setMode('quick');
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, arenaId);
+      const rm = await joinQuickQueue(activeUser.id, activeUser.displayName, activeUser.mmr, charId, arenaId);
       setServerWarming(false);
       attachRoomListeners(rm);
     } catch (_err: any) {
@@ -158,20 +161,22 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   // 2. Bot Duel Flow
   const initiateBotDuel = (chosenDiff: 'novice' | 'fighter' | 'pro' | 'adaptive') => {
     soundManager.playClick();
-    setPendingFight({ type: 'bot', botDifficulty: chosenDiff });
-    setIsArenaModalOpen(true);
+    setPendingFight(null);
+    executeBotDuel(chosenDiff);
   };
 
-  const executeBotDuel = async (chosenDiff: 'novice' | 'fighter' | 'pro' | 'adaptive', arenaToUse?: ArenaId) => {
+  const executeBotDuel = async (chosenDiff: 'novice' | 'fighter' | 'pro' | 'adaptive', arenaToUse?: ArenaId, charToUse?: CharacterId) => {
     const arenaId = arenaToUse || selectedArena;
+    const charId = charToUse || selectedCharacter;
     setMode('bot');
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, selectedCharacter, arenaId);
+      const rm = await startBotDuel(activeUser.id, activeUser.displayName, chosenDiff, activeUser.mmr, charId, arenaId);
       setServerWarming(false);
       attachRoomListeners(rm);
+      rm.send('ready', {});
     } catch (_err: any) {
       setServerWarming(false);
       setErrorMsg('Failed to initialize AI Bot arena. Please try again.');
@@ -214,18 +219,19 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   // 3. Challenge Flow
   const initiateCreateChallenge = () => {
     soundManager.playClick();
-    setPendingFight({ type: 'challenge' });
-    setIsArenaModalOpen(true);
+    setPendingFight(null);
+    executeCreateChallenge();
   };
 
-  const executeCreateChallenge = async (arenaToUse?: ArenaId) => {
+  const executeCreateChallenge = async (arenaToUse?: ArenaId, charToUse?: CharacterId) => {
     const arenaId = arenaToUse || selectedArena;
+    const charId = charToUse || selectedCharacter;
     setMode('challenge');
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, selectedCharacter, arenaId);
+      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, charId, arenaId);
       setServerWarming(false);
       setRoomCode(rm.id);
       attachRoomListeners(rm);
@@ -235,18 +241,35 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     }
   };
 
-  const handleConfirmAndStartFight = (arenaId: ArenaId) => {
+  // Step 1: Prompt map selection once, then advance directly to character selection once
+  const handleConfirmArenaFight = (arenaId: ArenaId) => {
     handleArenaSelect(arenaId);
     if (!pendingFight) return;
 
-    if (pendingFight.type === 'quick') {
-      executeQuickDuel(arenaId);
-    } else if (pendingFight.type === 'bot') {
-      executeBotDuel(pendingFight.botDifficulty || botDifficulty, arenaId);
-    } else if (pendingFight.type === 'challenge') {
-      executeCreateChallenge(arenaId);
-    }
+    setPendingFight((prev) => prev ? { ...prev, stage: 'character', arenaId } : null);
+    setIsArenaModalOpen(false);
+    setIsCharacterModalOpen(true);
+  };
+
+  // Step 2: Prompt character selection once, then immediately enter match without duplicate dialogs
+  const handleConfirmCharacterFight = (charId: CharacterId) => {
+    handleCharacterSelect(charId);
+    if (!pendingFight) return;
+
+    const chosenArena = pendingFight.arenaId || selectedArena;
+    const fightType = pendingFight.type;
+    const diff = pendingFight.botDifficulty || botDifficulty;
+
     setPendingFight(null);
+    setIsCharacterModalOpen(false);
+
+    if (fightType === 'quick') {
+      executeQuickDuel(chosenArena, charId);
+    } else if (fightType === 'bot') {
+      executeBotDuel(diff, chosenArena, charId);
+    } else if (fightType === 'challenge') {
+      executeCreateChallenge(chosenArena, charId);
+    }
   };
 
   const handleJoinChallenge = async (codeToJoin?: string) => {
@@ -355,6 +378,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (document.activeElement?.tagName === 'INPUT') return;
+      if (isArenaModalOpen || isCharacterModalOpen || showTimeoutModal) return;
 
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
@@ -376,7 +400,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, room, isReady, initiateQuickDuel, toggleReady, handleLeaveQueue, onBackToLanding]);
+  }, [mode, room, isReady, initiateQuickDuel, toggleReady, handleLeaveQueue, onBackToLanding, isArenaModalOpen, isCharacterModalOpen, showTimeoutModal]);
 
   return (
     <div className="lobby-container">
@@ -593,7 +617,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                     <span>{activeArenaDef.subtitle}</span>
                   </div>
                   <div style={{ fontSize: '1.02rem', fontWeight: 900, color: 'var(--text-heading)', marginTop: '1px' }}>
-                    {activeArenaDef.name}
+                    {getCleanArenaName(activeArenaDef.name)}
                   </div>
                 </div>
               </div>
@@ -681,157 +705,12 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
               </div>
             )}
 
-            {/* Pre-Game Arena Selector Grid */}
-            <div style={{ marginBottom: '28px', textAlign: 'left' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '12px',
-                padding: '0 4px'
-              }}>
-                <div style={{
-                  fontSize: '0.82rem',
-                  fontWeight: 900,
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <Compass size={16} color="var(--accent-cyan)" />
-                  <span>Select Battleground Arena Before Match</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundManager.playClick();
-                    setIsArenaModalOpen(true);
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--accent-cyan)',
-                    fontSize: '0.78rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <Sparkles size={13} /> Full Arena Specs
-                </button>
-              </div>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
-                gap: '12px'
-              }}>
-                {getAllArenas().map((arena, idx) => {
-                  const isSelected = arena.id === selectedArena;
-                  const bgUrl = ARENA_BACKGROUNDS[arena.id];
-
-                  return (
-                    <div
-                      key={arena.id}
-                      onClick={() => {
-                        handleArenaSelect(arena.id);
-                        soundManager.playClick();
-                      }}
-                      style={{
-                        position: 'relative',
-                        height: '92px',
-                        borderRadius: '14px',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        border: isSelected
-                          ? `2px solid ${arena.theme.primaryColor}`
-                          : '1px solid rgba(255, 255, 255, 0.1)',
-                        boxShadow: isSelected
-                          ? `0 0 20px ${arena.theme.primaryColor}88, 0 6px 16px rgba(0,0,0,0.6)`
-                          : '0 4px 10px rgba(0,0,0,0.3)',
-                        transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                        transition: 'all 0.2s ease',
-                        padding: '10px 12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end',
-                        textAlign: 'left'
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundImage: `url(${bgUrl})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          filter: isSelected ? 'brightness(0.75) contrast(1.1)' : 'brightness(0.35)',
-                          transition: 'filter 0.2s ease'
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'linear-gradient(0deg, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.3) 100%)'
-                        }}
-                      />
-                      <div style={{ position: 'relative', zIndex: 2 }}>
-                        <div style={{
-                          fontSize: '0.66rem',
-                          color: isSelected ? arena.theme.accentColor : '#94a3b8',
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          {arena.subtitle}
-                        </div>
-                        <div style={{
-                          fontSize: '0.86rem',
-                          fontWeight: 900,
-                          color: '#ffffff',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {arena.name}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px',
-                            zIndex: 3,
-                            backgroundColor: arena.theme.primaryColor,
-                            color: '#ffffff',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: `0 0 10px ${arena.theme.primaryColor}`
-                          }}
-                        >
-                          <Check size={12} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
               <button
                 className="glass-panel"
                 onClick={initiateQuickDuel}
+                data-testid="start-game-btn"
+                aria-label="Start Game"
                 style={{
                   padding: '24px 16px',
                   cursor: 'pointer',
@@ -846,7 +725,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 }}>
                   <Users size={24} />
                 </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-heading)' }}>Quick Duel <span className="kbd-badge">Enter</span></h3>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-heading)' }}>Start Game (Quick Duel) <span className="kbd-badge">Enter</span></h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Match with earliest waiting human player</p>
               </button>
 
@@ -1091,9 +970,22 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 </button>
               </div>
             ) : (
-              <button className="btn-secondary" onClick={cancelLobby} style={{ marginTop: '16px', padding: '10px 20px', fontSize: '0.85rem' }}>
-                Cancel Queue
-              </button>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    handleLeaveQueue();
+                    executeBotDuel('adaptive');
+                  }}
+                  style={{ padding: '10px 18px', fontSize: '0.85rem', backgroundColor: '#22c55e', borderColor: '#4ade80' }}
+                >
+                  <Bot size={16} /> Play vs AI Bot Immediately
+                </button>
+                <button className="btn-secondary" onClick={cancelLobby} style={{ padding: '10px 18px', fontSize: '0.85rem' }}>
+                  Cancel Queue
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -1141,7 +1033,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                       ARENA • {currentArenaDef.subtitle}
                     </div>
                     <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#ffffff' }}>
-                      {currentArenaDef.name}
+                      {getCleanArenaName(currentArenaDef.name)}
                     </div>
                   </div>
                   <button
@@ -1246,7 +1138,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                       SELECTED BATTLEGROUND • {currentArenaDef.subtitle}
                     </div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
-                      {currentArenaDef.name}
+                      {getCleanArenaName(currentArenaDef.name)}
                     </div>
                   </div>
                   <button
@@ -1289,9 +1181,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       {/* Character Selection Modal */}
       <CharacterSelectModal
         isOpen={isCharacterModalOpen}
-        onClose={() => setIsCharacterModalOpen(false)}
+        onClose={() => {
+          setIsCharacterModalOpen(false);
+          setPendingFight(null);
+        }}
         selectedCharacterId={selectedCharacter}
         onSelectCharacter={handleCharacterSelect}
+        isFightLaunchFlow={Boolean(pendingFight)}
+        fightModeLabel={
+          pendingFight?.type === 'quick'
+            ? 'Quick 1v1 Duel'
+            : pendingFight?.type === 'bot'
+            ? `Solo Practice (${(pendingFight.botDifficulty || botDifficulty).toUpperCase()})`
+            : pendingFight?.type === 'challenge'
+            ? 'Private Challenge Duel'
+            : 'Duel'
+        }
+        onConfirmLaunch={handleConfirmCharacterFight}
       />
 
       {/* Arena Selection Modal */}
@@ -1303,7 +1209,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         }}
         selectedArenaId={selectedArena}
         onSelectArena={handleArenaSelect}
-        onStartFight={handleConfirmAndStartFight}
+        onStartFight={handleConfirmArenaFight}
         isFightLaunchFlow={Boolean(pendingFight)}
         fightModeLabel={
           pendingFight?.type === 'quick'
