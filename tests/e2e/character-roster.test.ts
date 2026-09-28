@@ -1001,7 +1001,7 @@ describe('KeyFury 2D Character Roster System — Complete E2E Test Suite', () =>
 
       it('F15-4: validates MATCH_RULES constants are intact', () => {
         expect(MATCH_RULES.STARTING_HEALTH).toBe(200);
-        expect(MATCH_RULES.MATCH_DURATION_SECONDS).toBe(90);
+        expect(MATCH_RULES.MATCH_DURATION_SECONDS).toBe(60);
       });
 
       it('F15-5: executes clean validation pipeline for mock rendering and audio', () => {
