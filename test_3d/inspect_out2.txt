@@ -1,0 +1,3 @@
+has visible_shadow: True
+has visible_camera: True
+has visible_diffuse: True

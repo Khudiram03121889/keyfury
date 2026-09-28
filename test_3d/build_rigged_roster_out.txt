@@ -1,0 +1,23 @@
+=== RIGGING AND EXPORTING ALL 4 KEYFURY FIGHTERS ===
+
+--- Rigging Shadow_Ronin ---
+  Center: (-2.55, 0.20), Z-range: [0.06, 2.20], Height: 2.15
+  Binding result: {'FINISHED'}, Vertex groups created: 20
+  Exported to D:\Keyboard stickman warrior\apps\web\public\assets\3d\Shadow_Ronin.glb (3,755,600 bytes)
+
+--- Rigging Volt_Shinobi ---
+  Center: (-0.88, -0.39), Z-range: [0.00, 1.98], Height: 1.98
+  Binding result: {'FINISHED'}, Vertex groups created: 20
+  Exported to D:\Keyboard stickman warrior\apps\web\public\assets\3d\Volt_Shinobi.glb (3,968,952 bytes)
+
+--- Rigging Void_Assassin ---
+  Center: (0.88, -0.40), Z-range: [0.00, 1.98], Height: 1.98
+  Binding result: {'FINISHED'}, Vertex groups created: 20
+  Exported to D:\Keyboard stickman warrior\apps\web\public\assets\3d\Void_Assassin.glb (3,647,476 bytes)
+
+--- Rigging Cyber_Valkyrie ---
+  Center: (2.59, 0.24), Z-range: [0.15, 2.26], Height: 2.11
+  Binding result: {'FINISHED'}, Vertex groups created: 20
+  Exported to D:\Keyboard stickman warrior\apps\web\public\assets\3d\Cyber_Valkyrie.glb (6,076,700 bytes)
+
+=== ALL FIGHTERS RIGGED AND EXPORTED SUCCESSFULLY ===

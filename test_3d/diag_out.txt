@@ -1,0 +1,10 @@
+Camera_Isometric location: <Vector (24.0000, -20.0000, 22.0000)>
+Camera_Isometric rotation: <Euler (x=0.9425, y=0.0000, z=0.8378), order='XYZ'>
+HIT OBJECT: Storm_Cloud_12_1 at distance 4.18m, hit location: <Vector (21.3745, -17.8121, 19.5933)>
+Obj: Storm_Cloud_12_0, min_dist: 2.62m, center: <Vector (15.2609, -11.1485, 27.0626)>
+Obj: Storm_Cloud_12_1, min_dist: 7.80m, center: <Vector (16.3827, -14.6828, 25.6514)>
+Obj: Storm_Cloud_12_2, min_dist: 1.70m, center: <Vector (16.2397, -11.0881, 28.0943)>
+Obj: Storm_Cloud_12_3, min_dist: 8.50m, center: <Vector (15.8825, -16.8157, 29.1201)>
+Obj: Storm_Cloud_13_1, min_dist: 14.11m, center: <Vector (1.9327, -23.7934, 32.3493)>
+Obj: Storm_Cloud_13_3, min_dist: 8.97m, center: <Vector (4.5989, -27.0630, 30.0698)>
+Obj: Volcano_Flank_Far_Right, min_dist: 11.69m, center: <Vector (0.0000, 0.0000, 0.0000)>

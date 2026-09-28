@@ -1,0 +1,530 @@
+[
+  {
+    "name": "Front_Duel_Fill",
+    "type": "AREA",
+    "color": [
+      0.8500000238418579,
+      0.9200000166893005,
+      1.0
+    ],
+    "energy": 450.0,
+    "location": [
+      0.0,
+      -8.0,
+      2.5
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Ground_Uplight",
+    "type": "POINT",
+    "color": [
+      0.0,
+      0.800000011920929,
+      1.0
+    ],
+    "energy": 180.0,
+    "location": [
+      0.0,
+      0.0,
+      -0.6000000238418579
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Key_Light_Cyan",
+    "type": "AREA",
+    "color": [
+      0.15000000596046448,
+      0.8500000238418579,
+      1.0
+    ],
+    "energy": 650.0,
+    "location": [
+      -6.5,
+      -6.5,
+      4.800000190734863
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Rim_Light_Magenta",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.10000000149011612,
+      0.6000000238418579
+    ],
+    "energy": 600.0,
+    "location": [
+      6.5,
+      5.5,
+      4.800000190734863
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Ronin_Inspect_Fill",
+    "type": "POINT",
+    "color": [
+      0.75,
+      0.8799999952316284,
+      1.0
+    ],
+    "energy": 50.0,
+    "location": [
+      -2.6500000953674316,
+      -1.5499999523162842,
+      1.75
+    ],
+    "hide_render": true
+  },
+  {
+    "name": "Ronin_Inspect_Key",
+    "type": "POINT",
+    "color": [
+      0.949999988079071,
+      0.9800000190734863,
+      1.0
+    ],
+    "energy": 160.0,
+    "location": [
+      -1.7500001192092896,
+      -1.5499999523162842,
+      2.450000047683716
+    ],
+    "hide_render": true
+  },
+  {
+    "name": "Ronin_Spine_Light",
+    "type": "POINT",
+    "color": [
+      0.2199999988079071,
+      0.7400000095367432,
+      0.9800000190734863
+    ],
+    "energy": 15.0,
+    "location": [
+      -2.1500000953674316,
+      0.2800000011920929,
+      1.6200000047683716
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Ronin_Test_KeyLight",
+    "type": "POINT",
+    "color": [
+      0.949999988079071,
+      0.9800000190734863,
+      1.0
+    ],
+    "energy": 450.0,
+    "location": [
+      0.550000011920929,
+      -3.0999999046325684,
+      1.75
+    ],
+    "hide_render": true
+  },
+  {
+    "name": "Ronin_Visor_Light",
+    "type": "POINT",
+    "color": [
+      0.2199999988079071,
+      0.7400000095367432,
+      0.9800000190734863
+    ],
+    "energy": 12.0,
+    "location": [
+      -2.1500000953674316,
+      -0.2800000011920929,
+      1.9600000381469727
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Back_Fill",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.75,
+      0.20000000298023224
+    ],
+    "energy": 160.0,
+    "location": [
+      0.0,
+      0.800000011920929,
+      1.5
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Back_Ribbon_Light",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.7799999713897705,
+      0.15000000596046448
+    ],
+    "energy": 180.0,
+    "location": [
+      0.0,
+      0.699999988079071,
+      1.399999976158142
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Kunai_LightL",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.8500000238418579,
+      0.15000000596046448
+    ],
+    "energy": 140.0,
+    "location": [
+      -0.2800000011920929,
+      -0.3100000023841858,
+      0.8100000023841858
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Kunai_LightR",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.8500000238418579,
+      0.15000000596046448
+    ],
+    "energy": 140.0,
+    "location": [
+      0.2800000011920929,
+      -0.3100000023841858,
+      0.8100000023841858
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Studio_Back",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.9200000166893005,
+      0.8199999928474426
+    ],
+    "energy": 450.0,
+    "location": [
+      0.0,
+      4.599999904632568,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Studio_Front",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.9599999785423279,
+      0.8999999761581421
+    ],
+    "energy": 420.0,
+    "location": [
+      0.0,
+      -4.599999904632568,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Studio_SideL",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.9599999785423279,
+      0.8999999761581421
+    ],
+    "energy": 350.0,
+    "location": [
+      -3.799999952316284,
+      0.0,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Studio_SideR",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.9599999785423279,
+      0.8999999761581421
+    ],
+    "energy": 350.0,
+    "location": [
+      3.799999952316284,
+      0.0,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Shinobi_Visor_Light",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.9399999976158142,
+      0.18000000715255737
+    ],
+    "energy": 110.0,
+    "location": [
+      0.0,
+      -0.44999998807907104,
+      1.9500000476837158
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Top_Arena_Fill",
+    "type": "AREA",
+    "color": [
+      0.699999988079071,
+      0.8500000238418579,
+      1.0
+    ],
+    "energy": 350.0,
+    "location": [
+      0.0,
+      -0.5,
+      8.0
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Valk_ArcCore_Light",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.44999998807907104,
+      0.11999999731779099
+    ],
+    "energy": 35.0,
+    "location": [
+      2.1500000953674316,
+      -0.3199999928474426,
+      1.850000023841858
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Valk_BackThruster_Light",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.2199999988079071,
+      0.05999999865889549
+    ],
+    "energy": 45.0,
+    "location": [
+      2.1500000953674316,
+      0.3799999952316284,
+      1.840000033378601
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Valk_Gauntlet_Light",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.2199999988079071,
+      0.07999999821186066
+    ],
+    "energy": 30.0,
+    "location": [
+      1.6699999570846558,
+      -0.2800000011920929,
+      1.2999999523162842
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Valk_Side_Fill",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.949999988079071,
+      0.8999999761581421
+    ],
+    "energy": 350.0,
+    "location": [
+      5.150000095367432,
+      0.0,
+      1.2999999523162842
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Valk_Test_Fill",
+    "type": "AREA",
+    "color": [
+      1.0,
+      0.9800000190734863,
+      0.949999988079071
+    ],
+    "energy": 400.0,
+    "location": [
+      -0.3499999940395355,
+      -3.5,
+      1.2999999523162842
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Valk_WingThruster_Light",
+    "type": "POINT",
+    "color": [
+      1.0,
+      0.18000000715255737,
+      0.05000000074505806
+    ],
+    "energy": 55.0,
+    "location": [
+      2.5998799800872803,
+      0.3799999952316284,
+      1.9600000381469727
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Dagger_LightL",
+    "type": "POINT",
+    "color": [
+      0.75,
+      0.2800000011920929,
+      1.0
+    ],
+    "energy": 140.0,
+    "location": [
+      -0.25999999046325684,
+      -0.3100000023841858,
+      0.8100000023841858
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Dagger_LightR",
+    "type": "POINT",
+    "color": [
+      0.75,
+      0.2800000011920929,
+      1.0
+    ],
+    "energy": 140.0,
+    "location": [
+      0.25999999046325684,
+      -0.3100000023841858,
+      0.8100000023841858
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Mantle_Back_Light",
+    "type": "POINT",
+    "color": [
+      0.6000000238418579,
+      0.20000000298023224,
+      0.8999999761581421
+    ],
+    "energy": 180.0,
+    "location": [
+      0.0,
+      0.699999988079071,
+      1.399999976158142
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Studio_Back",
+    "type": "AREA",
+    "color": [
+      0.8500000238418579,
+      0.699999988079071,
+      1.0
+    ],
+    "energy": 450.0,
+    "location": [
+      0.0,
+      4.599999904632568,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Studio_Front",
+    "type": "AREA",
+    "color": [
+      0.949999988079071,
+      0.8999999761581421,
+      1.0
+    ],
+    "energy": 420.0,
+    "location": [
+      0.0,
+      -4.599999904632568,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Studio_SideL",
+    "type": "AREA",
+    "color": [
+      0.949999988079071,
+      0.8999999761581421,
+      1.0
+    ],
+    "energy": 350.0,
+    "location": [
+      -3.799999952316284,
+      0.0,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Studio_SideR",
+    "type": "AREA",
+    "color": [
+      0.949999988079071,
+      0.8999999761581421,
+      1.0
+    ],
+    "energy": 350.0,
+    "location": [
+      3.799999952316284,
+      0.0,
+      1.25
+    ],
+    "hide_render": false
+  },
+  {
+    "name": "Void_Visor_Light",
+    "type": "POINT",
+    "color": [
+      0.8500000238418579,
+      0.44999998807907104,
+      1.0
+    ],
+    "energy": 110.0,
+    "location": [
+      0.0,
+      -0.44999998807907104,
+      1.9500000476837158
+    ],
+    "hide_render": false
+  }
+]

@@ -1,0 +1,2 @@
+Mount_Fury: 1344 outward faces, 96 INWARD faces!
+Z bounds: min_z=-5.0, max_z=41.0

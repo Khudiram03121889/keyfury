@@ -1,0 +1,31 @@
+{
+  "name": "Shadow_Ronin",
+  "location": [
+    -2.1500000953674316,
+    0.0,
+    0.0
+  ],
+  "rotation": [
+    0.0,
+    0.0,
+    -0.13962633907794952
+  ],
+  "dimensions": [
+    0.9241999387741089,
+    0.5077999234199524,
+    2.1482999324798584
+  ],
+  "modifiers": [
+    "WeightedNormal"
+  ],
+  "materials": [
+    "Mat_Ronin_FrontPBR",
+    "Mat_Ronin_BackPBR",
+    "Mat_Ronin_SidePBR"
+  ],
+  "vert_count": 32156,
+  "face_count": 32164,
+  "uv_layers": [
+    "UVMap"
+  ]
+}

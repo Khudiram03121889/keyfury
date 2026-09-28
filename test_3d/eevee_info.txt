@@ -1,0 +1,6 @@
+Shader creation success!
+Links count: 4
+  Texture Coordinate.Object -> Noise Texture.Vector
+  Noise Texture.Factor -> Color Ramp.Factor
+  Color Ramp.Color -> Principled BSDF.Base Color
+  Principled BSDF.BSDF -> Material Output.Surface

@@ -1,0 +1,4 @@
+Removed Distant_Skyline_Plane
+Initial object count: 192
+Created cube: TEST_CUBE_IN_VIEW, loc=<Vector (0.0000, 0.0000, 0.0000)>, dim=<Vector (5.0000, 5.0000, 10.0000)>
+Render completed to d:\Keyboard stickman warrior\test_3d\test_cube_render.png

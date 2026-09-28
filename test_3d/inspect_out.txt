@@ -1,0 +1,28 @@
+BLENDER VERSION: 5.2.1 LTS
+=== MIX FLOAT INPUTS ===
+Input 0: name='Factor', identifier='Factor_Float', type='VALUE'
+Input 1: name='Factor', identifier='Factor_Vector', type='VECTOR'
+Input 2: name='A', identifier='A_Float', type='VALUE'
+Input 3: name='B', identifier='B_Float', type='VALUE'
+Input 4: name='A', identifier='A_Vector', type='VECTOR'
+Input 5: name='B', identifier='B_Vector', type='VECTOR'
+Input 6: name='A', identifier='A_Color', type='RGBA'
+Input 7: name='B', identifier='B_Color', type='RGBA'
+Input 8: name='A', identifier='A_Rotation', type='ROTATION'
+Input 9: name='B', identifier='B_Rotation', type='ROTATION'
+=== MIX FLOAT OUTPUTS ===
+Output 0: name='Result', identifier='Result_Float'
+Output 1: name='Result', identifier='Result_Vector'
+Output 2: name='Result', identifier='Result_Color'
+Output 3: name='Result', identifier='Result_Rotation'
+=== MIX RGBA INPUTS ===
+Input 0: name='Factor', identifier='Factor_Float', type='VALUE'
+Input 1: name='Factor', identifier='Factor_Vector', type='VECTOR'
+Input 2: name='A', identifier='A_Float', type='VALUE'
+Input 3: name='B', identifier='B_Float', type='VALUE'
+Input 4: name='A', identifier='A_Vector', type='VECTOR'
+Input 5: name='B', identifier='B_Vector', type='VECTOR'
+Input 6: name='A', identifier='A_Color', type='RGBA'
+Input 7: name='B', identifier='B_Color', type='RGBA'
+Input 8: name='A', identifier='A_Rotation', type='ROTATION'
+Input 9: name='B', identifier='B_Rotation', type='ROTATION'

@@ -1,0 +1,36 @@
+>>> [Celestial Void 100% 3D] Building High-Fidelity 3D Environment...
+d:\Keyboard stickman warrior\test_3d\build_full_3d_celestial.py:52: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+d:\Keyboard stickman warrior\test_3d\build_full_3d_celestial.py:64: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+Info: Saved as "KeyFury_3D_CelestialVoid.blend"
+>>> [Celestial Void 100% 3D] Saved Blender file: d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CelestialVoid.blend
+>>> [Celestial Void 100% 3D] Rendered EEVEE still: d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CelestialVoid_Render.png
+INFO Draco is available, use library at C:\Program Files\WindowsApps\BlenderFoundation.Blender_5.2.1.0_x64__ppwjx1n5r4v9t\Blender\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_draco_bridge.dll
+INFO MeshOptimizer is available, use library at C:\Program Files\WindowsApps\BlenderFoundation.Blender_5.2.1.0_x64__ppwjx1n5r4v9t\Blender\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_meshopt_bridge.dll
+11:21:25 | INFO: Starting glTF 2.0 export
+11:21:25 | WARNING: Unsupported light source AREA
+11:21:25 | INFO: Extracting primitive: Celestial_Tree_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Celestial_Moon_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Celestial_Islands_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Celestial_Nebula_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Celestial_Platform_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Celestial_Shrine_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Sphere
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | INFO: Extracting primitive: Celestial_Circles_Mesh
+11:21:25 | INFO: Primitives created: 1
+11:21:25 | WARNING: Unsupported light source AREA
+11:21:25 | WARNING: Unsupported light source AREA
+11:21:25 | WARNING: Unsupported light source AREA
+11:21:25 | INFO: Finished glTF 2.0 export in 0.09877395629882812 s
+
+>>> [Celestial Void 100% 3D] Exported GLB model: d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CelestialVoid.glb
+>>> [Celestial Void 100% 3D] Completed Successfully!
+BlenderMCP addon unregistered

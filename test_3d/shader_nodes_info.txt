@@ -1,0 +1,107 @@
+=== Node: ShaderNodeTexNoise (Noise Texture) ===
+  INPUTS:
+    - 'Vector' (type: VECTOR)
+    - 'W' (type: VALUE)
+    - 'Scale' (type: VALUE)
+    - 'Detail' (type: VALUE)
+    - 'Roughness' (type: VALUE)
+    - 'Lacunarity' (type: VALUE)
+    - 'Offset' (type: VALUE)
+    - 'Gain' (type: VALUE)
+    - 'Distortion' (type: VALUE)
+  OUTPUTS:
+    - 'Factor' (type: VALUE)
+    - 'Color' (type: RGBA)
+
+=== Node: ShaderNodeValToRGB (Color Ramp) ===
+  INPUTS:
+    - 'Factor' (type: VALUE)
+  OUTPUTS:
+    - 'Color' (type: RGBA)
+    - 'Alpha' (type: VALUE)
+
+=== Node: ShaderNodeBump (Bump) ===
+  INPUTS:
+    - 'Strength' (type: VALUE)
+    - 'Distance' (type: VALUE)
+    - 'Filter Width' (type: VALUE)
+    - 'Height' (type: VALUE)
+    - 'Normal' (type: VECTOR)
+  OUTPUTS:
+    - 'Normal' (type: VECTOR)
+
+=== Node: ShaderNodeBsdfPrincipled (Principled BSDF.001) ===
+  INPUTS:
+    - 'Base Color' (type: RGBA)
+    - 'Metallic' (type: VALUE)
+    - 'Roughness' (type: VALUE)
+    - 'IOR' (type: VALUE)
+    - 'Alpha' (type: VALUE)
+    - 'Thin Wall' (type: BOOLEAN)
+    - 'Normal' (type: VECTOR)
+    - 'Weight' (type: VALUE)
+    - 'Diffuse Roughness' (type: VALUE)
+    - 'Subsurface Weight' (type: VALUE)
+    - 'Subsurface Radius' (type: VECTOR)
+    - 'Subsurface Scale' (type: VALUE)
+    - 'Subsurface IOR' (type: VALUE)
+    - 'Subsurface Anisotropy' (type: VALUE)
+    - 'Specular IOR Level' (type: VALUE)
+    - 'Specular Tint' (type: RGBA)
+    - 'Anisotropic' (type: VALUE)
+    - 'Anisotropic Rotation' (type: VALUE)
+    - 'Tangent' (type: VECTOR)
+    - 'Transmission Weight' (type: VALUE)
+    - 'Coat Weight' (type: VALUE)
+    - 'Coat Roughness' (type: VALUE)
+    - 'Coat IOR' (type: VALUE)
+    - 'Coat Tint' (type: RGBA)
+    - 'Coat Normal' (type: VECTOR)
+    - 'Sheen Weight' (type: VALUE)
+    - 'Sheen Roughness' (type: VALUE)
+    - 'Sheen Tint' (type: RGBA)
+    - 'Emission Color' (type: RGBA)
+    - 'Emission Strength' (type: VALUE)
+    - 'Thin Film Thickness' (type: VALUE)
+    - 'Thin Film IOR' (type: VALUE)
+  OUTPUTS:
+    - 'BSDF' (type: SHADER)
+
+=== Node: ShaderNodeTexVoronoi (Voronoi Texture) ===
+  INPUTS:
+    - 'Vector' (type: VECTOR)
+    - 'W' (type: VALUE)
+    - 'Scale' (type: VALUE)
+    - 'Detail' (type: VALUE)
+    - 'Roughness' (type: VALUE)
+    - 'Lacunarity' (type: VALUE)
+    - 'Smoothness' (type: VALUE)
+    - 'Exponent' (type: VALUE)
+    - 'Randomness' (type: VALUE)
+  OUTPUTS:
+    - 'Distance' (type: VALUE)
+    - 'Color' (type: RGBA)
+    - 'Position' (type: VECTOR)
+    - 'W' (type: VALUE)
+    - 'Radius' (type: VALUE)
+
+=== Node: ShaderNodeMapping (Mapping) ===
+  INPUTS:
+    - 'Vector' (type: VECTOR)
+    - 'Location' (type: VECTOR)
+    - 'Rotation' (type: VECTOR)
+    - 'Scale' (type: VECTOR)
+  OUTPUTS:
+    - 'Vector' (type: VECTOR)
+
+=== Node: ShaderNodeTexCoord (Texture Coordinate) ===
+  INPUTS:
+  OUTPUTS:
+    - 'Generated' (type: VECTOR)
+    - 'Normal' (type: VECTOR)
+    - 'UV' (type: VECTOR)
+    - 'Object' (type: VECTOR)
+    - 'Camera' (type: VECTOR)
+    - 'Window' (type: VECTOR)
+    - 'Reflection' (type: VECTOR)
+

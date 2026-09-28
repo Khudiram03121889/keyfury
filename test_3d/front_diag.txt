@@ -1,0 +1,12 @@
+Camera_Front loc: <Vector (0.0000, -19.5000, 3.8000)>, rot: <Euler (x=1.4748, y=0.0000, z=0.0000), order='XYZ'>
+Angle -06 deg: Hit 'Amphi_Col_18' dist=47.30m, loc=<Vector (0.0000, 27.5457, -1.1447)>
+Angle -03 deg: Hit 'Mount_Fury' dist=33.19m, loc=<Vector (0.0000, 13.6413, 2.0631)>
+Angle +00 deg: Hit 'Mount_Fury' dist=34.51m, loc=<Vector (0.0000, 15.0075, 3.8000)>
+Angle +03 deg: Hit 'Mount_Fury' dist=37.22m, loc=<Vector (0.0000, 17.6737, 5.7482)>
+Angle +06 deg: Hit 'Mount_Fury' dist=40.64m, loc=<Vector (0.0000, 20.9132, 8.0476)>
+Angle +09 deg: Hit 'Mount_Fury' dist=44.70m, loc=<Vector (0.0000, 24.6478, 10.7923)>
+Angle +12 deg: Hit 'Mount_Fury' dist=48.89m, loc=<Vector (0.0000, 28.3186, 13.9642)>
+Angle +15 deg: Hit 'Mount_Fury' dist=57.00m, loc=<Vector (0.0000, 35.5556, 18.5521)>
+Angle +18 deg: Hit 'Mount_Fury' dist=65.88m, loc=<Vector (0.0000, 43.1531, 24.1572)>
+Angle +21 deg: Hit 'Storm_Cloud_6_2' dist=62.47m, loc=<Vector (0.0000, 38.8163, 26.1855)>
+Angle +24 deg: Hit 'Storm_Cloud_6_2' dist=58.92m, loc=<Vector (0.0000, 34.3257, 27.7648)>

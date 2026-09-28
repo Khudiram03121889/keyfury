@@ -1,0 +1,4 @@
+Mix inputs: ['Factor', 'Factor', 'A', 'B', 'A', 'B', 'A', 'B', 'A', 'B']
+Mix outputs: ['Result', 'Result', 'Result', 'Result']
+TexCoord outputs: ['Generated', 'Normal', 'UV', 'Object', 'Camera', 'Window', 'Reflection']
+UVMap outputs: ['UV']

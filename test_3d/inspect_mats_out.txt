@@ -1,0 +1,145 @@
+=== OBJECTS & MATERIALS ===
+Obj: Ash_Plume_Mount_Fury, Mats: []
+Obj: Combat_Platform_Obsidian, Mats: ['Mat_Obsidian_Deck']
+Obj: Lavafall_Flank_Left, Mats: ['Mat_Lavafall_Flowing']
+Obj: Lavafall_Flank_Left_Splash_Pool, Mats: ['Mat_Lava_Eruption']
+Obj: Lavafall_Flank_Right, Mats: ['Mat_Lavafall_Flowing']
+Obj: Lavafall_Flank_Right_Splash_Pool, Mats: ['Mat_Lava_Eruption']
+Obj: Lavafall_Rear_Center, Mats: ['Mat_Lavafall_Flowing']
+Obj: Lavafall_Rear_Center_Splash_Pool, Mats: ['Mat_Lava_Eruption']
+Obj: Light_Lavafalls_Left, Mats: []
+Obj: Light_Lavafalls_Right, Mats: []
+Obj: Light_Mount_Fury_Crater, Mats: []
+Obj: Light_Mount_Fury_Face_Key, Mats: []
+Obj: Mount_Fury_Base_Lavafall, Mats: ['Mat_Lavafall_Flowing']
+Obj: Mount_Fury_Coulee_0, Mats: ['Mat_Molten_Lava']
+Obj: Mount_Fury_Coulee_1, Mats: ['Mat_Molten_Lava']
+Obj: Mount_Fury_Coulee_2, Mats: ['Mat_Molten_Lava']
+Obj: Mount_Fury_Crater_Lava_Pool, Mats: ['Mat_Lava_Eruption']
+Obj: Mount_Fury_Eruption_Core, Mats: ['Mat_Lava_Eruption']
+Obj: Platform_Deck_Fissures, Mats: []
+Obj: Platform_Fissure_0, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_1, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_2, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_3, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_4, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_5, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_6, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Fissure_7, Mats: ['Mat_Lava_Fissure']
+Obj: Platform_Paver_Deck, Mats: ['Mat_Obsidian_Deck']
+Obj: Stratovolcano_Mount_Fury, Mats: ['Mat_Mountain_Rock']
+
+=== MAT_LAVAFALL_FLOWING NODES ===
+Node: Material Output (OUTPUT_MATERIAL)
+   In: Surface (Surface) ['<- Principled BSDF.BSDF']
+   In: Displacement (Displacement) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Thickness (Thickness) = 0.0
+Node: Principled BSDF (BSDF_PRINCIPLED)
+   In: Base Color (Base Color) ['<- Color Ramp.Color']
+   In: Metallic (Metallic) = 0.0
+   In: Roughness (Roughness) = 0.20000000298023224
+   In: IOR (IOR) = 1.5
+   In: Alpha (Alpha) = 1.0
+   In: Thin Wall (Thin Wall) = False
+   In: Normal (Normal) ['<- Bump.Normal']
+   In: Weight (Weight) = 0.0
+   In: Diffuse Roughness (Diffuse Roughness) = 0.0
+   In: Subsurface Weight (Subsurface Weight) = 0.0
+   In: Subsurface Radius (Subsurface Radius) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Subsurface Scale (Subsurface Scale) = 0.004999999888241291
+   In: Subsurface IOR (Subsurface IOR) = 1.399999976158142
+   In: Subsurface Anisotropy (Subsurface Anisotropy) = 0.0
+   In: Specular IOR Level (Specular IOR Level) = 0.5
+   In: Specular Tint (Specular Tint) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Anisotropic (Anisotropic) = 0.0
+   In: Anisotropic Rotation (Anisotropic Rotation) = 0.0
+   In: Tangent (Tangent) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Transmission Weight (Transmission Weight) = 0.0
+   In: Coat Weight (Coat Weight) = 0.0
+   In: Coat Roughness (Coat Roughness) = 0.029999999329447746
+   In: Coat IOR (Coat IOR) = 1.5
+   In: Coat Tint (Coat Tint) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Coat Normal (Coat Normal) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Sheen Weight (Sheen Weight) = 0.0
+   In: Sheen Roughness (Sheen Roughness) = 0.5
+   In: Sheen Tint (Sheen Tint) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Emission Color (Emission Color) ['<- Color Ramp.001.Color']
+   In: Emission Strength (Emission Strength) = 2.200000047683716
+   In: Thin Film Thickness (Thin Film Thickness) = 0.0
+   In: Thin Film IOR (Thin Film IOR) = 1.3300000429153442
+Node: Texture Coordinate (TEX_COORD)
+Node: Noise Texture (TEX_NOISE)
+   In: Vector (Vector) ['<- Texture Coordinate.Object']
+   In: W (W) = 0.0
+   In: Scale (Scale) = 5.5
+   In: Detail (Detail) = 4.0
+   In: Roughness (Roughness) = 0.550000011920929
+   In: Lacunarity (Lacunarity) = 2.0
+   In: Offset (Offset) = 0.0
+   In: Gain (Gain) = 1.0
+   In: Distortion (Distortion) = 0.0
+Node: Layer Weight (LAYER_WEIGHT)
+   In: Blend (Blend) = 0.3499999940395355
+   In: Normal (Normal) = <bpy_float[3], NodeSocketVector.default_value>
+Node: Mix (MIX)
+   In: Factor (Factor_Float) = 0.44999998807907104
+   In: Factor (Factor_Vector) = <bpy_float[3], NodeSocketVectorFactor.default_value>
+   In: A (A_Float) ['<- Layer Weight.Facing']
+   In: B (B_Float) ['<- Noise Texture.Factor']
+   In: A (A_Vector) = <bpy_float[3], NodeSocketVector.default_value>
+   In: B (B_Vector) = <bpy_float[3], NodeSocketVector.default_value>
+   In: A (A_Color) = <bpy_float[4], NodeSocketColor.default_value>
+   In: B (B_Color) = <bpy_float[4], NodeSocketColor.default_value>
+   In: A (A_Rotation) = <Euler (x=0.0000, y=0.0000, z=0.0000), order='XYZ'>
+   In: B (B_Rotation) = <Euler (x=0.0000, y=0.0000, z=0.0000), order='XYZ'>
+Node: Color Ramp (VALTORGB)
+   In: Factor (Fac) ['<- Mix.Result']
+Node: Color Ramp.001 (VALTORGB)
+   In: Factor (Fac) ['<- Mix.Result']
+Node: Bump (BUMP)
+   In: Strength (Strength) = 0.3499999940395355
+   In: Distance (Distance) = 0.15000000596046448
+   In: Filter Width (Filter Width) = 0.10000000149011612
+   In: Height (Height) ['<- Noise Texture.Factor']
+   In: Normal (Normal) = <bpy_float[3], NodeSocketVector.default_value>
+
+=== MAT_MOUNTAIN_ROCK NODES ===
+Node: Principled BSDF (BSDF_PRINCIPLED)
+   In: Base Color (Base Color) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Metallic (Metallic) = 0.0
+   In: Roughness (Roughness) = 0.8500000238418579
+   In: IOR (IOR) = 1.5
+   In: Alpha (Alpha) = 1.0
+   In: Thin Wall (Thin Wall) = False
+   In: Normal (Normal) ['<- Bump.Normal']
+   In: Weight (Weight) = 0.0
+   In: Diffuse Roughness (Diffuse Roughness) = 0.0
+   In: Subsurface Weight (Subsurface Weight) = 0.0
+   In: Subsurface Radius (Subsurface Radius) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Subsurface Scale (Subsurface Scale) = 0.004999999888241291
+   In: Subsurface IOR (Subsurface IOR) = 1.399999976158142
+   In: Subsurface Anisotropy (Subsurface Anisotropy) = 0.0
+   In: Specular IOR Level (Specular IOR Level) = 0.44999998807907104
+   In: Specular Tint (Specular Tint) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Anisotropic (Anisotropic) = 0.0
+   In: Anisotropic Rotation (Anisotropic Rotation) = 0.0
+   In: Tangent (Tangent) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Transmission Weight (Transmission Weight) = 0.0
+   In: Coat Weight (Coat Weight) = 0.0
+   In: Coat Roughness (Coat Roughness) = 0.029999999329447746
+   In: Coat IOR (Coat IOR) = 1.5
+   In: Coat Tint (Coat Tint) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Coat Normal (Coat Normal) = <bpy_float[3], NodeSocketVector.default_value>
+   In: Sheen Weight (Sheen Weight) = 0.0
+   In: Sheen Roughness (Sheen Roughness) = 0.5
+   In: Sheen Tint (Sheen Tint) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Emission Color (Emission Color) = <bpy_float[4], NodeSocketColor.default_value>
+   In: Emission Strength (Emission Strength) = 0.05999999865889549
+   In: Thin Film Thickness (Thin Film Thickness) = 0.0
+   In: Thin Film IOR (Thin Film IOR) = 1.3300000429153442
+Node: Bump (BUMP)
+   In: Strength (Strength) = 0.8999999761581421
+   In: Distance (Distance) = 0.20000000298023224
+   In: Filter Width (Filter Width) = 0.10000000149011612
+   In: Height (Height) ['<- Mix.Result']
+   In: Normal (Normal) = <bpy_float[3], NodeSocketVector.default_value>

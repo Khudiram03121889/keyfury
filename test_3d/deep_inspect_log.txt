@@ -1,0 +1,8 @@
+Starting deep inspect...
+Opening D:\Keyboard stickman warrior\test_3d\KeyFury_3D_CyberRooftop.blend
+Opened successfully. Scene objects count: 12
+Shadow_Ronin is MISSING!
+Volt_Shinobi is MISSING!
+Void_Assassin is MISSING!
+Cyber_Valkyrie is MISSING!
+Finished deep inspect successfully!

@@ -1,0 +1,24 @@
+Testing armature generation on Shadow_Ronin...
+Parent result: {'FINISHED'}
+Vertex groups on obj: 20
+  VG: Root
+  VG: Hips
+  VG: Spine
+  VG: Chest
+  VG: Neck
+  VG: Head
+  VG: Shoulder.R
+  VG: UpperArm.R
+  VG: Forearm.R
+  VG: Hand.R
+  VG: Shoulder.L
+  VG: UpperArm.L
+  VG: Forearm.L
+  VG: Hand.L
+  VG: Thigh.R
+  VG: Shin.R
+  VG: Foot.R
+  VG: Thigh.L
+  VG: Shin.L
+  VG: Foot.L
+Exported to D:\Keyboard stickman warrior\test_3d\test_rigged_ronin.glb

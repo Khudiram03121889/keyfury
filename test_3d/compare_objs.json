@@ -1,0 +1,314 @@
+{
+  "Cyber_Valkyrie": {
+    "name": "Cyber_Valkyrie",
+    "type": "MESH",
+    "location": [
+      2.1500000953674316,
+      0.0,
+      0.0
+    ],
+    "rotation_euler": [
+      0.0,
+      0.0,
+      0.13962633907794952
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "dimensions": [
+      1.1602998971939087,
+      0.6340999603271484,
+      2.113800048828125
+    ],
+    "modifiers": [
+      {
+        "name": "WeightedNormal",
+        "type": "WEIGHTED_NORMAL",
+        "props": {
+          "execution_time": 0.0,
+          "invert_vertex_group": false,
+          "is_active": true,
+          "is_override_data": false,
+          "keep_sharp": false,
+          "mode": "FACE_AREA",
+          "name": "WeightedNormal",
+          "persistent_uid": 1800999687,
+          "show_expanded": true,
+          "show_in_editmode": true,
+          "show_on_cage": false,
+          "show_render": true,
+          "show_viewport": true,
+          "thresh": 0.009999999776482582,
+          "type": "WEIGHTED_NORMAL",
+          "use_apply_on_spline": false,
+          "use_face_influence": false,
+          "use_pin_to_last": false,
+          "vertex_group": "",
+          "weight": 50
+        }
+      }
+    ],
+    "materials": [
+      {
+        "slot": "Mat_Valkyrie_MasterPBR",
+        "material": "Mat_Valkyrie_MasterPBR",
+        "nodes": [
+          {
+            "name": "Material Output",
+            "type": "OUTPUT_MATERIAL"
+          },
+          {
+            "name": "Principled BSDF",
+            "type": "BSDF_PRINCIPLED"
+          },
+          {
+            "name": "Image Texture",
+            "type": "TEX_IMAGE",
+            "image": "valk_front_color",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_front_master.png"
+          },
+          {
+            "name": "Image Texture.001",
+            "type": "TEX_IMAGE",
+            "image": "valk_front_norm",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_front_normal.png"
+          },
+          {
+            "name": "Normal Map",
+            "type": "NORMAL_MAP"
+          },
+          {
+            "name": "Image Texture.002",
+            "type": "TEX_IMAGE",
+            "image": "valk_front_emit",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_front_emission.png"
+          }
+        ]
+      },
+      {
+        "slot": "Mat_Valkyrie_BackPBR",
+        "material": "Mat_Valkyrie_BackPBR",
+        "nodes": [
+          {
+            "name": "Material Output",
+            "type": "OUTPUT_MATERIAL"
+          },
+          {
+            "name": "Principled BSDF",
+            "type": "BSDF_PRINCIPLED"
+          },
+          {
+            "name": "Image Texture",
+            "type": "TEX_IMAGE",
+            "image": "valk_back_color",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_back_master.png"
+          },
+          {
+            "name": "Image Texture.001",
+            "type": "TEX_IMAGE",
+            "image": "valk_back_norm",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_back_normal.png"
+          },
+          {
+            "name": "Normal Map",
+            "type": "NORMAL_MAP"
+          },
+          {
+            "name": "Image Texture.002",
+            "type": "TEX_IMAGE",
+            "image": "valk_back_emit",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_back_emission.png"
+          }
+        ]
+      },
+      {
+        "slot": "Mat_Valkyrie_SidePBR",
+        "material": "Mat_Valkyrie_SidePBR",
+        "nodes": [
+          {
+            "name": "Material Output",
+            "type": "OUTPUT_MATERIAL"
+          },
+          {
+            "name": "Principled BSDF",
+            "type": "BSDF_PRINCIPLED"
+          },
+          {
+            "name": "Image Texture",
+            "type": "TEX_IMAGE",
+            "image": "valk_side_color",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_clean_side.png"
+          },
+          {
+            "name": "Image Texture.001",
+            "type": "TEX_IMAGE",
+            "image": "valk_side_norm",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_side_normal.png"
+          },
+          {
+            "name": "Normal Map",
+            "type": "NORMAL_MAP"
+          },
+          {
+            "name": "Image Texture.002",
+            "type": "TEX_IMAGE",
+            "image": "valk_side_emit",
+            "image_filepath": "d:\\Keyboard stickman warrior\\test_3d\\valk_turnaround_side_emission.png"
+          }
+        ]
+      }
+    ],
+    "vertex_count": 37128,
+    "polygon_count": 37148,
+    "uv_layers": [
+      "UVMap"
+    ]
+  },
+  "Shadow_Ronin": {
+    "name": "Shadow_Ronin",
+    "type": "MESH",
+    "location": [
+      -2.1500000953674316,
+      0.0,
+      0.0
+    ],
+    "rotation_euler": [
+      0.0,
+      0.0,
+      -0.13962633907794952
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "dimensions": [
+      1.259299874305725,
+      0.447299987077713,
+      2.3679001331329346
+    ],
+    "modifiers": [
+      {
+        "name": "WeightedNormal",
+        "type": "WEIGHTED_NORMAL",
+        "props": {
+          "execution_time": 0.0,
+          "invert_vertex_group": false,
+          "is_active": true,
+          "is_override_data": false,
+          "keep_sharp": false,
+          "mode": "FACE_AREA",
+          "name": "WeightedNormal",
+          "persistent_uid": 1800999687,
+          "show_expanded": true,
+          "show_in_editmode": true,
+          "show_on_cage": false,
+          "show_render": true,
+          "show_viewport": true,
+          "thresh": 0.009999999776482582,
+          "type": "WEIGHTED_NORMAL",
+          "use_apply_on_spline": false,
+          "use_face_influence": false,
+          "use_pin_to_last": false,
+          "vertex_group": "",
+          "weight": 50
+        }
+      }
+    ],
+    "materials": [
+      {
+        "slot": "Mat_Ronin_FrontPBR",
+        "material": "Mat_Ronin_FrontPBR",
+        "nodes": [
+          {
+            "name": "Material Output",
+            "type": "OUTPUT_MATERIAL"
+          },
+          {
+            "name": "Principled BSDF",
+            "type": "BSDF_PRINCIPLED"
+          },
+          {
+            "name": "Image Texture",
+            "type": "TEX_IMAGE",
+            "image": "ronin_f_col",
+            "image_filepath": "d:\\\\Keyboard stickman warrior\\\\test_3d\\ronin_turnaround_front_master.png"
+          },
+          {
+            "name": "Image Texture.001",
+            "type": "TEX_IMAGE",
+            "image": "ronin_f_nrm",
+            "image_filepath": "d:\\\\Keyboard stickman warrior\\\\test_3d\\ronin_turnaround_front_normal.png"
+          },
+          {
+            "name": "Normal Map",
+            "type": "NORMAL_MAP"
+          },
+          {
+            "name": "Image Texture.002",
+            "type": "TEX_IMAGE",
+            "image": "ronin_f_emi",
+            "image_filepath": "d:\\\\Keyboard stickman warrior\\\\test_3d\\ronin_turnaround_front_emission.png"
+          }
+        ]
+      },
+      {
+        "slot": "Mat_Ronin_BackPBR",
+        "material": "Mat_Ronin_BackPBR",
+        "nodes": [
+          {
+            "name": "Material Output",
+            "type": "OUTPUT_MATERIAL"
+          },
+          {
+            "name": "Principled BSDF",
+            "type": "BSDF_PRINCIPLED"
+          },
+          {
+            "name": "Image Texture",
+            "type": "TEX_IMAGE",
+            "image": "ronin_b_col",
+            "image_filepath": "d:\\\\Keyboard stickman warrior\\\\test_3d\\ronin_turnaround_back_master.png"
+          },
+          {
+            "name": "Image Texture.001",
+            "type": "TEX_IMAGE",
+            "image": "ronin_b_nrm",
+            "image_filepath": "d:\\\\Keyboard stickman warrior\\\\test_3d\\ronin_turnaround_back_normal.png"
+          },
+          {
+            "name": "Normal Map",
+            "type": "NORMAL_MAP"
+          },
+          {
+            "name": "Image Texture.002",
+            "type": "TEX_IMAGE",
+            "image": "ronin_b_emi",
+            "image_filepath": "d:\\\\Keyboard stickman warrior\\\\test_3d\\ronin_turnaround_back_emission.png"
+          }
+        ]
+      },
+      {
+        "slot": "Mat_Ronin_ChassisPBR",
+        "material": "Mat_Ronin_ChassisPBR",
+        "nodes": [
+          {
+            "name": "Material Output",
+            "type": "OUTPUT_MATERIAL"
+          },
+          {
+            "name": "Principled BSDF",
+            "type": "BSDF_PRINCIPLED"
+          }
+        ]
+      }
+    ],
+    "vertex_count": 34644,
+    "polygon_count": 34650,
+    "uv_layers": [
+      "UVMap"
+    ]
+  }
+}

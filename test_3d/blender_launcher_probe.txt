@@ -1,0 +1,7 @@
+BLENDER CLI ARGUMENTS WORK: 5.2.1 LTS
+FILE: D:\Keyboard stickman warrior\test_3d\KeyFury_3D_CyberRooftop.blend
+Shadow_Ronin: loc=(-2.55, 0.2, 0.0) dims=(0.924, 0.508, 2.148) bounds=(0.055, 2.204)
+Volt_Shinobi: loc=(-0.88, -0.38, 0.0) dims=(1.076, 0.512, 1.981) bounds=(0.058, 2.039)
+Void_Assassin: loc=(0.88, -0.38, 0.0) dims=(0.888, 0.475, 1.98) bounds=(0.0, 1.98)
+Cyber_Valkyrie: loc=(2.15, 0.0, 0.0) dims=(1.16, 0.634, 2.114) bounds=(0.145, 2.259)
+LEG_FINISH_DETAILS: 24 objects

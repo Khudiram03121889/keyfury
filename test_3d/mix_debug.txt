@@ -1,0 +1,2 @@
+Inputs: [(0, 'Factor', 'Factor_Float'), (1, 'Factor', 'Factor_Vector'), (2, 'A', 'A_Float'), (3, 'B', 'B_Float'), (4, 'A', 'A_Vector'), (5, 'B', 'B_Vector'), (6, 'A', 'A_Color'), (7, 'B', 'B_Color'), (8, 'A', 'A_Rotation'), (9, 'B', 'B_Rotation')]
+Outputs: [(0, 'Result', 'Result_Float'), (1, 'Result', 'Result_Vector'), (2, 'Result', 'Result_Color'), (3, 'Result', 'Result_Rotation')]

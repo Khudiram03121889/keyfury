@@ -1,0 +1,20 @@
+=== Shadow_Ronin ===
+Vertices: 31536, Faces: 31542
+Materials (3): ['Mat_Ronin_FrontPBR', 'Mat_Ronin_BackPBR', 'Mat_Ronin_SidePBR']
+Vertex Groups (0): []
+Shape Keys: []
+=== Volt_Shinobi ===
+Vertices: 30164, Faces: 30178
+Materials (3): ['Mat_Shinobi_FrontPBR', 'Mat_Shinobi_BackPBR', 'Mat_Shinobi_SidePBR']
+Vertex Groups (0): []
+Shape Keys: []
+=== Void_Assassin ===
+Vertices: 27110, Faces: 27124
+Materials (3): ['Mat_Void_FrontPBR', 'Mat_Void_BackPBR', 'Mat_Void_SidePBR']
+Vertex Groups (0): []
+Shape Keys: []
+=== Cyber_Valkyrie ===
+Vertices: 37128, Faces: 37148
+Materials (3): ['Mat_Valkyrie_MasterPBR', 'Mat_Valkyrie_BackPBR', 'Mat_Valkyrie_SidePBR']
+Vertex Groups (0): []
+Shape Keys: ['Basis', 'Breathe', 'Wing_Flex']

@@ -1,0 +1,11 @@
+failed
+Traceback (most recent call last):
+  File "D:\Keyboard stickman warrior\test_3d\run_leg_finish_with_log.py", line 8, in <module>
+    runpy.run_path(r"D:\Keyboard stickman warrior\test_3d\apply_leg_finish.py", run_name="__main__")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\Keyboard stickman warrior\test_3d\apply_leg_finish.py", line 153, in <module>
+    raise RuntimeError(f"Required fighter is missing: {name}")
+RuntimeError: Required fighter is missing: Shadow_Ronin

@@ -1,0 +1,3 @@
+visible_shadow: True
+ray_visibility: False
+obj.visible_shadow set to False successfully

@@ -1,0 +1,573 @@
+{
+  "filepath": "d:\\Keyboard stickman warrior\\test_3d\\KeyFury_3D_CyberRooftop.blend",
+  "objects": [
+    {
+      "name": "Arena_Platform",
+      "type": "MESH",
+      "location": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "modifiers": [],
+      "materials": [
+        "Mat_RainPlatform",
+        "Mat_DarkCarbon",
+        "Mat_CyanGlow.001",
+        "Mat_MagentaGlow.001",
+        "Mat_CrimsonGlow.001"
+      ]
+    },
+    {
+      "name": "Arena_Skyline",
+      "type": "MESH",
+      "location": [
+        -14.0,
+        14.0,
+        4.0
+      ],
+      "modifiers": [],
+      "materials": [
+        "Mat_DarkCarbon",
+        "Mat_ChromeTrim",
+        "Mat_CrimsonGlow.001",
+        "Mat_CyanGlow.001",
+        "Mat_AmberGlow",
+        "Mat_MagentaGlow.001"
+      ]
+    },
+    {
+      "name": "Cam_DOF_Target",
+      "type": "EMPTY",
+      "location": [
+        0.0,
+        0.0,
+        1.350000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Cyber_Valkyrie",
+      "type": "MESH",
+      "location": [
+        2.1500000953674316,
+        0.0,
+        0.0
+      ],
+      "modifiers": [
+        "WeightedNormal"
+      ],
+      "materials": [
+        "Mat_Valkyrie_MasterPBR",
+        "Mat_Valkyrie_BackPBR",
+        "Mat_Valkyrie_SidePBR"
+      ]
+    },
+    {
+      "name": "Front_Duel_Fill",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        -8.0,
+        2.5
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ground_Uplight",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        0.0,
+        -0.6000000238418579
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Holo_Text_KEYFURY",
+      "type": "FONT",
+      "location": [
+        -2.4000000953674316,
+        9.5,
+        5.5
+      ],
+      "modifiers": [],
+      "materials": [
+        "Mat_CyanGlow.001"
+      ]
+    },
+    {
+      "name": "Holo_Text_NeoKyoto",
+      "type": "FONT",
+      "location": [
+        -2.200000047683716,
+        9.5,
+        6.199999809265137
+      ],
+      "modifiers": [],
+      "materials": [
+        "Mat_WhiteGlow.001"
+      ]
+    },
+    {
+      "name": "Key_Light_Cyan",
+      "type": "LIGHT",
+      "location": [
+        -6.5,
+        -6.5,
+        4.800000190734863
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "KeyFury_Combat_Camera",
+      "type": "CAMERA",
+      "location": [
+        0.0,
+        -7.599999904632568,
+        2.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Neon_Kanji_Duel",
+      "type": "FONT",
+      "location": [
+        6.0,
+        9.5,
+        5.0
+      ],
+      "modifiers": [],
+      "materials": [
+        "Mat_MagentaGlow.001"
+      ]
+    },
+    {
+      "name": "Rim_Light_Magenta",
+      "type": "LIGHT",
+      "location": [
+        6.5,
+        5.5,
+        4.800000190734863
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ronin_Fullbody_Camera",
+      "type": "CAMERA",
+      "location": [
+        -2.1500000953674316,
+        -1.5499999523162842,
+        1.9500000476837158
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ronin_Inspect_Fill",
+      "type": "LIGHT",
+      "location": [
+        -2.6500000953674316,
+        -1.5499999523162842,
+        1.75
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ronin_Inspect_Key",
+      "type": "LIGHT",
+      "location": [
+        -1.7500001192092896,
+        -1.5499999523162842,
+        2.450000047683716
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ronin_Spine_Light",
+      "type": "LIGHT",
+      "location": [
+        -2.1500000953674316,
+        0.2800000011920929,
+        1.6200000047683716
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ronin_Test_KeyLight",
+      "type": "LIGHT",
+      "location": [
+        0.550000011920929,
+        -3.0999999046325684,
+        1.75
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Ronin_Visor_Light",
+      "type": "LIGHT",
+      "location": [
+        -2.1500000953674316,
+        -0.2800000011920929,
+        1.9600000381469727
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shadow_Ronin",
+      "type": "MESH",
+      "location": [
+        -2.1500000953674316,
+        0.0,
+        0.0
+      ],
+      "modifiers": [
+        "WeightedNormal"
+      ],
+      "materials": [
+        "Mat_Ronin_FrontPBR",
+        "Mat_Ronin_BackPBR",
+        "Mat_Ronin_ChassisPBR"
+      ]
+    },
+    {
+      "name": "Shinobi_Back_Fill",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        0.800000011920929,
+        1.5
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Back_Ribbon_Light",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        0.699999988079071,
+        1.399999976158142
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Fullbody_Camera",
+      "type": "CAMERA",
+      "location": [
+        -1.2000000476837158,
+        -1.600000023841858,
+        1.850000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Kunai_LightL",
+      "type": "LIGHT",
+      "location": [
+        -0.2800000011920929,
+        -0.3100000023841858,
+        0.8100000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Kunai_LightR",
+      "type": "LIGHT",
+      "location": [
+        0.2800000011920929,
+        -0.3100000023841858,
+        0.8100000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Studio_Back",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        4.599999904632568,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Studio_Front",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        -4.599999904632568,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Studio_SideL",
+      "type": "LIGHT",
+      "location": [
+        -3.799999952316284,
+        0.0,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Studio_SideR",
+      "type": "LIGHT",
+      "location": [
+        3.799999952316284,
+        0.0,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Shinobi_Visor_Light",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        -0.44999998807907104,
+        1.9500000476837158
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Top_Arena_Fill",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        -0.5,
+        8.0
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Valk_ArcCore_Light",
+      "type": "LIGHT",
+      "location": [
+        2.1500000953674316,
+        -0.3199999928474426,
+        1.850000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Valk_BackThruster_Light",
+      "type": "LIGHT",
+      "location": [
+        2.1500000953674316,
+        0.3799999952316284,
+        1.840000033378601
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Valk_Gauntlet_Light",
+      "type": "LIGHT",
+      "location": [
+        1.6699999570846558,
+        -0.2800000011920929,
+        1.2999999523162842
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Valk_Side_Fill",
+      "type": "LIGHT",
+      "location": [
+        5.150000095367432,
+        0.0,
+        1.2999999523162842
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Valk_Test_Fill",
+      "type": "LIGHT",
+      "location": [
+        -0.3499999940395355,
+        -3.5,
+        1.2999999523162842
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Valk_WingThruster_Light",
+      "type": "LIGHT",
+      "location": [
+        2.5998799800872803,
+        0.3799999952316284,
+        1.9600000381469727
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Assassin",
+      "type": "MESH",
+      "location": [
+        0.8999999761581421,
+        1.2999999523162842,
+        0.0
+      ],
+      "modifiers": [
+        "WeightedNormal"
+      ],
+      "materials": [
+        "Mat_Void_Obsidian",
+        "Mat_Void_RiftGlow",
+        "Mat_Void_VioletArmor",
+        "Mat_Void_Chrome",
+        "Mat_Void_Crystal",
+        "Mat_Void_MantleDark",
+        "Mat_Void_VisorGlow"
+      ]
+    },
+    {
+      "name": "Void_Dagger_LightL",
+      "type": "LIGHT",
+      "location": [
+        -0.25999999046325684,
+        -0.3100000023841858,
+        0.8100000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Dagger_LightR",
+      "type": "LIGHT",
+      "location": [
+        0.25999999046325684,
+        -0.3100000023841858,
+        0.8100000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Fullbody_Camera",
+      "type": "CAMERA",
+      "location": [
+        -1.2000000476837158,
+        -1.600000023841858,
+        1.850000023841858
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Mantle_Back_Light",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        0.699999988079071,
+        1.399999976158142
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Studio_Back",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        4.599999904632568,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Studio_Front",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        -4.599999904632568,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Studio_SideL",
+      "type": "LIGHT",
+      "location": [
+        -3.799999952316284,
+        0.0,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Studio_SideR",
+      "type": "LIGHT",
+      "location": [
+        3.799999952316284,
+        0.0,
+        1.25
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Void_Visor_Light",
+      "type": "LIGHT",
+      "location": [
+        0.0,
+        -0.44999998807907104,
+        1.9500000476837158
+      ],
+      "modifiers": [],
+      "materials": []
+    },
+    {
+      "name": "Volt_Shinobi",
+      "type": "MESH",
+      "location": [
+        -0.8999999761581421,
+        1.2999999523162842,
+        0.0
+      ],
+      "modifiers": [
+        "WeightedNormal"
+      ],
+      "materials": [
+        "Mat_Shinobi_Carbon",
+        "Mat_Shinobi_LightningGlow",
+        "Mat_Shinobi_Amber",
+        "Mat_Shinobi_Chrome",
+        "Mat_Shinobi_Gold",
+        "Mat_Shinobi_VisorGlow",
+        "Mat_Shinobi_RibbonGlow"
+      ]
+    }
+  ]
+}

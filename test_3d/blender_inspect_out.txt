@@ -1,0 +1,81 @@
+>>> BLENDER SCRIPT RUNNING!
+Scene: Scene
+Objects in scene:
+ - Bridge_Wall_Fill (LIGHT) loc=<Vector (0.0000, -7.0000, -1.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Castle_Accent_Sun (LIGHT) loc=<Vector (-16.0000, 29.0000, 14.0000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Front_Duel_Fill (LIGHT) loc=<Vector (0.0000, -10.0000, 3.6000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Highland_3D_Balustrade (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (36.0000, 0.5800, 0.9500)>
+   verts=112 faces=84
+   mat=Mat_Stone_Trim
+ - Highland_3D_Cartouches (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (21.7200, 0.0400, 1.2000)>
+   verts=48 faces=36
+   mat=Mat_Rune_Cartouche
+ - Highland_3D_Castle (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (6.5850, 5.6700, 5.0450)>
+   verts=304 faces=164
+   mat=Mat_Castle_Stone
+ - Highland_3D_Castle_Roofs (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (6.6420, 5.7240, 3.2000)>
+   verts=128 faces=64
+   mat=Mat_Castle_Roof
+ - Highland_3D_Castle_Windows (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (4.7000, 0.6300, 1.7500)>
+   verts=48 faces=36
+   mat=Mat_Castle_Window_Warm
+ - Highland_3D_Clouds (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (130.6723, 27.1600, 30.3600)>
+   verts=4480 faces=4900
+   mat=Mat_Cloud
+ - Highland_3D_Deciduous (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (13.3850, 12.4950, 8.8325)>
+   verts=1470 faces=1680
+   mat=Mat_Deciduous
+ - Highland_3D_Deck (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (36.0000, 4.4000, 0.4000)>
+   verts=8 faces=6
+   mat=Mat_Flagstone_Main
+ - Highland_3D_Frieze (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (36.0000, 0.3800, 0.2325)>
+   verts=16 faces=12
+   mat=Mat_Rune_Frieze
+ - Highland_3D_Lake (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (30.8533, 54.8882, 11.5550)>
+   verts=97 faces=84
+   mat=Mat_Alpine_Water
+ - Highland_3D_Mandala (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (4.2000, 4.2000, 0.0000)>
+   verts=33 faces=32
+   mat=Mat_Rune_Mandala
+ - Highland_3D_Moss (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (22.8250, 4.7450, 0.7750)>
+   verts=64 faces=48
+   mat=Mat_Moss
+ - Highland_3D_Mountains (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (170.0000, 189.0000, 38.7707)>
+   verts=3958 faces=3944
+   mat=Mat_Mtn_Rock
+   mat=Mat_Mtn_Snow
+ - Highland_3D_Pines (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (53.1200, 34.5900, 13.5050)>
+   verts=1856 faces=928
+   mat=Mat_Pine
+ - Highland_3D_Terrain (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (190.0000, 165.0000, 68.2735)>
+   verts=11000 faces=10791
+   mat=Mat_Grass_Highland
+ - Highland_3D_Trail (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (20.9243, 8.9961, 5.9800)>
+   verts=56 faces=42
+   mat=Mat_Trail_Dirt
+ - Highland_3D_Trunks (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (52.1137, 41.3700, 10.2860)>
+   verts=432 faces=216
+   mat=Mat_Tree_Trunk
+ - Highland_3D_Wall (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (36.0000, 5.1200, 13.9000)>
+   verts=184 faces=138
+   mat=Mat_Stone_Wall
+ - Highland_3D_Waterfall (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (7.1584, 6.7000, 6.8705)>
+   verts=40 faces=30
+   mat=Mat_Waterfall_Foam
+ - Highland_3D_Wet_Rocks (MESH) loc=<Vector (0.0000, 0.0000, 0.0000)> dims=<Vector (8.0000, 7.4000, 6.6000)>
+   verts=40 faces=30
+   mat=Mat_Wet_Rock
+ - Highland_Cam_Front (CAMERA) loc=<Vector (0.0000, -20.0000, 2.2275)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Highland_Cam_Isometric_Aerial (CAMERA) loc=<Vector (-24.0000, -22.0000, 18.0000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Highland_Cam_Left_Profile (CAMERA) loc=<Vector (-14.0000, 1.0000, 1.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Highland_Cam_Low_Angle (CAMERA) loc=<Vector (0.0000, -12.0000, -1.8000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Highland_Cam_Right_Perspective (CAMERA) loc=<Vector (14.0000, 12.0000, 7.0000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Rune_Glow_-10.5 (LIGHT) loc=<Vector (-10.5000, -1.8000, -0.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Rune_Glow_-2.1 (LIGHT) loc=<Vector (-2.1000, -1.8000, -0.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Rune_Glow_-6.3 (LIGHT) loc=<Vector (-6.3000, -1.8000, -0.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Rune_Glow_10.5 (LIGHT) loc=<Vector (10.5000, -1.8000, -0.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Rune_Glow_2.1 (LIGHT) loc=<Vector (2.1000, -1.8000, -0.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Rune_Glow_6.3 (LIGHT) loc=<Vector (6.3000, -1.8000, -0.2000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Sky_Ambient_Fill (LIGHT) loc=<Vector (0.0000, 18.0000, 26.0000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Sun_Alpine_Daylight (LIGHT) loc=<Vector (24.0000, -12.0000, 48.0000)> dims=<Vector (0.0000, 0.0000, 0.0000)>
+ - Waterfall_Rim_Light (LIGHT) loc=<Vector (16.0000, 27.0000, 7.5000)> dims=<Vector (0.0000, 0.0000, 0.0000)>

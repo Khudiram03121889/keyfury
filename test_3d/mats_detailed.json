@@ -1,0 +1,369 @@
+{
+  "Mat_Ronin_FrontPBR": {
+    "name": "Mat_Ronin_FrontPBR",
+    "blend_method": "HASHED",
+    "shadow_method": null,
+    "nodes": {
+      "Material Output": {
+        "type": "OUTPUT_MATERIAL"
+      },
+      "Principled BSDF": {
+        "type": "BSDF_PRINCIPLED",
+        "inputs": {
+          "Base Color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "Metallic": 0.2199999988079071,
+          "Roughness": 0.44999998807907104,
+          "IOR": 1.5,
+          "Alpha": 1.0,
+          "Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Subsurface Radius": [
+            1.0,
+            0.20000000298023224,
+            0.10000000149011612
+          ],
+          "Subsurface Scale": 0.004999999888241291,
+          "Subsurface IOR": 1.399999976158142,
+          "Specular IOR Level": 0.5,
+          "Specular Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Tangent": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Coat Roughness": 0.029999999329447746,
+          "Coat IOR": 1.5,
+          "Coat Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Coat Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Sheen Roughness": 0.5,
+          "Sheen Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 1.600000023841858,
+          "Thin Film IOR": 1.3300000429153442
+        }
+      },
+      "Image Texture": {
+        "type": "TEX_IMAGE"
+      },
+      "Image Texture.001": {
+        "type": "TEX_IMAGE"
+      },
+      "Normal Map": {
+        "type": "NORMAL_MAP"
+      },
+      "Image Texture.002": {
+        "type": "TEX_IMAGE"
+      }
+    },
+    "links": [
+      "Image Texture.Color -> Principled BSDF.Base Color",
+      "Image Texture.001.Color -> Normal Map.Color",
+      "Normal Map.Normal -> Principled BSDF.Normal",
+      "Image Texture.002.Color -> Principled BSDF.Emission Color",
+      "Principled BSDF.BSDF -> Material Output.Surface"
+    ]
+  },
+  "Mat_Ronin_BackPBR": {
+    "name": "Mat_Ronin_BackPBR",
+    "blend_method": "HASHED",
+    "shadow_method": null,
+    "nodes": {
+      "Material Output": {
+        "type": "OUTPUT_MATERIAL"
+      },
+      "Principled BSDF": {
+        "type": "BSDF_PRINCIPLED",
+        "inputs": {
+          "Base Color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "Metallic": 0.2199999988079071,
+          "Roughness": 0.44999998807907104,
+          "IOR": 1.5,
+          "Alpha": 1.0,
+          "Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Subsurface Radius": [
+            1.0,
+            0.20000000298023224,
+            0.10000000149011612
+          ],
+          "Subsurface Scale": 0.004999999888241291,
+          "Subsurface IOR": 1.399999976158142,
+          "Specular IOR Level": 0.5,
+          "Specular Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Tangent": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Coat Roughness": 0.029999999329447746,
+          "Coat IOR": 1.5,
+          "Coat Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Coat Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Sheen Roughness": 0.5,
+          "Sheen Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 1.600000023841858,
+          "Thin Film IOR": 1.3300000429153442
+        }
+      },
+      "Image Texture": {
+        "type": "TEX_IMAGE"
+      },
+      "Image Texture.001": {
+        "type": "TEX_IMAGE"
+      },
+      "Normal Map": {
+        "type": "NORMAL_MAP"
+      },
+      "Image Texture.002": {
+        "type": "TEX_IMAGE"
+      }
+    },
+    "links": [
+      "Image Texture.Color -> Principled BSDF.Base Color",
+      "Image Texture.001.Color -> Normal Map.Color",
+      "Normal Map.Normal -> Principled BSDF.Normal",
+      "Image Texture.002.Color -> Principled BSDF.Emission Color",
+      "Principled BSDF.BSDF -> Material Output.Surface"
+    ]
+  },
+  "Mat_Ronin_ChassisPBR": {
+    "name": "Mat_Ronin_ChassisPBR",
+    "blend_method": "HASHED",
+    "shadow_method": null,
+    "nodes": {
+      "Material Output": {
+        "type": "OUTPUT_MATERIAL"
+      },
+      "Principled BSDF": {
+        "type": "BSDF_PRINCIPLED",
+        "inputs": {
+          "Base Color": [
+            0.03999999910593033,
+            0.05000000074505806,
+            0.06499999761581421,
+            1.0
+          ],
+          "Metallic": 0.25,
+          "Roughness": 0.5199999809265137,
+          "IOR": 1.5,
+          "Alpha": 1.0,
+          "Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Subsurface Radius": [
+            1.0,
+            0.20000000298023224,
+            0.10000000149011612
+          ],
+          "Subsurface Scale": 0.004999999888241291,
+          "Subsurface IOR": 1.399999976158142,
+          "Specular IOR Level": 0.5,
+          "Specular Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Tangent": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Coat Roughness": 0.029999999329447746,
+          "Coat IOR": 1.5,
+          "Coat Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Coat Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Sheen Roughness": 0.5,
+          "Sheen Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Thin Film IOR": 1.3300000429153442
+        }
+      }
+    },
+    "links": [
+      "Principled BSDF.BSDF -> Material Output.Surface"
+    ]
+  },
+  "Mat_Valkyrie_MasterPBR": {
+    "name": "Mat_Valkyrie_MasterPBR",
+    "blend_method": "HASHED",
+    "shadow_method": null,
+    "nodes": {
+      "Material Output": {
+        "type": "OUTPUT_MATERIAL"
+      },
+      "Principled BSDF": {
+        "type": "BSDF_PRINCIPLED",
+        "inputs": {
+          "Base Color": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ],
+          "Metallic": 0.8500000238418579,
+          "Roughness": 0.30000001192092896,
+          "IOR": 1.5,
+          "Alpha": 1.0,
+          "Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Subsurface Radius": [
+            1.0,
+            0.20000000298023224,
+            0.10000000149011612
+          ],
+          "Subsurface Scale": 0.004999999888241291,
+          "Subsurface IOR": 1.399999976158142,
+          "Specular IOR Level": 0.5,
+          "Specular Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Tangent": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Coat Roughness": 0.029999999329447746,
+          "Coat IOR": 1.5,
+          "Coat Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Coat Normal": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Sheen Roughness": 0.5,
+          "Sheen Tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Emission Strength": 3.200000047683716,
+          "Thin Film IOR": 1.3300000429153442
+        }
+      },
+      "Image Texture": {
+        "type": "TEX_IMAGE"
+      },
+      "Image Texture.001": {
+        "type": "TEX_IMAGE"
+      },
+      "Normal Map": {
+        "type": "NORMAL_MAP"
+      },
+      "Image Texture.002": {
+        "type": "TEX_IMAGE"
+      }
+    },
+    "links": [
+      "Image Texture.Color -> Principled BSDF.Base Color",
+      "Image Texture.001.Color -> Normal Map.Color",
+      "Normal Map.Normal -> Principled BSDF.Normal",
+      "Image Texture.002.Color -> Principled BSDF.Emission Color",
+      "Principled BSDF.BSDF -> Material Output.Surface"
+    ]
+  }
+}
