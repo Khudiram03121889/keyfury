@@ -10,6 +10,7 @@ test-results/
 .agents/
 *.png
 !apps/web/public/assets/**/*.png
+!apps/web/src/assets/**/*.png
 .gradle/
 **/android/.gradle/
 **/android/build/
