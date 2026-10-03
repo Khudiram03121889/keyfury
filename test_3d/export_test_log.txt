@@ -1,0 +1,42 @@
+>>> STARTING EXPORT TEST SCRIPT <<<
+Opened blend file: d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CyberRooftop_BACKUP_4FIGHTERS.blend
+Images in blend: 38
+  Img: Render Result, filepath=, packed=False
+  Img: ronin_b_col, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_back_master.png, packed=False
+  Img: ronin_b_emi, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_back_emission.png, packed=False
+  Img: ronin_b_nrm, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_back_normal.png, packed=False
+  Img: ronin_f_col, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_front_master.png, packed=False
+  Img: ronin_f_emi, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_front_emission.png, packed=False
+  Img: ronin_f_nrm, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_front_normal.png, packed=False
+  Img: ronin_s_col, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_side_master.png, packed=False
+  Img: ronin_s_emi, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_side_emission.png, packed=False
+  Img: ronin_s_nrm, filepath=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_side_normal.png, packed=False
+  Img: shinobi_b_col, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_back_master.png, packed=False
+  Img: shinobi_b_emi, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_back_emission.png, packed=False
+  Img: shinobi_b_nrm, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_back_normal.png, packed=False
+  Img: shinobi_f_col, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_front_master.png, packed=False
+  Img: shinobi_f_emi, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_front_emission.png, packed=False
+  Img: shinobi_f_nrm, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_front_normal.png, packed=False
+  Img: shinobi_s_col, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_side_master.png, packed=False
+  Img: shinobi_s_emi, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_side_emission.png, packed=False
+  Img: shinobi_s_nrm, filepath=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_side_normal.png, packed=False
+  Img: valk_back_color, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_back_master.png, packed=False
+  Img: valk_back_emit, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_back_emission.png, packed=False
+  Img: valk_back_norm, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_back_normal.png, packed=False
+  Img: valk_front_color, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_front_master.png, packed=False
+  Img: valk_front_emit, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_front_emission.png, packed=False
+  Img: valk_front_norm, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_front_normal.png, packed=False
+  Img: valk_side_color, filepath=d:\Keyboard stickman warrior\test_3d\valk_clean_side.png, packed=False
+  Img: valk_side_emit, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_side_emission.png, packed=False
+  Img: valk_side_norm, filepath=d:\Keyboard stickman warrior\test_3d\valk_turnaround_side_normal.png, packed=False
+  Img: Viewer Node, filepath=, packed=False
+  Img: void_b_col, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_back_master.png, packed=False
+  Img: void_b_emi, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_back_emission.png, packed=False
+  Img: void_b_nrm, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_back_normal.png, packed=False
+  Img: void_f_col, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_front_master.png, packed=False
+  Img: void_f_emi, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_front_emission.png, packed=False
+  Img: void_f_nrm, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_front_normal.png, packed=False
+  Img: void_s_col, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_side_master.png, packed=False
+  Img: void_s_emi, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_side_emission.png, packed=False
+  Img: void_s_nrm, filepath=d:\Keyboard stickman warrior\test_3d\void_turnaround_side_normal.png, packed=False
+Exported test_ronin_textured.glb size: 2156088 bytes

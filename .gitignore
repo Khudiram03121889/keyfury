@@ -29,6 +29,7 @@ media_automation/
 youtube_oauth_token.json
 client_secret.json
 .pnpm-store/
+*.blend1
 
 
 

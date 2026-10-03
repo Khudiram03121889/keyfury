@@ -10,8 +10,10 @@ import { Navbar } from './components/layout/Navbar';
 import { AuthModal } from './components/auth/AuthModal';
 import { ProfileModal } from './components/profile/ProfileModal';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
+import { KeyFurySplashScreen } from './components/splash/KeyFurySplashScreen';
 
 export const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [guest, setGuest] = useState<GuestProfile | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -34,10 +36,14 @@ export const App: React.FC = () => {
 
   const reloadProfile = async () => {
     try {
-      const p = await getUserProfile();
-      setUserProfile(p);
-      if (p) {
+      const g = await ensureGuestSession();
+      const p = await getUserProfile(g?.id);
+      if (p && !p.isGuest) {
+        setUserProfile(p);
         setGuest(p);
+      } else {
+        setUserProfile(p);
+        setGuest(p || g);
       }
     } catch (_err) {
       // Ignore
@@ -68,12 +74,23 @@ export const App: React.FC = () => {
   useEffect(() => {
     initSession();
 
+    const handleProfileSync = () => {
+      reloadProfile();
+    };
+    window.addEventListener('keyfury_stats_updated', handleProfileSync);
+    window.addEventListener('keyfury_profile_updated', handleProfileSync);
+
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
     if (roomParam) {
       setInitialRoomCode(roomParam);
       setView('lobby');
     }
+
+    return () => {
+      window.removeEventListener('keyfury_stats_updated', handleProfileSync);
+      window.removeEventListener('keyfury_profile_updated', handleProfileSync);
+    };
   }, []);
 
   useEffect(() => {
@@ -102,6 +119,7 @@ export const App: React.FC = () => {
       setRoom(null);
     }
     setView('lobby');
+    reloadProfile();
   };
 
   const handleBackToLanding = () => {
@@ -111,6 +129,15 @@ export const App: React.FC = () => {
     }
     setView('landing');
   };
+
+  if (showSplash) {
+    return (
+      <KeyFurySplashScreen
+        durationSeconds={5.0}
+        onComplete={() => setShowSplash(false)}
+      />
+    );
+  }
 
   if (isInitializing) {
     return (
@@ -139,7 +166,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="app-container" style={view === 'match' ? { height: '100vh', overflow: 'hidden' } : undefined}>
+    <div className="app-container" style={view === 'match' || view === 'result' ? { height: '100vh', overflow: 'hidden' } : undefined}>
       {/* Top Navbar */}
       {view !== 'match' && (
         <Navbar
@@ -152,7 +179,11 @@ export const App: React.FC = () => {
       )}
 
       {/* Main View Content */}
-      <div style={{ flex: 1, height: view === 'match' ? '100vh' : undefined, overflow: view === 'match' ? 'hidden' : undefined }}>
+      <div style={{
+        flex: 1,
+        height: view === 'match' ? '100vh' : (view === 'result' ? 'calc(100vh - 78px)' : undefined),
+        overflow: (view === 'match' || view === 'result') ? 'hidden' : undefined
+      }}>
         {view === 'landing' && (
           <LandingPage guest={guest} onPlayClick={handlePlayClick} />
         )}

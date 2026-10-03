@@ -1,0 +1,47 @@
+=== VOID ASSASSIN BLEND INSPECTION ===
+Mesh: Void_Assassin, verts=27110, vgs=20
+Bounds: X=[-0.4440, 0.4440], Y=[-0.2620, 0.2126], Z=[0.0000, 1.9795]
+Armature: Void_Assassin_Rig, bones=20
+
+  Bone: Root            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.0, 0.15)
+  Bone: Hips            Head: (0.0, 0.0, 0.9502) Tail: (0.0, 0.0, 1.1085)
+  Bone: Spine           Head: (0.0, 0.0, 1.1085) Tail: (0.0, 0.0, 1.3659)
+  Bone: Chest           Head: (0.0, 0.0, 1.3659) Tail: (0.0, 0.0, 1.643)
+  Bone: Neck            Head: (0.0, 0.0, 1.643) Tail: (0.0, 0.0, 1.742)
+  Bone: Head            Head: (0.0, 0.0, 1.742) Tail: (0.0, 0.0, 2.0785)
+  Bone: Shoulder.R      Head: (0.0799, 0.0, 1.5638) Tail: (0.1865, 0.0, 1.544)
+  Bone: UpperArm.R      Head: (0.1865, 0.0, 1.544) Tail: (0.293, 0.0, 1.2867)
+  Bone: Forearm.R       Head: (0.293, 0.0, 1.2867) Tail: (0.3641, 0.0, 1.0689)
+  Bone: Hand.R          Head: (0.3641, 0.0, 1.0689) Tail: (0.4262, 0.0, 0.9502)
+  Bone: Shoulder.L      Head: (-0.0799, 0.0, 1.5638) Tail: (-0.1865, 0.0, 1.544)
+  Bone: UpperArm.L      Head: (-0.1865, 0.0, 1.544) Tail: (-0.293, 0.0, 1.2867)
+  Bone: Forearm.L       Head: (-0.293, 0.0, 1.2867) Tail: (-0.3641, 0.0, 1.0689)
+  Bone: Hand.L          Head: (-0.3641, 0.0, 1.0689) Tail: (-0.4262, 0.0, 0.9502)
+  Bone: Thigh.R         Head: (0.1575, 0.0, 0.9502) Tail: (0.175, 0.0, 0.5147)
+  Bone: Shin.R          Head: (0.175, 0.0, 0.5147) Tail: (0.175, 0.0, 0.12)
+  Bone: Foot.R          Head: (0.175, 0.0, 0.12) Tail: (0.175, -0.15, 0.005)
+  Bone: Thigh.L         Head: (-0.1575, 0.0, 0.9502) Tail: (-0.175, 0.0, 0.5147)
+  Bone: Shin.L          Head: (-0.175, 0.0, 0.5147) Tail: (-0.175, 0.0, 0.12)
+  Bone: Foot.L          Head: (-0.175, 0.0, 0.12) Tail: (-0.175, -0.15, 0.005)
+
+Vertex Groups:
+  VG Root           : count=0 max_w=0.000 min_w=0.000
+  VG Hips           : count=5683 max_w=0.966 min_w=0.001
+  VG Spine          : count=6988 max_w=0.850 min_w=0.001
+  VG Chest          : count=6395 max_w=0.646 min_w=0.001
+  VG Neck           : count=3991 max_w=0.554 min_w=0.001
+  VG Head           : count=3739 max_w=0.998 min_w=0.001
+  VG Shoulder.R     : count=3770 max_w=0.702 min_w=0.001
+  VG UpperArm.R     : count=3144 max_w=1.000 min_w=0.001
+  VG Forearm.R      : count=1560 max_w=1.000 min_w=0.001
+  VG Hand.R         : count=3099 max_w=1.000 min_w=0.001
+  VG Shoulder.L     : count=3720 max_w=0.741 min_w=0.001
+  VG UpperArm.L     : count=2932 max_w=0.999 min_w=0.001
+  VG Forearm.L      : count=1546 max_w=1.000 min_w=0.001
+  VG Hand.L         : count=2321 max_w=1.000 min_w=0.003
+  VG Thigh.R        : count=6913 max_w=1.000 min_w=0.001
+  VG Shin.R         : count=2298 max_w=1.000 min_w=0.001
+  VG Foot.R         : count=700 max_w=1.000 min_w=0.004
+  VG Thigh.L        : count=6949 max_w=1.000 min_w=0.001
+  VG Shin.L         : count=2288 max_w=1.000 min_w=0.001
+  VG Foot.L         : count=690 max_w=1.000 min_w=0.010

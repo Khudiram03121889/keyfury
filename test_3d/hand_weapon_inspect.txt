@@ -1,0 +1,16 @@
+
+==================== Shadow_Ronin ====================
+Connected components (islands): 1
+  Island 0: 31536 verts | Bounds X:[-0.462,0.462] Y:[-0.249,0.259] Z:[0.000,2.204] Center:(-0.008,0.008,1.155)
+
+==================== Cyber_Valkyrie ====================
+Connected components (islands): 1
+  Island 0: 37128 verts | Bounds X:[-0.529,0.631] Y:[-0.283,0.351] Z:[0.000,2.259] Center:(0.004,0.050,1.296)
+
+==================== Volt_Shinobi ====================
+Connected components (islands): 1
+  Island 0: 30164 verts | Bounds X:[-0.525,0.525] Y:[-0.271,0.241] Z:[0.000,1.980] Center:(0.000,0.006,1.020)
+
+==================== Void_Assassin ====================
+Connected components (islands): 1
+  Island 0: 27110 verts | Bounds X:[-0.444,0.444] Y:[-0.258,0.216] Z:[0.000,1.980] Center:(0.000,0.006,0.999)

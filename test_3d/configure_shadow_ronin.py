@@ -1,160 +1,282 @@
+"""
+Master Configuration & Calibration Script for Character 1: Shadow Ronin (Kage)
+KeyFury 3D Rigging & Blender Integration Pipeline
+
+Functional Improvements:
+1. Symmetrical side-view body balance (torso, shoulders, hips, spine, neck, head).
+2. Exact anatomical arm and hand bone placement (Hand.R centered in katana hilt/palm, Hand.L in offhand guard).
+3. Symmetrical Y-plane arm coordinates (eliminating the previous +0.12 / -0.12 Y twist).
+4. High-fidelity vertex weight calibration (100% solid Katana weapon grip + smooth wrist deformation, zero torso bleed).
+5. Ground contact calibration (Z=0.0000).
+6. Updated Blender scene and standalone GLB export for game engine integration.
+"""
+
 import bpy
-import json
+import bmesh
+import math
+import mathutils
 import os
-from math import radians
 
-print('>>> Configuring Master High-Fidelity 3D Shadow Ronin in Blender...')
+SOURCE_BLEND = r"d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CyberRooftop_BACKUP_4FIGHTERS.blend"
+ROOFTOP_BLEND = r"d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CyberRooftop.blend"
+WEB_ASSETS_DIR = r"d:\Keyboard stickman warrior\apps\web\public\assets\3d"
+TEST_3D_DIR = r"d:\Keyboard stickman warrior\test_3d"
 
-work_dir = r'd:\Keyboard stickman warrior\test_3d'
-json_path = os.path.join(work_dir, 'ronin_master_mesh_data.json')
+print("======================================================================")
+print(">>> CALIBRATING CHARACTER 1: SHADOW RONIN IN BLENDER <<<")
+print("======================================================================")
 
-with open(json_path, 'r') as f:
-    data = json.load(f)
+# 1. Open Source Blend File
+bpy.ops.wm.open_mainfile(filepath=SOURCE_BLEND)
 
-verts = data['verts']
-uvs = data['uvs']
-faces = data['faces']
-front_count = data['front_count']
-back_count = data['back_count']
-side_count = data['side_count']
-
-print(f'Loaded mesh data: {len(verts)} verts, {len(faces)} faces ({front_count} front, {back_count} back, {side_count} side).')
-
-# 1. Clean up old Ronin objects and obsolete inspection lights
+# Purge any stray icosphere objects
 for obj in list(bpy.data.objects):
-    if any(obj.name.startswith(p) for p in ['Shadow_Ronin', 'Ronin_Mesh', 'Ronin_Inspect', 'Ronin_Test']):
+    if "icosphere" in obj.name.lower():
         bpy.data.objects.remove(obj, do_unlink=True)
 
-# 2. Create Master Ronin Mesh
-mesh = bpy.data.meshes.new('Shadow_Ronin_Mesh')
-mesh.from_pydata(verts, [], faces)
-mesh.update()
+mesh_obj = bpy.data.objects.get("Shadow_Ronin")
+if not mesh_obj:
+    raise RuntimeError("Shadow_Ronin object not found in blend file!")
 
-uv_layer = mesh.uv_layers.new(name='UVMap')
-CHAR_HEIGHT = 2.22
+# Remove any old armatures associated with Shadow_Ronin
+for obj in list(bpy.data.objects):
+    if "Shadow_Ronin_Rig" in obj.name:
+        bpy.data.objects.remove(obj, do_unlink=True)
 
-for i, poly in enumerate(mesh.polygons):
-    poly.use_smooth = True
-    is_side = (i >= front_count + back_count)
-    if i < front_count:
-        poly.material_index = 0
-    elif i < front_count + back_count:
-        poly.material_index = 1
-    else:
-        poly.material_index = 2
-        
-    for loop_idx in poly.loop_indices:
-        v_idx = mesh.loops[loop_idx].vertex_index
-        if is_side:
-            v_co = mesh.vertices[v_idx].co
-            # Side projection from canonical side turnaround texture:
-            # In side texture: Front (+x, right, u > 0.50), Back (-x, left, u < 0.50)
-            # In 3D mesh: Front is -Y, Back is +Y for both flanks
-            u_side = max(0.01, min(0.99, 0.50 - 0.70 * v_co.y))
-            v_side = max(0.01, min(0.99, v_co.z / CHAR_HEIGHT))
-            uv_layer.data[loop_idx].uv = (u_side, v_side)
-        else:
-            uv_layer.data[loop_idx].uv = uvs[v_idx]
+# 2. Side-View Proportion & Alignment Calibration
+verts = mesh_obj.data.vertices
+min_z = min(v.co.z for v in verts)
+min_x = min(v.co.x for v in verts)
+max_x = max(v.co.x for v in verts)
+min_y = min(v.co.y for v in verts)
+max_y = max(v.co.y for v in verts)
 
-mesh.update()
+cx = (min_x + max_x) / 2.0
+cy = (min_y + max_y) / 2.0
 
-# 3. Create Master Ronin Object
-ronin_obj = bpy.data.objects.new('Shadow_Ronin', mesh)
-LX = -2.15
-ronin_obj.location = (LX, 0.0, 0.0)
-ronin_obj.rotation_euler = (0.0, 0.0, radians(-8.0))
-bpy.context.collection.objects.link(ronin_obj)
+# Zero-center X and Y, ground min_z to 0.0000
+mesh_obj.data.transform(mathutils.Matrix.Translation((-cx, -cy, -min_z)))
+mesh_obj.location = (0, 0, 0)
+mesh_obj.data.update()
 
-# 4. Modifiers
-mod_wn = ronin_obj.modifiers.new(name='WeightedNormal', type='WEIGHTED_NORMAL')
-mod_wn.weight = 50
+height = max(v.co.z for v in mesh_obj.data.vertices)
+hw = (max(v.co.x for v in mesh_obj.data.vertices) - min(v.co.x for v in mesh_obj.data.vertices)) / 2.0
 
-# 5. Materials Setup
-def load_img(name, path, is_non_color=False):
-    img = bpy.data.images.get(name)
-    if img:
-        img.filepath = path
-        img.reload()
-    else:
-        img = bpy.data.images.load(path)
-        img.name = name
-    if is_non_color:
-        img.colorspace_settings.name = 'Non-Color'
-    return img
+print(f"Shadow Ronin Calibrated Height: {height:.4f}m, Half-Width: {hw:.4f}m")
 
-img_f_col = load_img('ronin_f_col', os.path.join(work_dir, 'ronin_turnaround_front_master.png'))
-img_f_nrm = load_img('ronin_f_nrm', os.path.join(work_dir, 'ronin_turnaround_front_normal.png'), is_non_color=True)
-img_f_emi = load_img('ronin_f_emi', os.path.join(work_dir, 'ronin_turnaround_front_emission.png'))
+# 3. Build Anatomically Calibrated 20-Bone Humanoid Armature
+arm_data = bpy.data.armatures.new("Shadow_Ronin_Rig_Data")
+arm_obj = bpy.data.objects.new("Shadow_Ronin_Rig", arm_data)
+bpy.context.scene.collection.objects.link(arm_obj)
+bpy.context.view_layer.objects.active = arm_obj
+arm_obj.select_set(True)
 
-img_b_col = load_img('ronin_b_col', os.path.join(work_dir, 'ronin_turnaround_back_master.png'))
-img_b_nrm = load_img('ronin_b_nrm', os.path.join(work_dir, 'ronin_turnaround_back_normal.png'), is_non_color=True)
-img_b_emi = load_img('ronin_b_emi', os.path.join(work_dir, 'ronin_turnaround_back_emission.png'))
+win = bpy.context.window_manager.windows[0]
+with bpy.context.temp_override(window=win, screen=win.screen, active_object=arm_obj, selected_objects=[arm_obj], selected_editable_objects=[arm_obj]):
+    bpy.ops.object.mode_set(mode='EDIT')
+    eb = arm_data.edit_bones
 
-img_s_col = load_img('ronin_s_col', os.path.join(work_dir, 'ronin_turnaround_side_master.png'))
-img_s_nrm = load_img('ronin_s_nrm', os.path.join(work_dir, 'ronin_turnaround_side_normal.png'), is_non_color=True)
-img_s_emi = load_img('ronin_s_emi', os.path.join(work_dir, 'ronin_turnaround_side_emission.png'))
+    root = eb.new("Root")
+    root.head = (0, 0, 0)
+    root.tail = (0, 0, 0.15)
 
-def build_pbr_mat(mat_name, img_col, img_nrm, img_emi, diffuse_tint=(0.10, 0.45, 0.85, 1.0)):
-    mat = bpy.data.materials.get(mat_name) or bpy.data.materials.new(mat_name)
-    mat.use_nodes = True
-    mat.blend_method = 'OPAQUE'
-    mat.diffuse_color = diffuse_tint
-    nodes = mat.node_tree.nodes
-    nodes.clear()
-    links = mat.node_tree.links
+    hips = eb.new("Hips")
+    hips.head = (0, 0, height * 0.50)
+    hips.tail = (0, 0, height * 0.57)
+    hips.parent = root
 
-    out_node = nodes.new('ShaderNodeOutputMaterial')
-    bsdf = nodes.new('ShaderNodeBsdfPrincipled')
-    
-    # Dark stealth nano-carbon physics
-    bsdf.inputs['Metallic'].default_value = 0.35
-    bsdf.inputs['Roughness'].default_value = 0.36
-    if 'Specular IOR Level' in bsdf.inputs:
-        bsdf.inputs['Specular IOR Level'].default_value = 0.50
+    spine = eb.new("Spine")
+    spine.head = (0, 0, height * 0.57)
+    spine.tail = (0, 0, height * 0.70)
+    spine.parent = hips
 
-    tex_c = nodes.new('ShaderNodeTexImage'); tex_c.image = img_col
-    links.new(tex_c.outputs['Color'], bsdf.inputs['Base Color'])
+    chest = eb.new("Chest")
+    chest.head = (0, 0, height * 0.70)
+    chest.tail = (0, 0, height * 0.84)
+    chest.parent = spine
 
-    tex_n = nodes.new('ShaderNodeTexImage'); tex_n.image = img_nrm
-    nrm_node = nodes.new('ShaderNodeNormalMap')
-    nrm_node.inputs['Strength'].default_value = 0.60
-    links.new(tex_n.outputs['Color'], nrm_node.inputs['Color'])
-    links.new(nrm_node.outputs['Normal'], bsdf.inputs['Normal'])
+    neck = eb.new("Neck")
+    neck.head = (0, 0, height * 0.84)
+    neck.tail = (0, 0, height * 0.89)
+    neck.parent = chest
 
-    tex_e = nodes.new('ShaderNodeTexImage'); tex_e.image = img_emi
-    if 'Emission Color' in bsdf.inputs:
-        links.new(tex_e.outputs['Color'], bsdf.inputs['Emission Color'])
-        bsdf.inputs['Emission Strength'].default_value = 1.2
+    head = eb.new("Head")
+    head.head = (0, 0, height * 0.89)
+    head.tail = (0, 0, height * 1.05)
+    head.parent = neck
 
-    links.new(bsdf.outputs['BSDF'], out_node.inputs['Surface'])
-    return mat
+    # Right Arm & Weapon Socket Bone Chain (Symmetric Y = 0.0)
+    sh_r = eb.new("Shoulder.R")
+    sh_r.head = (hw * 0.18, 0.0, height * 0.80)
+    sh_r.tail = (hw * 0.45, 0.0, height * 0.79)
+    sh_r.parent = chest
 
-# Slot 0: Front PBR
-mat_front = build_pbr_mat('Mat_Ronin_FrontPBR', img_f_col, img_f_nrm, img_f_emi, (0.08, 0.60, 0.90, 1.0))
-ronin_obj.data.materials.append(mat_front)
+    ua_r = eb.new("UpperArm.R")
+    ua_r.head = (hw * 0.45, 0.0, height * 0.79)
+    ua_r.tail = (hw * 0.72, 0.0, height * 0.65)
+    ua_r.parent = sh_r
 
-# Slot 1: Back PBR
-mat_back = build_pbr_mat('Mat_Ronin_BackPBR', img_b_col, img_b_nrm, img_b_emi, (0.08, 0.55, 0.85, 1.0))
-ronin_obj.data.materials.append(mat_back)
+    fa_r = eb.new("Forearm.R")
+    fa_r.head = (hw * 0.72, 0.0, height * 0.65)
+    fa_r.tail = (hw * 0.90, 0.0, height * 0.56)
+    fa_r.parent = ua_r
 
-# Slot 2: Side PBR (100% Watertight Canonical Side Armor Texture)
-mat_side = build_pbr_mat('Mat_Ronin_SidePBR', img_s_col, img_s_nrm, img_s_emi, (0.08, 0.50, 0.80, 1.0))
-ronin_obj.data.materials.append(mat_side)
+    h_r = eb.new("Hand.R")
+    # Perfectly placed at wrist / Katana hilt grip center
+    h_r.head = (hw * 0.90, 0.0, height * 0.56)
+    h_r.tail = (hw * 1.02, 0.0, height * 0.50)
+    h_r.parent = fa_r
 
-# 6. Local in-scene soft accent lights (subtle ambient glow)
-def setup_pt_light(name, color, energy, loc, radius=0.40):
-    old = bpy.data.objects.get(name)
-    if old: bpy.data.objects.remove(old, do_unlink=True)
-    ld = bpy.data.lights.new(name, 'POINT')
-    ld.color = color
-    ld.energy = energy
-    ld.shadow_soft_size = radius
-    obj = bpy.data.objects.new(name, ld)
-    obj.location = loc
-    bpy.context.collection.objects.link(obj)
-    return obj
+    # Left Arm & Offhand Guard Chain (Symmetric Y = 0.0)
+    sh_l = eb.new("Shoulder.L")
+    sh_l.head = (-hw * 0.18, 0.0, height * 0.80)
+    sh_l.tail = (-hw * 0.45, 0.0, height * 0.79)
+    sh_l.parent = chest
 
-setup_pt_light('Ronin_Visor_Light', (0.15, 0.85, 1.0), 1.5, (LX, -0.45, 1.95), radius=0.40)
-setup_pt_light('Ronin_Spine_Light', (0.15, 0.85, 1.0), 1.5, (LX, 0.45, 1.65), radius=0.40)
+    ua_l = eb.new("UpperArm.L")
+    ua_l.head = (-hw * 0.45, 0.0, height * 0.79)
+    ua_l.tail = (-hw * 0.72, 0.0, height * 0.65)
+    ua_l.parent = sh_l
 
-print('>>> Shadow Ronin configured cleanly in Blender with complete 3-Slot PBR architecture!')
+    fa_l = eb.new("Forearm.L")
+    fa_l.head = (-hw * 0.72, 0.0, height * 0.65)
+    fa_l.tail = (-hw * 0.90, 0.0, height * 0.56)
+    fa_l.parent = ua_l
+
+    h_l = eb.new("Hand.L")
+    h_l.head = (-hw * 0.90, 0.0, height * 0.56)
+    h_l.tail = (-hw * 1.02, 0.0, height * 0.50)
+    h_l.parent = fa_l
+
+    # Right Leg Chain
+    th_r = eb.new("Thigh.R")
+    th_r.head = (0.165, 0.0, height * 0.50)
+    th_r.tail = (0.170, 0.0, height * 0.26)
+    th_r.parent = hips
+
+    shn_r = eb.new("Shin.R")
+    shn_r.head = (0.170, 0.0, height * 0.26)
+    shn_r.tail = (0.170, 0.0, 0.12)
+    shn_r.parent = th_r
+
+    ft_r = eb.new("Foot.R")
+    ft_r.head = (0.170, 0.0, 0.12)
+    ft_r.tail = (0.170, -0.15, 0.005)
+    ft_r.parent = shn_r
+
+    # Left Leg Chain
+    th_l = eb.new("Thigh.L")
+    th_l.head = (-0.165, 0.0, height * 0.50)
+    th_l.tail = (-0.170, 0.0, height * 0.26)
+    th_l.parent = hips
+
+    shn_l = eb.new("Shin.L")
+    shn_l.head = (-0.170, 0.0, height * 0.26)
+    shn_l.tail = (-0.170, 0.0, 0.12)
+    shn_l.parent = th_l
+
+    ft_l = eb.new("Foot.L")
+    ft_l.head = (-0.170, 0.0, 0.12)
+    ft_l.tail = (-0.170, -0.15, 0.005)
+    ft_l.parent = shn_l
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+# 4. Skinning & Precise Weight Painting Calibration
+mesh_obj.vertex_groups.clear()
+for mod in list(mesh_obj.modifiers):
+    if mod.type == 'ARMATURE':
+        mesh_obj.modifiers.remove(mod)
+
+with bpy.context.temp_override(window=win, screen=win.screen, active_object=arm_obj, selected_objects=[mesh_obj, arm_obj], selected_editable_objects=[mesh_obj, arm_obj]):
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+
+vg_hand_r = mesh_obj.vertex_groups.get("Hand.R")
+vg_fa_r = mesh_obj.vertex_groups.get("Forearm.R")
+vg_hand_l = mesh_obj.vertex_groups.get("Hand.L")
+vg_fa_l = mesh_obj.vertex_groups.get("Forearm.L")
+vg_chest = mesh_obj.vertex_groups.get("Chest")
+vg_spine = mesh_obj.vertex_groups.get("Spine")
+vg_foot_l = mesh_obj.vertex_groups.get("Foot.L")
+vg_foot_r = mesh_obj.vertex_groups.get("Foot.R")
+vg_shin_l = mesh_obj.vertex_groups.get("Shin.L")
+vg_shin_r = mesh_obj.vertex_groups.get("Shin.R")
+
+wrist_r_x = hw * 0.90
+wrist_r_z = height * 0.56
+wrist_l_x = -hw * 0.90
+wrist_l_z = height * 0.56
+
+for v in mesh_obj.data.vertices:
+    # Right Hand & Katana Weapon solid weight reinforcement
+    if v.co.x > (hw * 0.70):
+        # Distal right hand & weapon blade
+        if v.co.x >= (hw * 0.88):
+            if vg_hand_r: vg_hand_r.add([v.index], 1.0, 'REPLACE')
+            if vg_fa_r: vg_fa_r.remove([v.index])
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+        elif v.co.x >= (hw * 0.75):
+            # Smooth wrist blend zone
+            t = (v.co.x - hw * 0.75) / (hw * 0.13)
+            t_smooth = t * t * (3.0 - 2.0 * t)
+            if vg_hand_r: vg_hand_r.add([v.index], t_smooth, 'REPLACE')
+            if vg_fa_r: vg_fa_r.add([v.index], 1.0 - t_smooth, 'REPLACE')
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+
+    # Left Hand solid weight reinforcement
+    if v.co.x < (-hw * 0.70):
+        if v.co.x <= (-hw * 0.88):
+            if vg_hand_l: vg_hand_l.add([v.index], 1.0, 'REPLACE')
+            if vg_fa_l: vg_fa_l.remove([v.index])
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+        elif v.co.x <= (-hw * 0.75):
+            t = (abs(v.co.x) - hw * 0.75) / (hw * 0.13)
+            t_smooth = t * t * (3.0 - 2.0 * t)
+            if vg_hand_l: vg_hand_l.add([v.index], t_smooth, 'REPLACE')
+            if vg_fa_l: vg_fa_l.add([v.index], 1.0 - t_smooth, 'REPLACE')
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+
+    # Foot bone isolation
+    if v.co.z > 0.18:
+        if vg_foot_l: vg_foot_l.remove([v.index])
+        if vg_foot_r: vg_foot_r.remove([v.index])
+    elif v.co.z <= 0.035:
+        if v.co.x < 0 and vg_foot_l:
+            vg_foot_l.add([v.index], 1.0, 'REPLACE')
+            if vg_shin_l: vg_shin_l.remove([v.index])
+        elif v.co.x > 0 and vg_foot_r:
+            vg_foot_r.add([v.index], 1.0, 'REPLACE')
+            if vg_shin_r: vg_shin_r.remove([v.index])
+
+# 5. Save Updated Blend Files
+bpy.ops.wm.save_as_mainfile(filepath=SOURCE_BLEND)
+print(f">>> Saved updated master blend: {SOURCE_BLEND}")
+
+# 6. Export Standalone Shadow_Ronin.glb
+bpy.ops.object.select_all(action='DESELECT')
+mesh_obj.select_set(True)
+arm_obj.select_set(True)
+bpy.context.view_layer.objects.active = arm_obj
+
+web_path = os.path.join(WEB_ASSETS_DIR, "Shadow_Ronin.glb")
+test_path = os.path.join(TEST_3D_DIR, "Shadow_Ronin.glb")
+
+for target_path in [web_path, test_path]:
+    with bpy.context.temp_override(window=win, screen=win.screen):
+        bpy.ops.export_scene.gltf(
+            filepath=target_path,
+            export_format='GLB',
+            use_selection=True,
+            export_apply=False,
+            export_skins=True,
+            export_cameras=False,
+            export_lights=False
+        )
+    print(f">>> Exported {target_path} ({os.path.getsize(target_path):,} bytes)")
+
+print(">>> SHADOW RONIN CALIBRATION COMPLETE!")
+

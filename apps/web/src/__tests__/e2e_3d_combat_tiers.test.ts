@@ -839,13 +839,13 @@ describe('KeyFury 3D WebGL Combat Engine — 4-Tier Opaque-Box E2E Test Suite', 
         expect(fighter.meshObject!.position.y).toBeCloseTo(0, 1);
       });
 
-      it('F11.3: executes molten fissure emergence on Volcanic Caldera: -max(0, (1 - p*1.5)*0.8)', () => {
+      it('F11.3: executes solid rock stride on Volcanic Caldera without burying legs in ground', () => {
         const fighter = new Character3DFighter('valkyrie', 'left', createMockLoader());
         fighter.setEntranceProgress(0.0, 'volcanic_caldera');
         fighter.update(0.016, 0.0);
 
-        // At p = 0, submerged by -0.8m
-        expect(fighter.meshObject!.position.y).toBeLessThan(-0.7);
+        // At p = 0, stays on/above ground (never submerged below rock floor)
+        expect(fighter.meshObject!.position.y).toBeGreaterThanOrEqual(0.0);
 
         fighter.setEntranceProgress(1.0, 'volcanic_caldera');
         fighter.update(0.016, 1.0);
@@ -2101,10 +2101,10 @@ describe('KeyFury 3D WebGL Combat Engine — 4-Tier Opaque-Box E2E Test Suite', 
       const valkyrie = new Character3DFighter('valkyrie', 'left', loader);
       const voidAssassin = new Character3DFighter('void', 'right', loader);
 
-      // 1. Fissure emergence
+      // 1. Platform stride on solid volcanic ground (never buried in rock)
       valkyrie.setEntranceProgress(0.1, arena.id);
       valkyrie.update(0.016, 0.1);
-      expect(valkyrie.meshObject!.position.y).toBeLessThan(-0.5);
+      expect(valkyrie.meshObject!.position.y).toBeGreaterThanOrEqual(0.0);
 
       // 2. Platform arrival
       valkyrie.setEntranceProgress(1.0, arena.id);

@@ -1,0 +1,8 @@
+=== MASTER TEXTURED 4-FIGHTER EXPORT ===
+
+Exported Shadow_Ronin.glb: 4,253,532 bytes
+Exported Cyber_Valkyrie.glb: 6,316,852 bytes
+Exported Volt_Shinobi.glb: 3,983,064 bytes
+Exported Void_Assassin.glb: 3,837,432 bytes
+
+>>> Saved Master Blend with packed PBR textures!

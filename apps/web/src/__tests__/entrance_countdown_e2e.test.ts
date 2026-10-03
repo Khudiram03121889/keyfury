@@ -294,15 +294,15 @@ describe('Milestone 4: Map-Specific Entrances & Synchronized 3-2-1 Countdown Seq
       expect(p2.meshObject!.position.y).toBeCloseTo(0.0, 1);
     });
 
-    it('M4.4.3: Volcanic Caldera Molten Emergence: rises from magma fissure -max(0, (1 - p*1.5)*0.8)', () => {
+    it('M4.4.3: Volcanic Caldera Platform Stride: strides on top of solid rock floor without burying legs in ground', () => {
       const fighter = new Character3DFighter('valkyrie', 'left', createMockLoader());
 
-      // At p = 0: Submerged in magma plume
+      // At p = 0: Clean stride on volcanic platform surface (never negative / never buried in rock)
       fighter.setEntranceProgress(0.0, 'volcanic_caldera');
       fighter.update(0.016, 0.0);
-      expect(fighter.meshObject!.position.y).toBeLessThan(-0.7);
+      expect(fighter.meshObject!.position.y).toBeGreaterThanOrEqual(0.0);
 
-      // At p = 1.0: Erupted onto platform surface
+      // At p = 1.0: Planted on platform surface
       fighter.setEntranceProgress(1.0, 'volcanic_caldera');
       fighter.update(0.016, 1.0);
       expect(fighter.group.position.x).toBe(-1.50);

@@ -385,11 +385,12 @@ describe('Challenger M5: Empirical Stress Testing — MatchPage & Hotkey Isolati
       expect(harness.cameraCycleCalls).toBe(2);
       expect(harness.activePresetIndex).toBe(2);
 
-      // Total presets is 5, cycle through all 5
-      for (let i = 0; i < 3; i++) {
+      // Cycle through remaining presets to wrap around
+      const remainingCycles = CAMERA_PRESETS.length - 2;
+      for (let i = 0; i < remainingCycles; i++) {
         harness.simulateKeyDown(createMockKeyEvent('KeyC', 'c', canvasTarget), nonInputElement);
       }
-      expect(harness.cameraCycleCalls).toBe(5);
+      expect(harness.cameraCycleCalls).toBe(CAMERA_PRESETS.length);
       expect(harness.activePresetIndex).toBe(0); // Wrapped around
     });
 

@@ -48,12 +48,15 @@ export const ResultPage: React.FC<ResultPageProps> = ({
     calculatedNewMmr = matchResult.mmrDeltas[room.sessionId].newMmr;
   } else if (myRawStats?.mmrDelta !== undefined || myRawStats?.mmr_delta !== undefined) {
     calculatedMmrDelta = myRawStats?.mmrDelta ?? myRawStats?.mmr_delta ?? (isWinner ? 24 : -16);
-    calculatedNewMmr = myRawStats?.newMmr ?? myRawStats?.new_mmr ?? myRawStats?.mmr;
-  } else if (myRawStats?.mmr !== undefined) {
-    calculatedNewMmr = myRawStats.mmr;
-    calculatedMmrDelta = isWinner ? 24 : -16;
+    calculatedNewMmr = myRawStats?.newMmr ?? myRawStats?.new_mmr ?? (typeof myRawStats?.mmr === 'number' ? myRawStats.mmr : Math.max(0, (userProfile?.mmr ?? 1000) + calculatedMmrDelta));
   } else {
     calculatedMmrDelta = isWinner ? 24 : -16;
+    if (typeof myRawStats?.mmr === 'number') {
+      calculatedNewMmr = myRawStats.mmr;
+    } else {
+      const baseMmr = typeof userProfile?.mmr === 'number' ? userProfile.mmr : 1000;
+      calculatedNewMmr = Math.max(0, baseMmr + calculatedMmrDelta);
+    }
   }
 
   const playerStats: MatchPlayerStats = {

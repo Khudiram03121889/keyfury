@@ -12,7 +12,7 @@ target_y_bottom = 748
 # 1. Load clean slices (ground contact shadows removed)
 f_slice = Image.open(os.path.join(work_dir, 'shinobi_slice_front_final.png'))
 b_slice = Image.open(os.path.join(work_dir, 'shinobi_slice_back_final.png'))
-s_slice = Image.open(os.path.join(work_dir, 'shinobi_clean_slice_side.png'))
+s_slice = Image.open(os.path.join(work_dir, 'shinobi_slice_side.png'))
 
 def fit_to_canvas(im):
     arr = np.array(im)

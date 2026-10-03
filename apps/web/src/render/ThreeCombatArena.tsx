@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Character3DFighter, CharacterId, CHARACTER_PROFILES, resolveCharacterId } from '../game/character/Character3DController';
 import { getSavedSelectedCameraAngle, saveSelectedCameraAngle } from '../lib/supabase';
+import { KeyFury3DThunderScene } from '../components/splash/KeyFury3DThunderScene';
 
 export type ArenaId = 'cyber_rooftop' | 'celestial_void' | 'volcanic_caldera' | 'highland_sanctuary';
 
@@ -316,6 +317,19 @@ export interface FighterSpotlightData {
   weapon: string;
   color: string;
   side: 'left' | 'right';
+}
+
+// Fluid easing functions for opening sequence transitions & cinematic cameras
+export function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+export function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+export function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
 export function getIntroActForTime(t: number): IntroAct {
@@ -710,6 +724,12 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
   // Screen shake
   const shakeIntensityRef = useRef<number>(0);
 
+  // Opening Sequence 3D Transition & Smooth Cinematic Refs
+  const openingTransitionRef = useRef<HTMLDivElement>(null);
+  const openingCardRef = useRef<HTMLDivElement>(null);
+  const screenVeilRef = useRef<HTMLDivElement>(null);
+  const arrivalFlareRef = useRef<HTMLDivElement>(null);
+
   // Visible physical interaction: Hit feedback particle & shockwave engine
   const hitParticlesRef = useRef<HitParticleData[]>([]);
   const hitParticlesGeoRef = useRef<THREE.BufferGeometry | null>(null);
@@ -850,6 +870,11 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     setActiveFighterBanner(null);
     setCountdownNum(null);
 
+    // Dismiss opening transition elements
+    if (openingTransitionRef.current) openingTransitionRef.current.style.display = 'none';
+    if (screenVeilRef.current) screenVeilRef.current.style.display = 'none';
+    if (arrivalFlareRef.current) arrivalFlareRef.current.style.display = 'none';
+
     // Snap fighters to marks
     if (p1FighterRef.current) p1FighterRef.current.setEntranceProgress(1.0, resolvedArenaId);
     if (p2FighterRef.current) p2FighterRef.current.setEntranceProgress(1.0, resolvedArenaId);
@@ -983,6 +1008,20 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     setActiveFighterBanner(null);
     setCountdownNum(null);
     applyPresetTransformRef.current(activePresetIndexRef.current);
+
+    // Reset opening transition elements
+    if (openingTransitionRef.current) {
+      openingTransitionRef.current.style.display = 'flex';
+      openingTransitionRef.current.style.opacity = '0';
+    }
+    if (screenVeilRef.current) {
+      screenVeilRef.current.style.display = 'block';
+      screenVeilRef.current.style.opacity = '1';
+    }
+    if (arrivalFlareRef.current) {
+      arrivalFlareRef.current.style.display = 'none';
+      arrivalFlareRef.current.style.opacity = '0';
+    }
 
     // 1. Scene & Camera
     const scene = new THREE.Scene();
@@ -1391,17 +1430,95 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         const currentAct = getIntroActForTime(t);
         setIntroAct((prev) => (prev !== currentAct ? currentAct : prev));
 
-        // ACT 1: Stage Showcase & Atmospheric Pan (0.0s - 1.5s)
+        // High-Performance 60+ FPS 3D Opening Transition Updates (Act 1: 0.0s - 1.55s)
+        if (t < 1.55) {
+          // 1. Screen Veil: Smooth atmospheric fade-in from cinematic black (0.0s -> 0.4s)
+          if (screenVeilRef.current) {
+            if (t <= 0.4) {
+              const veilP = t / 0.4;
+              const veilAlpha = Math.max(0, 1.0 - easeInOutQuad(veilP));
+              screenVeilRef.current.style.opacity = veilAlpha.toFixed(3);
+              screenVeilRef.current.style.display = 'block';
+            } else {
+              screenVeilRef.current.style.opacity = '0';
+              screenVeilRef.current.style.display = 'none';
+            }
+          }
+
+          // 2. 3D Game Title & Logo Thunder Transition (Act 1: 0.0s - 1.55s)
+          if (openingTransitionRef.current) {
+            if (t < 1.5) {
+              openingTransitionRef.current.style.display = 'block';
+            } else {
+              openingTransitionRef.current.style.display = 'none';
+            }
+          }
+
+          // 3. Arrival Cross-Fade Flare: subtle energy burst right before character appears (1.20s -> 1.50s)
+          if (arrivalFlareRef.current) {
+            if (t >= 1.20 && t < 1.50) {
+              const flareP = (t - 1.20) / 0.30;
+              const flareAlpha = Math.sin(flareP * Math.PI) * 0.45;
+              arrivalFlareRef.current.style.opacity = flareAlpha.toFixed(3);
+              arrivalFlareRef.current.style.display = 'block';
+            } else {
+              arrivalFlareRef.current.style.opacity = '0';
+              arrivalFlareRef.current.style.display = 'none';
+            }
+          }
+        } else {
+          if (openingTransitionRef.current && openingTransitionRef.current.style.display !== 'none') {
+            openingTransitionRef.current.style.display = 'none';
+          }
+          if (screenVeilRef.current && screenVeilRef.current.style.display !== 'none') {
+            screenVeilRef.current.style.display = 'none';
+          }
+          if (arrivalFlareRef.current && arrivalFlareRef.current.style.display !== 'none') {
+            arrivalFlareRef.current.style.display = 'none';
+          }
+        }
+
+        // ACT 1: Stage Showcase, 3D Game Title & Logo Transition & Smooth Handoff (0.0s - 1.5s)
         if (currentAct === 'stage') {
           setActiveFighterBanner(null);
           setCountdownNum(null);
-          const p = t / 1.5;
-          camera.position.x = 0;
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 2.8, arenaDef.camPos[1] + 1.2, p);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 4.0, arenaDef.camPos[2] + 1.0, p);
-          camera.fov = arenaDef.camFov;
+          const p = Math.min(Math.max(t / 1.5, 0), 1);
+
+          // Target values at t = 1.5s where Act 2 begins
+          const p1TargetX = -4.2;
+          const p1TargetY = arenaDef.camPos[1] + 0.6;
+          const p1TargetZ = arenaDef.camPos[2] * 0.6;
+          const p1LookX = -1.75;
+          const p1LookY = 1.1 + arenaDef.fighterFloorY;
+          const p1LookZ = 0;
+          const p1TargetFov = 32.0;
+
+          if (p < 0.6) {
+            // Phase 1 (0.0s - 0.9s): Wide arena drift showcasing the 3D Game Title & Logo
+            const subP = easeOutCubic(p / 0.6);
+            camera.position.x = THREE.MathUtils.lerp(0, -0.6, subP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 2.4, arenaDef.camPos[1] + 1.8, subP);
+            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 3.2, arenaDef.camPos[2] + 1.8, subP);
+            camera.fov = arenaDef.camFov;
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(arenaDef.camLookAt[0], arenaDef.camLookAt[0] - 0.3, subP),
+              THREE.MathUtils.lerp(arenaDef.camLookAt[1] + 0.4, arenaDef.camLookAt[1] + 0.25, subP),
+              arenaDef.camLookAt[2]
+            );
+          } else {
+            // Phase 2 (0.9s - 1.5s): Smooth cubic curve swoop directly into Player 1 entry tracking shot
+            const subP = easeInOutCubic((p - 0.6) / 0.4);
+            camera.position.x = THREE.MathUtils.lerp(-0.6, p1TargetX, subP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 1.8, p1TargetY, subP);
+            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 1.8, p1TargetZ, subP);
+            camera.fov = THREE.MathUtils.lerp(arenaDef.camFov, p1TargetFov, subP);
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(arenaDef.camLookAt[0] - 0.3, p1LookX, subP),
+              THREE.MathUtils.lerp(arenaDef.camLookAt[1] + 0.25, p1LookY, subP),
+              THREE.MathUtils.lerp(arenaDef.camLookAt[2], p1LookZ, subP)
+            );
+          }
           camera.updateProjectionMatrix();
-          currentCamLookAt.current.set(arenaDef.camLookAt[0], arenaDef.camLookAt[1] + 0.5, arenaDef.camLookAt[2]);
           camera.lookAt(currentCamLookAt.current);
         }
         // ACT 2: Player 1 Unique Map Entrance & Spotlight (1.5s - 3.5s)
@@ -1417,11 +1534,12 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
             p1FighterRef.current.triggerEntranceFlair();
           }
 
-          const p = (t - 1.5) / 2.0;
-          // Dynamic low 3/4 tracking shot of Player 1
-          camera.position.x = THREE.MathUtils.lerp(-4.2, -1.8, p);
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, p);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, p);
+          const p = Math.min(Math.max((t - 1.5) / 2.0, 0), 1);
+          const easeP = easeInOutCubic(p);
+          // Dynamic low 3/4 tracking shot of Player 1 with fluid easing
+          camera.position.x = THREE.MathUtils.lerp(-4.2, -1.8, easeP);
+          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, easeP);
+          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, easeP);
           camera.fov = 32.0;
           camera.updateProjectionMatrix();
           currentCamLookAt.current.set(-1.75, 1.1 + arenaDef.fighterFloorY, 0);
@@ -1440,11 +1558,12 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
             p2FighterRef.current.triggerEntranceFlair();
           }
 
-          const p = (t - 3.5) / 2.0;
-          // Whip/Pan across to low 3/4 tracking shot of Player 2
-          camera.position.x = THREE.MathUtils.lerp(4.2, 1.8, p);
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, p);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, p);
+          const p = Math.min(Math.max((t - 3.5) / 2.0, 0), 1);
+          const easeP = easeInOutCubic(p);
+          // Fluid eased tracking shot of Player 2
+          camera.position.x = THREE.MathUtils.lerp(4.2, 1.8, easeP);
+          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, easeP);
+          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, easeP);
           camera.fov = 32.0;
           camera.updateProjectionMatrix();
           currentCamLookAt.current.set(1.75, 1.1 + arenaDef.fighterFloorY, 0);
@@ -1459,16 +1578,17 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
           setActiveFighterBanner(null);
 
           const p = Math.min((t - 5.5) / 1.0, 1.0);
+          const easeP = easeInOutCubic(p);
           const tPos = targetCamPos.current;
           const tLook = targetCamLookAt.current;
 
-          camera.position.x = THREE.MathUtils.lerp(1.8, tPos.x, p);
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] * 0.7 + 0.3, tPos.y, p);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.45, tPos.z, p);
-          camera.fov = THREE.MathUtils.lerp(32.0, targetCamFov.current, p);
+          camera.position.x = THREE.MathUtils.lerp(1.8, tPos.x, easeP);
+          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] * 0.7 + 0.3, tPos.y, easeP);
+          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.45, tPos.z, easeP);
+          camera.fov = THREE.MathUtils.lerp(32.0, targetCamFov.current, easeP);
           camera.updateProjectionMatrix();
 
-          currentCamLookAt.current.lerp(tLook, p * 0.2);
+          currentCamLookAt.current.lerp(tLook, easeP * 0.25);
           camera.lookAt(currentCamLookAt.current);
 
           // Synchronized 3-2-1 Countdown (5.5-6.2s: "3", 6.2-6.9s: "2", 6.9-7.3s: "1", 7.3-7.5s: "FIGHT!")
@@ -1651,6 +1771,57 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
           </button>
         </div>
       )}
+
+      {/* Subtle Opening Cinematic Atmospheric Fade Veil */}
+      <div
+        ref={screenVeilRef}
+        data-testid="opening-cinematic-veil"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: '#060913',
+          pointerEvents: 'none',
+          zIndex: 28,
+          opacity: 1,
+          willChange: 'opacity',
+        }}
+      />
+
+      {/* Subtle Character Entry Arrival Lens Flare */}
+      <div
+        ref={arrivalFlareRef}
+        data-testid="opening-arrival-flare"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `radial-gradient(circle at 35% 65%, ${arenaDef.themeColor}77 0%, transparent 60%)`,
+          pointerEvents: 'none',
+          zIndex: 29,
+          opacity: 0,
+          display: 'none',
+          willChange: 'opacity',
+        }}
+      />
+
+      {/* 3D Game Title & Logo Thunder Transition Layer (Act 1: 0.0s - 1.5s) */}
+      <div
+        ref={openingTransitionRef}
+        data-testid="opening-3d-transition"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 30,
+        }}
+      >
+        <div ref={openingCardRef} style={{ width: '100%', height: '100%' }}>
+          <KeyFury3DThunderScene
+            durationSeconds={1.5}
+            isOverlay={true}
+            allowSkip={false}
+          />
+        </div>
+      </div>
 
       {/* Cinematic Showcase HUD Layer (Acts 1 to 4) */}
       {!isIntroComplete && !isIntroSkipped && introAct !== 'combat' && (

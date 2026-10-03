@@ -552,23 +552,13 @@ export async function getUserProfile(userId?: string): Promise<UserProfile | nul
           try { savedProfileObj = JSON.parse(savedProfileStr); } catch (_e) {}
         }
 
-        let mmr = data.mmr ?? 1000;
-        let matchesPlayed = data.matches_played ?? 0;
-        let wins = data.wins ?? 0;
-        let losses = data.losses ?? 0;
-        let avgWpm = data.avg_wpm ? Number(data.avg_wpm) : 0;
-        let peakWpm = data.peak_wpm ? Number(data.peak_wpm) : 0;
-        let accuracy = data.accuracy ? Number(data.accuracy) : 0;
-
-        if (savedProfileObj) {
-          if (typeof savedProfileObj.mmr === 'number' && savedProfileObj.mmr > mmr) mmr = savedProfileObj.mmr;
-          if (typeof savedProfileObj.matchesPlayed === 'number' && savedProfileObj.matchesPlayed > matchesPlayed) matchesPlayed = savedProfileObj.matchesPlayed;
-          if (typeof savedProfileObj.wins === 'number' && savedProfileObj.wins > wins) wins = savedProfileObj.wins;
-          if (typeof savedProfileObj.losses === 'number' && savedProfileObj.losses > losses) losses = savedProfileObj.losses;
-          if (typeof savedProfileObj.avgWpm === 'number' && savedProfileObj.avgWpm > 0 && (avgWpm === 0 || savedProfileObj.avgWpm > avgWpm)) avgWpm = savedProfileObj.avgWpm;
-          if (typeof savedProfileObj.peakWpm === 'number' && savedProfileObj.peakWpm > peakWpm) peakWpm = savedProfileObj.peakWpm;
-          if (typeof savedProfileObj.accuracy === 'number' && savedProfileObj.accuracy > 0 && (accuracy === 0 || savedProfileObj.accuracy > accuracy)) accuracy = savedProfileObj.accuracy;
-        }
+        let mmr = typeof savedProfileObj?.mmr === 'number' ? savedProfileObj.mmr : (data.mmr ?? 1000);
+        let matchesPlayed = typeof savedProfileObj?.matchesPlayed === 'number' ? Math.max(savedProfileObj.matchesPlayed, data.matches_played ?? 0) : (data.matches_played ?? 0);
+        let wins = typeof savedProfileObj?.wins === 'number' ? Math.max(savedProfileObj.wins, data.wins ?? 0) : (data.wins ?? 0);
+        let losses = typeof savedProfileObj?.losses === 'number' ? Math.max(savedProfileObj.losses, data.losses ?? 0) : (data.losses ?? 0);
+        let avgWpm = typeof savedProfileObj?.avgWpm === 'number' && savedProfileObj.avgWpm > 0 ? savedProfileObj.avgWpm : (Number(data.avg_wpm) || 0);
+        let peakWpm = typeof savedProfileObj?.peakWpm === 'number' ? Math.max(savedProfileObj.peakWpm, Number(data.peak_wpm) || 0) : (Number(data.peak_wpm) || 0);
+        let accuracy = typeof savedProfileObj?.accuracy === 'number' && savedProfileObj.accuracy > 0 ? savedProfileObj.accuracy : (Number(data.accuracy) || 0);
 
         const isGuestUser = data.is_guest ?? false;
         // For registered users, data.display_name from DB is the primary source of truth
@@ -714,6 +704,9 @@ export async function updateUserProfile(
 }
 
 export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfile[]> {
+  const localAccounts = JSON.parse(localStorage.getItem('keyfury_user_accounts') || '[]');
+  const localCurrentId = localStorage.getItem('keyfury_guest_id');
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -725,13 +718,19 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
 
       if (!error && data && data.length > 0) {
         const mapped = data.map((row) => {
-          const mmr = row.mmr ?? 1000;
-          const wins = row.wins ?? 0;
-          const losses = row.losses ?? 0;
-          const matchesPlayed = row.matches_played ?? (wins + losses);
-          const avgWpm = row.avg_wpm ? Number(row.avg_wpm) : 0;
-          const peakWpm = row.peak_wpm ? Number(row.peak_wpm) : 0;
-          const accuracy = row.accuracy ? Number(row.accuracy) : 0;
+          const savedStr = localStorage.getItem(`keyfury_profile_${row.id}`);
+          let savedObj: any = null;
+          if (savedStr) {
+            try { savedObj = JSON.parse(savedStr); } catch (_e) {}
+          }
+
+          const mmr = typeof savedObj?.mmr === 'number' ? savedObj.mmr : (row.mmr ?? 1000);
+          const wins = typeof savedObj?.wins === 'number' ? Math.max(savedObj.wins, row.wins ?? 0) : (row.wins ?? 0);
+          const losses = typeof savedObj?.losses === 'number' ? Math.max(savedObj.losses, row.losses ?? 0) : (row.losses ?? 0);
+          const matchesPlayed = typeof savedObj?.matchesPlayed === 'number' ? Math.max(savedObj.matchesPlayed, row.matches_played ?? (wins + losses)) : (row.matches_played ?? (wins + losses));
+          const avgWpm = typeof savedObj?.avgWpm === 'number' && savedObj.avgWpm > 0 ? savedObj.avgWpm : (row.avg_wpm ? Number(row.avg_wpm) : 0);
+          const peakWpm = typeof savedObj?.peakWpm === 'number' ? Math.max(savedObj.peakWpm, Number(row.peak_wpm) || 0) : (row.peak_wpm ? Number(row.peak_wpm) : 0);
+          const accuracy = typeof savedObj?.accuracy === 'number' && savedObj.accuracy > 0 ? savedObj.accuracy : (row.accuracy ? Number(row.accuracy) : 0);
 
           return {
             id: row.id,
@@ -754,8 +753,21 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
           };
         });
 
+        // Merge any local accounts not already in remote data
+        for (const acc of localAccounts) {
+          if (!mapped.some((m) => m.id === acc.id)) {
+            const saved = localStorage.getItem(`keyfury_profile_${acc.id}`);
+            if (saved) {
+              try {
+                const p = JSON.parse(saved);
+                mapped.push({ ...p, isGuest: false });
+              } catch (_e) {}
+            }
+          }
+        }
+
         mapped.sort((a, b) => b.mmr - a.mmr);
-        return mapped;
+        return mapped.slice(offset, offset + limit);
       }
     } catch (_err) {
       // Fallback below
@@ -763,7 +775,6 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
   }
 
   // Real user accounts leaderboard (from user signups)
-  const localAccounts = JSON.parse(localStorage.getItem('keyfury_user_accounts') || '[]');
   const profiles: UserProfile[] = [];
 
   for (const acc of localAccounts) {
@@ -771,7 +782,7 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
     if (saved) {
       try {
         const p = JSON.parse(saved);
-        if (!p.isGuest) profiles.push(p);
+        profiles.push({ ...p, isGuest: false });
       } catch (_e) {}
     } else {
       profiles.push({
@@ -795,6 +806,49 @@ export async function getLeaderboard(limit = 100, offset = 0): Promise<UserProfi
       });
     }
   }
+
+  if (localCurrentId && !profiles.some((p) => p.id === localCurrentId)) {
+    const saved = localStorage.getItem(`keyfury_profile_${localCurrentId}`);
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (!p.isGuest) profiles.push(p);
+      } catch (_e) {}
+    }
+  }
+
+  const BENCHMARKS: Partial<UserProfile>[] = [
+    { id: 'bm-gm-1', displayName: 'ZenithOverlord', mmr: 3340, rankTier: 'Grandmaster', wins: 88, losses: 12, avgWpm: 142, peakWpm: 158, accuracy: 99.4, bio: 'Apex Keyboard Grandmaster' },
+    { id: 'bm-m-1', displayName: 'NeonViper', mmr: 2920, rankTier: 'Master', wins: 64, losses: 18, avgWpm: 126, peakWpm: 140, accuracy: 98.8, bio: 'Swift Volt Shinobi Master' },
+    { id: 'bm-d-1', displayName: 'ValkyriePrime', mmr: 2510, rankTier: 'Diamond', wins: 49, losses: 21, avgWpm: 112, peakWpm: 128, accuracy: 98.1, bio: 'Cyber Valkyrie Ace' },
+    { id: 'bm-p-1', displayName: 'KageRonin', mmr: 2140, rankTier: 'Platinum', wins: 38, losses: 22, avgWpm: 98, peakWpm: 115, accuracy: 97.5, bio: 'Shadow Blade Duelist' },
+    { id: 'bm-g-1', displayName: 'HyperStrike', mmr: 1720, rankTier: 'Gold', wins: 28, losses: 20, avgWpm: 84, peakWpm: 98, accuracy: 96.8, bio: 'Gold Tier Gladiator' },
+    { id: 'bm-s-1', displayName: 'SwiftStriker', mmr: 1350, rankTier: 'Silver', wins: 18, losses: 16, avgWpm: 68, peakWpm: 82, accuracy: 95.4, bio: 'Silver League Challenger' }
+  ];
+
+  BENCHMARKS.forEach((bm) => {
+    if (!profiles.some((p) => p.displayName.toLowerCase() === bm.displayName?.toLowerCase())) {
+      const mmr = bm.mmr || 1000;
+      profiles.push({
+        id: bm.id!,
+        displayName: bm.displayName!,
+        avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${bm.displayName}`,
+        bio: bm.bio || 'Competitive Warrior',
+        keycapTheme: 'cyberpunk',
+        accentColor: '#38bdf8',
+        mmr,
+        rankTier: bm.rankTier || getRankTier(mmr),
+        rankDivision: 'I',
+        matchesPlayed: (bm.wins || 0) + (bm.losses || 0),
+        wins: bm.wins || 0,
+        losses: bm.losses || 0,
+        avgWpm: bm.avgWpm || 75,
+        peakWpm: bm.peakWpm || 90,
+        accuracy: bm.accuracy || 96,
+        isGuest: false
+      });
+    }
+  });
 
   profiles.sort((a, b) => (b.mmr ?? 1000) - (a.mmr ?? 1000));
   return profiles.slice(offset, offset + limit);
@@ -847,6 +901,14 @@ export async function getMatchHistory(userId: string, limit = 10): Promise<Match
 export const getRecentGuestMatches = getMatchHistory;
 
 export async function getUserAchievements(userId: string): Promise<UserAchievement[]> {
+  const localAchievements: UserAchievement[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(`keyfury_achievements_${userId}`) || '[]');
+    } catch {
+      return [];
+    }
+  })();
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -854,20 +916,38 @@ export async function getUserAchievements(userId: string): Promise<UserAchieveme
         .select('*')
         .eq('profile_id', userId);
 
-      if (!error && data) {
-        return data.map((d: any) => ({
+      if (!error && data && data.length > 0) {
+        const remoteList: UserAchievement[] = data.map((d: any) => ({
           achievementId: d.achievement_id,
           progress: d.progress,
           unlocked: d.unlocked,
           unlockedAt: d.unlocked_at
         }));
+
+        const mergedMap = new Map<string, UserAchievement>();
+        localAchievements.forEach((a) => mergedMap.set(a.achievementId, a));
+        remoteList.forEach((r) => {
+          const existing = mergedMap.get(r.achievementId);
+          if (!existing) {
+            mergedMap.set(r.achievementId, r);
+          } else {
+            mergedMap.set(r.achievementId, {
+              achievementId: r.achievementId,
+              progress: Math.max(existing.progress, r.progress),
+              unlocked: existing.unlocked || r.unlocked,
+              unlockedAt: existing.unlockedAt || r.unlockedAt
+            });
+          }
+        });
+        const merged = Array.from(mergedMap.values());
+        localStorage.setItem(`keyfury_achievements_${userId}`, JSON.stringify(merged));
+        return merged;
       }
     } catch (_e) {
       // Fallback below
     }
   }
 
-  const localAchievements = JSON.parse(localStorage.getItem(`keyfury_achievements_${userId}`) || '[]');
   return localAchievements;
 }
 
@@ -898,16 +978,16 @@ export async function saveMatchStats(
     joined_at: new Date().toISOString(),
     opponent_name: stats.opponentName || 'Opponent Warrior',
     mode: stats.mode || 'Ranked 1v1',
-    mmr_delta: stats.mmrDelta || (stats.result === 'WIN' ? 25 : -15)
+    mmr_delta: stats.mmrDelta || (stats.result === 'WIN' ? 24 : -16)
   };
 
   const currentHistory: MatchHistoryItem[] = JSON.parse(localStorage.getItem(`keyfury_history_${userId}`) || '[]');
   
-  // ponytail: deduplicate if identical match was recorded within 5 seconds
+  // ponytail: deduplicate if identical match was recorded within 3 seconds
   if (currentHistory.length > 0) {
     const last = currentHistory[0];
     const timeDiff = Math.abs(Date.now() - new Date(last.joined_at).getTime());
-    if (timeDiff < 5000 && last.result === stats.result && last.accepted_wpm === stats.wpm && last.accuracy === stats.accuracy) {
+    if (timeDiff < 3000 && last.result === stats.result && last.accepted_wpm === stats.wpm && last.accuracy === stats.accuracy) {
       return { newAchievements: [] };
     }
   }
@@ -915,160 +995,222 @@ export async function saveMatchStats(
   currentHistory.unshift(matchItem);
   localStorage.setItem(`keyfury_history_${userId}`, JSON.stringify(currentHistory.slice(0, 50)));
 
-  // Persist to Supabase database match_players table if available
+  // Persist to Supabase database match_players table if available (non-blocking)
   if (supabase) {
-    try {
-      await supabase.from('match_players').insert([{
-        profile_id: userId,
-        match_id: matchItem.match_id,
-        result: matchItem.result,
-        final_health: matchItem.final_health,
-        accepted_wpm: matchItem.accepted_wpm,
-        accuracy: matchItem.accuracy,
-        highest_combo: matchItem.highest_combo,
-        words_completed: matchItem.words_completed,
-        joined_at: matchItem.joined_at,
-        opponent_name: matchItem.opponent_name
-      }]);
-    } catch (_e) {
-      // Ignore if table/RLS not configured
-    }
+    void (async () => {
+      try {
+        await supabase.from('match_players').insert([{
+          profile_id: userId,
+          match_id: matchItem.match_id,
+          result: matchItem.result,
+          final_health: matchItem.final_health,
+          accepted_wpm: matchItem.accepted_wpm,
+          accuracy: matchItem.accuracy,
+          highest_combo: matchItem.highest_combo,
+          words_completed: matchItem.words_completed,
+          joined_at: matchItem.joined_at,
+          opponent_name: matchItem.opponent_name
+        }]);
+      } catch (_e) {}
+    })();
   }
 
   // Update profile metrics locally & remotely for all accounts
   const currentProfile = await getUserProfile(userId);
-  if (currentProfile) {
-    const updatedMatches = (currentProfile.matchesPlayed || 0) + 1;
-    const updatedWins = (currentProfile.wins || 0) + (stats.result === 'WIN' ? 1 : 0);
-    const updatedLosses = (currentProfile.losses || 0) + (stats.result === 'LOSS' ? 1 : 0);
-    const updatedPeak = Math.max(currentProfile.peakWpm || 0, stats.wpm);
-    const updatedAvg = Math.round(
-      ((currentProfile.avgWpm || 0) * (updatedMatches - 1) + stats.wpm) / updatedMatches
-    );
-    const updatedAcc = Number(
-      (((currentProfile.accuracy || 95) * (updatedMatches - 1) + stats.accuracy) / updatedMatches).toFixed(1)
-    );
-    const newMmr = stats.finalMmr !== undefined
-      ? Math.max(0, stats.finalMmr)
-      : Math.max(0, (currentProfile.mmr || 1000) + (stats.mmrDelta || (stats.result === 'WIN' ? 25 : -15)));
-    const newTier = getRankTier(newMmr);
+  const prevMatches = currentProfile?.matchesPlayed || 0;
+  const updatedMatches = prevMatches + 1;
+  const updatedWins = (currentProfile?.wins || 0) + (stats.result === 'WIN' ? 1 : 0);
+  const updatedLosses = (currentProfile?.losses || 0) + (stats.result === 'LOSS' ? 1 : 0);
+  const updatedPeak = Math.max(currentProfile?.peakWpm || 0, stats.wpm);
+  const updatedAvg = Math.round(
+    ((currentProfile?.avgWpm || 0) * prevMatches + stats.wpm) / updatedMatches
+  );
+  const updatedAcc = Number(
+    ((((currentProfile?.accuracy || stats.accuracy) * prevMatches) + stats.accuracy) / updatedMatches).toFixed(1)
+  );
+  const newMmr = stats.finalMmr !== undefined
+    ? Math.max(0, stats.finalMmr)
+    : Math.max(0, (currentProfile?.mmr || 1000) + (stats.mmrDelta || (stats.result === 'WIN' ? 24 : -16)));
+  const newTier = getRankTier(newMmr);
 
-    const updatedProfile: UserProfile = {
-      ...currentProfile,
-      matchesPlayed: updatedMatches,
-      wins: updatedWins,
-      losses: updatedLosses,
-      peakWpm: updatedPeak,
-      avgWpm: updatedAvg,
-      accuracy: updatedAcc,
-      mmr: newMmr,
-      rankTier: newTier
-    };
-    localStorage.setItem(`keyfury_profile_${userId}`, JSON.stringify(updatedProfile));
-    localStorage.setItem('keyfury_guest_mmr', String(newMmr));
+  const isRegistered = (() => {
     try {
-      await updateUserProfile(updatedProfile);
-    } catch (_e) {
-      // Fallback to local storage persistence
+      const localAccounts = JSON.parse(localStorage.getItem('keyfury_user_accounts') || '[]');
+      return localAccounts.some((a: any) => a.id === userId);
+    } catch { return false; }
+  })();
+
+  const updatedProfile: UserProfile = {
+    id: userId,
+    displayName: currentProfile?.displayName || localStorage.getItem('keyfury_guest_name') || 'Warrior',
+    email: currentProfile?.email,
+    avatarUrl: currentProfile?.avatarUrl || localStorage.getItem('keyfury_avatar') || `https://api.dicebear.com/7.x/bottts/svg?seed=${userId}`,
+    bio: currentProfile?.bio || '',
+    keycapTheme: currentProfile?.keycapTheme || localStorage.getItem('keyfury_theme') || 'cyberpunk',
+    accentColor: currentProfile?.accentColor || '#00ffcc',
+    selectedCharacter: currentProfile?.selectedCharacter,
+    characterId: currentProfile?.characterId,
+    matchesPlayed: updatedMatches,
+    wins: updatedWins,
+    losses: updatedLosses,
+    peakWpm: updatedPeak,
+    avgWpm: updatedAvg,
+    accuracy: updatedAcc,
+    mmr: newMmr,
+    rankTier: newTier,
+    rankDivision: 'I',
+    placementRemaining: Math.max(0, 5 - updatedMatches),
+    isGuest: isRegistered ? false : (currentProfile?.isGuest ?? true)
+  };
+
+  localStorage.setItem(`keyfury_profile_${userId}`, JSON.stringify(updatedProfile));
+  localStorage.setItem('keyfury_guest_mmr', String(newMmr));
+
+  try {
+    const localAccounts = JSON.parse(localStorage.getItem('keyfury_user_accounts') || '[]');
+    const accIdx = localAccounts.findIndex((a: any) => a.id === userId);
+    if (accIdx >= 0) {
+      localAccounts[accIdx] = {
+        ...localAccounts[accIdx],
+        matchesPlayed: updatedMatches,
+        wins: updatedWins,
+        losses: updatedLosses,
+        avgWpm: updatedAvg,
+        peakWpm: updatedPeak,
+        accuracy: updatedAcc,
+        mmr: newMmr,
+        rankTier: newTier
+      };
+      localStorage.setItem('keyfury_user_accounts', JSON.stringify(localAccounts));
     }
+  } catch (_e) {}
+
+  if (supabase) {
+    void (async () => {
+      try {
+        await supabase.from('profiles').update({
+          mmr: newMmr,
+          matches_played: updatedMatches,
+          wins: updatedWins,
+          losses: updatedLosses,
+          avg_wpm: updatedAvg,
+          peak_wpm: updatedPeak,
+          accuracy: updatedAcc,
+          rank_tier: newTier,
+          rank_division: 'I',
+          last_seen_at: new Date().toISOString()
+        }).eq('id', userId);
+      } catch (_e) {}
+    })();
   }
 
-  // 2. Evaluate Achievements
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('keyfury_stats_updated', { detail: updatedProfile }));
+  }
+
+  // 2. Evaluate Achievements (strictly once per achievement)
   const currentAchievements: UserAchievement[] = await getUserAchievements(userId);
   const newlyUnlocked: Achievement[] = [];
 
   const updatedAchievements: UserAchievement[] = DEFAULT_ACHIEVEMENTS.map((ach) => {
     const existing = currentAchievements.find((a) => a.achievementId === ach.id);
     let progress = existing ? existing.progress : 0;
-    let unlocked = existing ? existing.unlocked : false;
+    const isAlreadyUnlocked = existing ? existing.unlocked : false;
 
-    if (!unlocked) {
-      const userMmr = currentProfile?.mmr || 1000;
+    if (isAlreadyUnlocked) {
+      return {
+        achievementId: ach.id,
+        progress: ach.maxProgress,
+        unlocked: true,
+        unlockedAt: existing?.unlockedAt || new Date().toISOString()
+      };
+    }
 
-      // Speed milestones
-      if (ach.id === 'warmup' && stats.wpm >= 40) { progress = 1; unlocked = true; }
-      else if (ach.id === 'speed_demon' && stats.wpm >= 80) { progress = 1; unlocked = true; }
-      else if (ach.id === 'century_club' && stats.wpm >= 100) { progress = 1; unlocked = true; }
-      else if (ach.id === 'hyper_typist' && stats.wpm >= 130) { progress = 1; unlocked = true; }
-      else if (ach.id === 'lightning_strike' && stats.wpm >= 150) { progress = 1; unlocked = true; }
+    let newlyEarned = false;
+    const userMmr = newMmr;
 
-      // Accuracy & Skill
-      else if (ach.id === 'steady_fingers' && stats.accuracy >= 90) { progress = 1; unlocked = true; }
-      else if (ach.id === 'sharpshooter' && stats.accuracy >= 98) { progress = 1; unlocked = true; }
-      else if (ach.id === 'perfectionist' && stats.accuracy >= 100 && stats.result === 'WIN') { progress = 1; unlocked = true; }
+    // Speed milestones
+    if (ach.id === 'warmup' && stats.wpm >= 40) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'speed_demon' && stats.wpm >= 80) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'century_club' && stats.wpm >= 100) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'hyper_typist' && stats.wpm >= 130) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'lightning_strike' && stats.wpm >= 150) { progress = 1; newlyEarned = true; }
 
-      // Combo streaks
-      else if (ach.id === 'combo_starter' && stats.maxCombo >= 5) { progress = 1; unlocked = true; }
-      else if (ach.id === 'combo_master' && stats.maxCombo >= 20) { progress = 1; unlocked = true; }
-      else if (ach.id === 'unbreakable' && stats.maxCombo >= 50) { progress = 1; unlocked = true; }
+    // Accuracy & Skill
+    else if (ach.id === 'steady_fingers' && stats.accuracy >= 90) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'sharpshooter' && stats.accuracy >= 98) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'perfectionist' && stats.accuracy >= 100 && stats.result === 'WIN') { progress = 1; newlyEarned = true; }
 
-      // Combat & Health
-      else if (ach.id === 'first_blood') { progress = 1; unlocked = true; }
-      else if (ach.id === 'first_victory' && stats.result === 'WIN') { progress = 1; unlocked = true; }
-      else if (ach.id === 'clean_fight' && stats.result === 'WIN' && stats.finalHealth >= 90) { progress = 1; unlocked = true; }
-      else if (ach.id === 'comeback_kid' && stats.result === 'WIN' && stats.finalHealth <= 25 && stats.finalHealth > 0) { progress = 1; unlocked = true; }
-      else if (ach.id === 'bot_slayer' && stats.result === 'WIN' && stats.opponentName?.toLowerCase().includes('bot')) { progress = 1; unlocked = true; }
-      else if (ach.id === 'bot_master' && stats.result === 'WIN' && (stats.opponentName?.toLowerCase().includes('pro') || stats.opponentName?.toLowerCase().includes('adaptive'))) { progress = 1; unlocked = true; }
+    // Combo streaks
+    else if (ach.id === 'combo_starter' && stats.maxCombo >= 5) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'combo_master' && stats.maxCombo >= 20) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'unbreakable' && stats.maxCombo >= 50) { progress = 1; newlyEarned = true; }
 
-      // Cumulative Match Wins & Words
-      else if (ach.id === 'veteran_warrior') {
-        progress = Math.min(10, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
-        if (progress >= 10) unlocked = true;
-      }
-      else if (ach.id === 'keyboard_god') {
-        progress = Math.min(25, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
-        if (progress >= 25) unlocked = true;
-      }
-      else if (ach.id === 'legendary_warrior') {
-        progress = Math.min(100, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
-        if (progress >= 100) unlocked = true;
-      }
-      else if (ach.id === 'marathon_runner') {
-        progress = Math.min(500, (existing?.progress || 0) + (stats.wordsCompleted || 0));
-        if (progress >= 500) unlocked = true;
-      }
-      else if (ach.id === 'wordsmith_master') {
-        progress = Math.min(2500, (existing?.progress || 0) + (stats.wordsCompleted || 0));
-        if (progress >= 2500) unlocked = true;
-      }
+    // Combat & Health
+    else if (ach.id === 'first_blood') { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'first_victory' && stats.result === 'WIN') { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'clean_fight' && stats.result === 'WIN' && stats.finalHealth >= 90) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'comeback_kid' && stats.result === 'WIN' && stats.finalHealth <= 25 && stats.finalHealth > 0) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'bot_slayer' && stats.result === 'WIN' && stats.opponentName?.toLowerCase().includes('bot')) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'bot_master' && stats.result === 'WIN' && (stats.opponentName?.toLowerCase().includes('pro') || stats.opponentName?.toLowerCase().includes('adaptive'))) { progress = 1; newlyEarned = true; }
 
-      // Competitive Rank Tiers & MMR
-      else if (ach.id === 'silver_warrior' && userMmr >= 1200) { progress = 1; unlocked = true; }
-      else if (ach.id === 'gold_champion' && userMmr >= 1600) { progress = 1; unlocked = true; }
-      else if (ach.id === 'platinum_elite' && userMmr >= 2000) { progress = 1; unlocked = true; }
-      else if (ach.id === 'diamond_ascendant' && userMmr >= 2400) { progress = 1; unlocked = true; }
-      else if (ach.id === 'master_realm' && userMmr >= 2800) { progress = 1; unlocked = true; }
-      else if (ach.id === 'grandmaster_god' && userMmr >= 3200) { progress = 1; unlocked = true; }
+    // Cumulative Match Wins & Words
+    else if (ach.id === 'veteran_warrior') {
+      progress = Math.min(10, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
+      if (progress >= 10) newlyEarned = true;
+    }
+    else if (ach.id === 'keyboard_god') {
+      progress = Math.min(25, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
+      if (progress >= 25) newlyEarned = true;
+    }
+    else if (ach.id === 'legendary_warrior') {
+      progress = Math.min(100, (existing?.progress || 0) + (stats.result === 'WIN' ? 1 : 0));
+      if (progress >= 100) newlyEarned = true;
+    }
+    else if (ach.id === 'marathon_runner') {
+      progress = Math.min(500, (existing?.progress || 0) + (stats.wordsCompleted || 0));
+      if (progress >= 500) newlyEarned = true;
+    }
+    else if (ach.id === 'wordsmith_master') {
+      progress = Math.min(2500, (existing?.progress || 0) + (stats.wordsCompleted || 0));
+      if (progress >= 2500) newlyEarned = true;
+    }
 
-      if (unlocked && (!existing || !existing.unlocked)) {
-        newlyUnlocked.push(ach);
-      }
+    // Competitive Rank Tiers & MMR
+    else if (ach.id === 'silver_warrior' && userMmr >= 1200) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'gold_champion' && userMmr >= 1600) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'platinum_elite' && userMmr >= 2000) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'diamond_ascendant' && userMmr >= 2400) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'master_realm' && userMmr >= 2800) { progress = 1; newlyEarned = true; }
+    else if (ach.id === 'grandmaster_god' && userMmr >= 3200) { progress = 1; newlyEarned = true; }
+
+    if (newlyEarned) {
+      newlyUnlocked.push(ach);
     }
 
     return {
       achievementId: ach.id,
-      progress,
-      unlocked,
-      unlockedAt: unlocked ? (existing?.unlockedAt || new Date().toISOString()) : undefined
+      progress: newlyEarned ? ach.maxProgress : progress,
+      unlocked: newlyEarned,
+      unlockedAt: newlyEarned ? new Date().toISOString() : undefined
     };
   });
 
   localStorage.setItem(`keyfury_achievements_${userId}`, JSON.stringify(updatedAchievements));
 
   if (supabase) {
-    try {
-      for (const ua of updatedAchievements) {
-        await supabase.from('user_achievements').upsert([{
+    void (async () => {
+      try {
+        const batchAchievements = updatedAchievements.map((ua) => ({
           profile_id: userId,
           achievement_id: ua.achievementId,
           progress: ua.progress,
           unlocked: ua.unlocked,
           unlocked_at: ua.unlockedAt
-        }]);
-      }
-    } catch (_e) {
-      // Ignore
-    }
+        }));
+        await supabase.from('user_achievements').upsert(batchAchievements);
+      } catch (_e) {}
+    })();
   }
 
   return { newAchievements: newlyUnlocked };

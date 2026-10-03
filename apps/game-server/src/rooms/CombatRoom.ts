@@ -920,7 +920,6 @@ export class CombatRoom extends Room<CombatRoomState> {
 
   private endMatch(winnerSessionId: string | undefined, reason: 'time' | 'knockout' | 'forfeit') {
     this.matchEnded = true;
-    this.state.status = reason === 'forfeit' ? 'forfeit' : 'completed';
     this.state.winnerSessionId = winnerSessionId || '';
     this.state.endReason = reason;
 
@@ -983,6 +982,9 @@ export class CombatRoom extends Room<CombatRoomState> {
         new_mmr: eloInfo.newMmr
       });
     });
+
+    // Update room status to completed after player MMR values have been updated in state
+    this.state.status = reason === 'forfeit' ? 'forfeit' : 'completed';
 
     const winnerProfileId = winnerSessionId ? this.state.players.get(winnerSessionId)?.profileId : undefined;
 

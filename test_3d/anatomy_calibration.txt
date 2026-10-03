@@ -1,0 +1,40 @@
+
+==================== Shadow_Ronin ====================
+Height: 2.2035, Width: 0.9242, Depth: 0.5078
+Raw Center: (0.0000, 0.0046, 1.1018)
+  Hand.L cluster (2518 verts): Center=(-0.3649, 0.0362, 1.2198) Bounds X:[-0.462, -0.297] Y:[-0.117, 0.207] Z:[0.773, 1.646]
+  Hand.R cluster (2124 verts): Center=(0.3720, 0.0001, 1.2827) Bounds X:[0.296, 0.462] Y:[-0.146, 0.146] Z:[0.990, 1.647]
+  Forearm.L cluster (2602 verts): Center=(-0.2309, 0.0315, 1.3782)
+  Forearm.R cluster (2526 verts): Center=(0.2293, 0.0014, 1.3857)
+  UpperArm.L cluster (1240 verts): Center=(-0.1200, 0.0066, 1.5956)
+  UpperArm.R cluster (1240 verts): Center=(0.1200, -0.0080, 1.5956)
+
+==================== Cyber_Valkyrie ====================
+Height: 2.2590, Width: 1.1603, Depth: 0.6341
+Raw Center: (0.0509, 0.0337, 1.1295)
+  Hand.L cluster (2732 verts): Center=(-0.4054, 0.1288, 1.3602) Bounds X:[-0.529, -0.320] Y:[-0.107, 0.307] Z:[0.793, 1.693]
+  Hand.R cluster (1432 verts): Center=(0.4964, 0.2082, 1.4461) Bounds X:[0.423, 0.631] Y:[-0.045, 0.323] Z:[1.101, 1.694]
+  Forearm.L cluster (3106 verts): Center=(-0.2408, 0.0362, 1.4151)
+  Forearm.R cluster (2804 verts): Center=(0.3400, 0.0965, 1.4423)
+  UpperArm.L cluster (1606 verts): Center=(-0.0996, -0.0130, 1.6382)
+  UpperArm.R cluster (1448 verts): Center=(0.1997, 0.0247, 1.6481)
+
+==================== Volt_Shinobi ====================
+Height: 1.9805, Width: 1.0504, Depth: 0.5118
+Raw Center: (0.0000, -0.0148, 0.9902)
+  Hand.L cluster (1754 verts): Center=(-0.4125, 0.0147, 1.1146) Bounds X:[-0.525, -0.336] Y:[-0.109, 0.142] Z:[0.698, 1.339]
+  Hand.R cluster (1754 verts): Center=(0.4125, 0.0147, 1.1146) Bounds X:[0.336, 0.525] Y:[-0.112, 0.147] Z:[0.698, 1.339]
+  Forearm.L cluster (2350 verts): Center=(-0.2584, 0.0248, 1.2443)
+  Forearm.R cluster (2350 verts): Center=(0.2584, 0.0248, 1.2443)
+  UpperArm.L cluster (1372 verts): Center=(-0.1338, -0.0083, 1.4396)
+  UpperArm.R cluster (1372 verts): Center=(0.1338, -0.0083, 1.4396)
+
+==================== Void_Assassin ====================
+Height: 1.9795, Width: 0.8880, Depth: 0.4746
+Raw Center: (0.0000, -0.0210, 0.9898)
+  Hand.L cluster (1782 verts): Center=(-0.3449, 0.0335, 1.0135) Bounds X:[-0.443, -0.285] Y:[-0.051, 0.135] Z:[0.696, 1.347]
+  Hand.R cluster (1782 verts): Center=(0.3449, 0.0335, 1.0135) Bounds X:[0.285, 0.443] Y:[-0.052, 0.133] Z:[0.696, 1.347]
+  Forearm.L cluster (1880 verts): Center=(-0.2175, 0.0072, 1.2323)
+  Forearm.R cluster (1880 verts): Center=(0.2175, 0.0072, 1.2323)
+  UpperArm.L cluster (1214 verts): Center=(-0.1123, -0.0113, 1.4414)
+  UpperArm.R cluster (1214 verts): Center=(0.1123, -0.0112, 1.4414)

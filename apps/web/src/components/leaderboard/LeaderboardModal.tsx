@@ -32,14 +32,27 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<'All' | RankTier>('All');
 
+  const loadLeaderboard = () => {
+    setLoading(true);
+    getGlobalLeaderboard(100).then((data) => {
+      setLeaderboard(data);
+      setLoading(false);
+    });
+  };
+
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
-      getGlobalLeaderboard(100).then((data) => {
-        setLeaderboard(data);
-        setLoading(false);
-      });
+      loadLeaderboard();
     }
+
+    const handleStatsUpdate = () => {
+      if (isOpen) {
+        loadLeaderboard();
+      }
+    };
+
+    window.addEventListener('keyfury_stats_updated', handleStatsUpdate);
+    return () => window.removeEventListener('keyfury_stats_updated', handleStatsUpdate);
   }, [isOpen]);
 
   if (!isOpen) return null;

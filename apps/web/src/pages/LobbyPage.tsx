@@ -8,6 +8,7 @@ import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
 import { CharacterSelectModal } from '../components/character/CharacterSelectModal';
 import { ArenaSelectModal, getCleanArenaName } from '../components/arena/ArenaSelectModal';
 import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefinition, ArenaId, DEFAULT_ARENA_ID } from '@keyfury/game-core';
+import { RankBadge, getRankTier } from '../components/ranked/RankBadge';
 import { CHARACTER_PORTRAITS } from '../assets/characters';
 import { ARENA_BACKGROUNDS } from '../assets/arenas';
 
@@ -458,6 +459,101 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
           <span>{liveStats.activeDuels} ACTIVE RANKED {liveStats.activeDuels === 1 ? 'DUEL' : 'DUELS'}</span>
         </div>
       </div>
+
+      {/* Warrior Ranked Dashboard Strip */}
+      {(() => {
+        const warriorMmr = activeUser.mmr ?? 1000;
+        const warriorTier = activeUser.rankTier || getRankTier(warriorMmr);
+        const matches = (activeUser as any).matchesPlayed ?? 0;
+        const wins = (activeUser as any).wins ?? 0;
+        const winrate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
+        const avgWpm = (activeUser as any).avgWpm ?? 0;
+
+        return (
+          <div
+            className="glass-panel"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 18px',
+              borderRadius: '14px',
+              marginBottom: '16px',
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.85) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <img
+                src={activeUser.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(activeUser.displayName)}`}
+                alt={activeUser.displayName}
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  border: '1.5px solid #38bdf8',
+                  objectFit: 'cover'
+                }}
+              />
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-heading)' }}>
+                    {activeUser.displayName}
+                  </span>
+                  {activeUser.isGuest && (
+                    <span style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      backgroundColor: 'rgba(251, 191, 36, 0.15)',
+                      color: '#fbbf24',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(251, 191, 36, 0.3)'
+                    }}>
+                      GUEST
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '1px' }}>
+                  Competitive Typist • {matches} Matches Played
+                </div>
+              </div>
+            </div>
+
+            {/* Live Rank & Stats Pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(0, 0, 0, 0.35)',
+                padding: '6px 14px',
+                borderRadius: '10px',
+                border: '1px solid rgba(56, 189, 248, 0.3)'
+              }}>
+                <RankBadge tier={warriorTier} rating={warriorMmr} size="sm" showRating showLabel />
+              </div>
+
+              {matches > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Winrate: </span>
+                    <strong style={{ color: winrate >= 50 ? '#34d399' : '#f87171' }}>{winrate}%</strong>
+                  </div>
+                  <div style={{ width: '1px', height: '12px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Avg Speed: </span>
+                    <strong style={{ color: '#38bdf8' }}>{avgWpm} WPM</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Active Champion & Active Arena Selection Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '18px' }}>

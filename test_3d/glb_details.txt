@@ -1,0 +1,125 @@
+
+==================== RONIN (d:\Keyboard stickman warrior\apps\web\public\assets\3d\Shadow_Ronin.glb) ====================
+OBJECTS IN GLTF:
+  Obj: Icosphere                      Type: MESH       Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.902, 2.0, 2.0)
+    Mesh: Icosphere Verts: 42 Polys: 80 VGroups: 0
+  Obj: Shadow_Ronin                   Type: MESH       Parent: Shadow_Ronin_Rig     Loc: (0.0, 0.0, 0.0) Dims: (0.905, 0.513, 2.148)
+    Mesh: Shadow_Ronin_Mesh.003 Verts: 34194 Polys: 62952 VGroups: 20
+    Vertex Groups: Root, Hips, Spine, Chest, Neck, Head, Shoulder.L, UpperArm.L, Forearm.L, Hand.L, Shoulder.R, UpperArm.R, Forearm.R, Hand.R, Thigh.L, Shin.L, Foot.L, Thigh.R, Shin.R, Foot.R
+    Modifier: Armature (ARMATURE)
+  Obj: Shadow_Ronin_Rig               Type: ARMATURE   Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.017, 0.375, 2.042)
+    Bones (20):
+      Bone: Root                 Parent: None            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.0, 1.074)
+      Bone: Hips                 Parent: Root            Head: (0.0, -0.0, -0.0) Tail: (-0.0, 0.15, 0.0)
+      Bone: Spine                Parent: Hips            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.279, -0.0)
+      Bone: Chest                Parent: Spine           Head: (-0.0, -0.0, 0.0) Tail: (-0.0, 0.23, 0.0)
+      Bone: Neck                 Parent: Chest           Head: (-0.0, 0.07, 0.0) Tail: (-0.0, 0.178, 0.0)
+      Bone: Head                 Parent: Neck            Head: (0.0, 0.0, 0.0) Tail: (-0.0, 0.107, 0.0)
+      Bone: Shoulder.L           Parent: Chest           Head: (-0.083, -0.016, -0.0) Tail: (-0.208, -0.037, -0.0)
+      Bone: UpperArm.L           Parent: Shoulder.L      Head: (-0.0, -0.0, 0.0) Tail: (0.096, 0.188, -0.26)
+      Bone: Forearm.L            Parent: UpperArm.L      Head: (0.0, -0.0, 0.0) Tail: (0.034, 0.28, 0.016)
+      Bone: Hand.L               Parent: Forearm.L       Head: (-0.0, -0.0, -0.0) Tail: (-0.021, 0.281, 0.015)
+      Bone: Shoulder.R           Parent: Chest           Head: (0.083, -0.016, -0.0) Tail: (0.208, -0.037, -0.0)
+      Bone: UpperArm.R           Parent: Shoulder.R      Head: (0.0, -0.0, -0.0) Tail: (0.003, 0.188, -0.277)
+      Bone: Forearm.R            Parent: UpperArm.R      Head: (-0.0, -0.0, -0.0) Tail: (-0.01, 0.28, -0.036)
+      Bone: Hand.R               Parent: Forearm.R       Head: (0.0, -0.0, 0.0) Tail: (0.026, 0.281, 0.002)
+      Bone: Thigh.L              Parent: Hips            Head: (-0.157, -0.15, 0.0) Tail: (-0.188, -0.666, -0.02)
+      Bone: Shin.L               Parent: Thigh.L         Head: (-0.0, -0.0, 0.0) Tail: (0.003, 0.438, -0.042)
+      Bone: Foot.L               Parent: Shin.L          Head: (-0.0, 0.0, -0.0) Tail: (-0.003, 0.286, -0.334)
+      Bone: Thigh.R              Parent: Hips            Head: (0.161, -0.15, 0.0) Tail: (0.193, -0.666, -0.02)
+      Bone: Shin.R               Parent: Thigh.R         Head: (-0.0, -0.0, 0.0) Tail: (-0.003, 0.438, -0.042)
+      Bone: Foot.R               Parent: Shin.R          Head: (-0.0, -0.0, 0.0) Tail: (0.003, 0.286, -0.334)
+
+==================== VALKYRIE (d:\Keyboard stickman warrior\apps\web\public\assets\3d\Cyber_Valkyrie.glb) ====================
+OBJECTS IN GLTF:
+  Obj: Cyber_Valkyrie                 Type: EMPTY      Parent: Cyber_Valkyrie_Rig   Loc: (0.0, 0.0, 0.0) Dims: (0.0, 0.0, 0.0)
+  Obj: Cyber_Valkyrie_Mesh.002        Type: MESH       Parent: Cyber_Valkyrie_Rig   Loc: (0.0, 0.0, 0.0) Dims: (1.155, 0.724, 2.114)
+    Mesh: Cyber_Valkyrie_Mesh.002 Verts: 40808 Polys: 74136 VGroups: 20
+    Vertex Groups: Root, Hips, Spine, Chest, Neck, Head, Shoulder.L, UpperArm.L, Forearm.L, Hand.L, Shoulder.R, UpperArm.R, Forearm.R, Hand.R, Thigh.L, Shin.L, Foot.L, Thigh.R, Shin.R, Foot.R
+    Modifier: Armature (ARMATURE)
+  Obj: Cyber_Valkyrie_Rig             Type: ARMATURE   Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.253, 0.384, 2.011)
+    Bones (20):
+      Bone: Root                 Parent: None            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.0, 1.057)
+      Bone: Hips                 Parent: Root            Head: (0.0, -0.0, -0.0) Tail: (0.0, 0.148, -0.0)
+      Bone: Spine                Parent: Hips            Head: (-0.0, -0.0, 0.0) Tail: (-0.0, 0.275, 0.0)
+      Bone: Chest                Parent: Spine           Head: (0.0, -0.0, -0.0) Tail: (0.0, 0.236, -0.0)
+      Bone: Neck                 Parent: Chest           Head: (-0.0, 0.06, 0.0) Tail: (-0.0, 0.166, 0.0)
+      Bone: Head                 Parent: Neck            Head: (0.0, 0.0, 0.0) Tail: (-0.0, 0.106, 0.0)
+      Bone: Shoulder.L           Parent: Chest           Head: (-0.104, -0.024, 0.0) Tail: (-0.261, -0.046, 0.0)
+      Bone: UpperArm.L           Parent: Shoulder.L      Head: (0.0, -0.0, 0.0) Tail: (0.086, 0.212, -0.261)
+      Bone: Forearm.L            Parent: UpperArm.L      Head: (-0.0, -0.0, 0.0) Tail: (0.039, 0.285, 0.011)
+      Bone: Hand.L               Parent: Forearm.L       Head: (-0.0, -0.0, 0.0) Tail: (-0.025, 0.286, 0.018)
+      Bone: Shoulder.R           Parent: Chest           Head: (0.104, -0.024, 0.0) Tail: (0.261, -0.046, 0.0)
+      Bone: UpperArm.R           Parent: Shoulder.R      Head: (-0.0, -0.0, -0.0) Tail: (0.013, 0.212, -0.274)
+      Bone: Forearm.R            Parent: UpperArm.R      Head: (-0.0, -0.0, -0.0) Tail: (-0.01, 0.285, -0.04)
+      Bone: Hand.R               Parent: Forearm.R       Head: (-0.0, -0.0, 0.0) Tail: (0.029, 0.286, 0.007)
+      Bone: Thigh.L              Parent: Hips            Head: (-0.311, -0.148, -0.0) Tail: (-0.373, -0.655, -0.02)
+      Bone: Shin.L               Parent: Thigh.L         Head: (0.0, -0.0, -0.0) Tail: (0.002, 0.429, -0.071)
+      Bone: Foot.L               Parent: Shin.L          Head: (-0.0, -0.0, -0.0) Tail: (-0.004, 0.304, -0.311)
+      Bone: Thigh.R              Parent: Hips            Head: (0.23, -0.148, 0.0) Tail: (0.277, -0.655, -0.02)
+      Bone: Shin.R               Parent: Thigh.R         Head: (-0.0, -0.0, 0.0) Tail: (-0.002, 0.428, -0.071)
+      Bone: Foot.R               Parent: Shin.R          Head: (-0.0, -0.0, -0.0) Tail: (0.003, 0.304, -0.31)
+  Obj: Icosphere                      Type: MESH       Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.902, 2.0, 2.0)
+    Mesh: Icosphere Verts: 42 Polys: 80 VGroups: 0
+
+==================== SHINOBI (d:\Keyboard stickman warrior\apps\web\public\assets\3d\Volt_Shinobi.glb) ====================
+OBJECTS IN GLTF:
+  Obj: Icosphere                      Type: MESH       Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.902, 2.0, 2.0)
+    Mesh: Icosphere Verts: 42 Polys: 80 VGroups: 0
+  Obj: Volt_Shinobi                   Type: MESH       Parent: Volt_Shinobi_Rig     Loc: (0.0, 0.0, 0.0) Dims: (1.05, 0.511, 1.98)
+    Mesh: Volt_Shinobi_Mesh.002 Verts: 33524 Polys: 60212 VGroups: 20
+    Vertex Groups: Root, Hips, Spine, Chest, Neck, Head, Shoulder.L, UpperArm.L, Forearm.L, Hand.L, Shoulder.R, UpperArm.R, Forearm.R, Hand.R, Thigh.L, Shin.L, Foot.L, Thigh.R, Shin.R, Foot.R
+    Modifier: Armature (ARMATURE)
+  Obj: Volt_Shinobi_Rig               Type: ARMATURE   Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.135, 0.372, 1.882)
+    Bones (20):
+      Bone: Root                 Parent: None            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.0, 0.99)
+      Bone: Hips                 Parent: Root            Head: (-0.0, -0.0, 0.0) Tail: (-0.0, 0.139, 0.0)
+      Bone: Spine                Parent: Hips            Head: (0.0, -0.0, -0.0) Tail: (0.0, 0.257, -0.0)
+      Bone: Chest                Parent: Spine           Head: (0.0, 0.0, 0.0) Tail: (-0.0, 0.219, 0.0)
+      Bone: Neck                 Parent: Chest           Head: (-0.0, 0.058, 0.0) Tail: (-0.0, 0.157, 0.0)
+      Bone: Head                 Parent: Neck            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.099, 0.0)
+      Bone: Shoulder.L           Parent: Chest           Head: (-0.095, -0.021, -0.0) Tail: (-0.236, -0.041, -0.0)
+      Bone: UpperArm.L           Parent: Shoulder.L      Head: (0.0, -0.0, 0.0) Tail: (0.084, 0.194, -0.243)
+      Bone: Forearm.L            Parent: UpperArm.L      Head: (-0.0, -0.0, 0.0) Tail: (0.037, 0.266, 0.012)
+      Bone: Hand.L               Parent: Forearm.L       Head: (0.0, 0.0, 0.0) Tail: (-0.022, 0.268, 0.016)
+      Bone: Shoulder.R           Parent: Chest           Head: (0.095, -0.021, -0.0) Tail: (0.236, -0.041, -0.0)
+      Bone: UpperArm.R           Parent: Shoulder.R      Head: (0.0, -0.0, -0.0) Tail: (0.015, 0.194, -0.257)
+      Bone: Forearm.R            Parent: UpperArm.R      Head: (0.0, -0.0, 0.0) Tail: (-0.008, 0.266, -0.038)
+      Bone: Hand.R               Parent: Forearm.R       Head: (0.0, 0.0, -0.0) Tail: (0.027, 0.268, 0.006)
+      Bone: Thigh.L              Parent: Hips            Head: (-0.157, -0.139, -0.0) Tail: (-0.189, -0.614, -0.02)
+      Bone: Shin.L               Parent: Thigh.L         Head: (-0.0, -0.0, -0.0) Tail: (0.004, 0.395, -0.022)
+      Bone: Foot.L               Parent: Shin.L          Head: (0.0, -0.0, -0.0) Tail: (-0.004, 0.244, -0.311)
+      Bone: Thigh.R              Parent: Hips            Head: (0.157, -0.139, 0.0) Tail: (0.189, -0.614, -0.02)
+      Bone: Shin.R               Parent: Thigh.R         Head: (0.0, -0.0, -0.0) Tail: (-0.004, 0.395, -0.022)
+      Bone: Foot.R               Parent: Shin.R          Head: (-0.0, -0.0, -0.0) Tail: (0.004, 0.244, -0.311)
+
+==================== VOID (d:\Keyboard stickman warrior\apps\web\public\assets\3d\Void_Assassin.glb) ====================
+OBJECTS IN GLTF:
+  Obj: Icosphere                      Type: MESH       Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (1.902, 2.0, 2.0)
+    Mesh: Icosphere Verts: 42 Polys: 80 VGroups: 0
+  Obj: Void_Assassin                  Type: MESH       Parent: Void_Assassin_Rig    Loc: (0.0, 0.0, 0.0) Dims: (0.888, 0.474, 1.979)
+    Mesh: Void_Assassin_Mesh.001 Verts: 31150 Polys: 54072 VGroups: 20
+    Vertex Groups: Root, Hips, Spine, Chest, Neck, Head, Shoulder.L, UpperArm.L, Forearm.L, Hand.L, Shoulder.R, UpperArm.R, Forearm.R, Hand.R, Thigh.L, Shin.L, Foot.L, Thigh.R, Shin.R, Foot.R
+    Modifier: Armature (ARMATURE)
+  Obj: Void_Assassin_Rig              Type: ARMATURE   Parent: None                 Loc: (0.0, 0.0, 0.0) Dims: (0.973, 0.367, 1.88)
+    Bones (20):
+      Bone: Root                 Parent: None            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.0, 0.99)
+      Bone: Hips                 Parent: Root            Head: (-0.0, -0.0, 0.0) Tail: (-0.0, 0.139, 0.0)
+      Bone: Spine                Parent: Hips            Head: (0.0, -0.0, -0.0) Tail: (0.0, 0.257, -0.0)
+      Bone: Chest                Parent: Spine           Head: (0.0, 0.0, 0.0) Tail: (-0.0, 0.213, 0.0)
+      Bone: Neck                 Parent: Chest           Head: (0.0, 0.064, -0.0) Tail: (0.0, 0.163, -0.0)
+      Bone: Head                 Parent: Neck            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.099, 0.0)
+      Bone: Shoulder.L           Parent: Chest           Head: (-0.08, -0.016, -0.0) Tail: (-0.2, -0.035, -0.0)
+      Bone: UpperArm.L           Parent: Shoulder.L      Head: (-0.0, -0.0, 0.0) Tail: (0.09, 0.177, -0.24)
+      Bone: Forearm.L            Parent: UpperArm.L      Head: (-0.0, -0.0, 0.0) Tail: (0.033, 0.261, 0.016)
+      Bone: Hand.L               Parent: Forearm.L       Head: (-0.0, -0.0, -0.0) Tail: (-0.02, 0.262, 0.015)
+      Bone: Shoulder.R           Parent: Chest           Head: (0.08, -0.016, 0.0) Tail: (0.2, -0.035, -0.0)
+      Bone: UpperArm.R           Parent: Shoulder.R      Head: (0.0, -0.0, 0.0) Tail: (0.008, 0.177, -0.257)
+      Bone: Forearm.R            Parent: UpperArm.R      Head: (0.0, -0.0, 0.0) Tail: (-0.008, 0.261, -0.036)
+      Bone: Hand.R               Parent: Forearm.R       Head: (-0.0, -0.0, -0.0) Tail: (0.025, 0.262, 0.002)
+      Bone: Thigh.L              Parent: Hips            Head: (-0.145, -0.139, 0.0) Tail: (-0.174, -0.614, -0.02)
+      Bone: Shin.L               Parent: Thigh.L         Head: (0.0, -0.0, -0.0) Tail: (0.004, 0.395, -0.016)
+      Bone: Foot.L               Parent: Shin.L          Head: (-0.0, -0.0, 0.0) Tail: (-0.004, 0.239, -0.314)
+      Bone: Thigh.R              Parent: Hips            Head: (0.145, -0.139, 0.0) Tail: (0.174, -0.614, -0.02)
+      Bone: Shin.R               Parent: Thigh.R         Head: (-0.0, -0.0, -0.0) Tail: (-0.004, 0.395, -0.016)
+      Bone: Foot.R               Parent: Shin.R          Head: (0.0, -0.0, 0.0) Tail: (0.004, 0.239, -0.314)

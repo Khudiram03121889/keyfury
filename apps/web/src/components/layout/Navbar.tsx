@@ -156,20 +156,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             {userProfile && (
               <div
                 onClick={onOpenProfile}
+                title="View Rank & Profile Dashboard"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: '8px',
                   backgroundColor: 'var(--pill-bg)',
                   border: '1px solid var(--border-card)',
+                  boxShadow: '0 4px 14px var(--card-shadow)',
                   borderRadius: '10px',
-                  padding: '6px 10px',
+                  padding: '5px 10px',
                   cursor: 'pointer',
-                  fontSize: '0.8rem',
+                  fontSize: '0.82rem',
                   color: 'var(--text-muted)'
                 }}
               >
-                <User size={14} /> <span className="nav-btn-text">Guest: </span><strong style={{ color: 'var(--text-main)' }}>{userProfile.displayName}</strong>
+                <RankBadge
+                  tier={userProfile.rankTier}
+                  rating={userProfile.mmr}
+                  size="sm"
+                  showRating
+                />
+                <span className="nav-btn-text" style={{ color: 'var(--text-main)', fontWeight: 800 }}>
+                  {userProfile.displayName}
+                </span>
               </div>
             )}
             <button

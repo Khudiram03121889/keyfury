@@ -82,18 +82,13 @@ def extract_clean_slice(raw_img_path, foot_cutoff=1204, min_comp_size=5000):
     return Image.fromarray(out_arr)
 
 # 1. Clean slices
-f_slice_path = os.path.join(work_dir, "void_slice_front_final.png")
+f_slice = Image.open(os.path.join(work_dir, "void_slice_front_final.png"))
+b_slice = Image.open(os.path.join(work_dir, "void_slice_back_final.png"))
 s_slice_path = os.path.join(work_dir, "void_clean_slice_side.png")
-b_slice_path = os.path.join(work_dir, "void_slice_back_final.png")
-
-f_slice = extract_clean_slice(os.path.join(work_dir, "void_ref_front_raw.png"), foot_cutoff=1204)
-s_slice = extract_clean_slice(os.path.join(work_dir, "void_ref_side_raw.png"), foot_cutoff=1204)
-b_slice = extract_clean_slice(os.path.join(work_dir, "void_ref_back_raw.png"), foot_cutoff=1204)
-
-f_slice.save(f_slice_path)
-s_slice.save(s_slice_path)
-b_slice.save(b_slice_path)
-print("Clean slices saved successfully.")
+if os.path.exists(s_slice_path):
+    s_slice = Image.open(s_slice_path)
+else:
+    s_slice = Image.open(os.path.join(work_dir, "void_slice_front_final.png"))
 
 # 2. Fit to canonical 512x768 turnaround canvas
 canvas_w, canvas_h = 512, 768

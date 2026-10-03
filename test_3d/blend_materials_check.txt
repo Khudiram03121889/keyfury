@@ -1,0 +1,109 @@
+=== BLEND MATERIALS AUDIT ===
+
+Object: Shadow_Ronin
+  Material slots: 3
+    Mat: Mat_Ronin_FrontPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_front_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_front_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_front_emission.png
+    Mat: Mat_Ronin_BackPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_back_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_back_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_back_emission.png
+    Mat: Mat_Ronin_SidePBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_side_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_side_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\ronin_turnaround_side_emission.png
+
+Object: Cyber_Valkyrie
+  Material slots: 3
+    Mat: Mat_Valkyrie_MasterPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_front_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_front_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_front_emission.png
+    Mat: Mat_Valkyrie_BackPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_back_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_back_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_back_emission.png
+    Mat: Mat_Valkyrie_SidePBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\valk_clean_side.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_side_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\valk_turnaround_side_emission.png
+
+Object: Volt_Shinobi
+  Material slots: 3
+    Mat: Mat_Shinobi_FrontPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_front_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_front_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_front_emission.png
+    Mat: Mat_Shinobi_BackPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_back_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_back_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_back_emission.png
+    Mat: Mat_Shinobi_SidePBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_side_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_side_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\shinobi_turnaround_side_emission.png
+
+Object: Void_Assassin
+  Material slots: 3
+    Mat: Mat_Void_FrontPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_front_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_front_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_front_emission.png
+    Mat: Mat_Void_BackPBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_back_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_back_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_back_emission.png
+    Mat: Mat_Void_SidePBR, use_nodes=True
+      Node Principled BSDF: Principled BSDF
+        Linked input 'Base Color' from Image Texture (Color)
+        Linked input 'Normal' from Normal Map (Normal)
+        Linked input 'Emission Color' from Image Texture.002 (Color)
+      Node Image Texture: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_side_master.png
+      Node Image Texture.001: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_side_normal.png
+      Node Image Texture.002: image=d:\Keyboard stickman warrior\test_3d\void_turnaround_side_emission.png

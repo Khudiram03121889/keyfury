@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Room } from 'colyseus.js';
 import Phaser from 'phaser';
-import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle, Download } from 'lucide-react';
 import { StickFightScene, AttackKind } from '../game/StickFightScene';
-import { GuestProfile, getSavedSelectedArena, getSavedSelectedCameraAngle } from '../lib/supabase';
+import { GuestProfile, getSavedSelectedArena, getSavedSelectedCameraAngle, saveMatchStats } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
-import { RankBadge } from '../components/ranked/RankBadge';
+import { RankBadge, getRankTier } from '../components/ranked/RankBadge';
 import { soundSynth } from '../game/audio/SoundSynth';
 import { getArenaDefinition, type ArenaDefinition } from '@keyfury/game-core';
 import { ThreeCombatArena, ThreeCombatArenaRef } from '../render/ThreeCombatArena';
+import { downloadMatchCard } from '../lib/downloadMatchCard';
 
 export interface MatchPageProps {
   room: Room;
@@ -20,7 +21,7 @@ export interface MatchPageProps {
 
 export const MatchPage: React.FC<MatchPageProps> = ({
   room,
-  guest: _guest,
+  guest,
   onMatchComplete,
   use3D = true,
   threeArenaRef: externalThreeArenaRef,
@@ -61,7 +62,9 @@ export const MatchPage: React.FC<MatchPageProps> = ({
   // In-Arena KO Finish Sequence & Stats Overlay State
   const [showStatsOverlay, setShowStatsOverlay] = useState<boolean>(false);
   const [completedState, setCompletedState] = useState<any>(null);
+  const [isDownloadingCard, setIsDownloadingCard] = useState<boolean>(false);
   const isMatchEndedRef = useRef<boolean>(false);
+  const matchEndPayloadRef = useRef<any>(null);
 
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(() => room?.state?.isPaused || false);
@@ -94,10 +97,12 @@ export const MatchPage: React.FC<MatchPageProps> = ({
     };
   }, []);
 
+  // ponytail: Tune wordsPerLine so text stays centered in the duel clash reticle between fighters
   const wordsPerLine = React.useMemo(() => {
     if (viewportWidth < 480) return 2;
-    if (viewportWidth < 768) return 4;
-    return 7;
+    if (viewportWidth < 768) return 3;
+    if (viewportWidth < 1200) return 4;
+    return 5;
   }, [viewportWidth]);
 
   const isBotMode = React.useMemo(() => {
@@ -417,6 +422,11 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         if ((event as any).botDifficulty) {
           setCurrentBotDifficulty((event as any).botDifficulty);
         }
+      } else if (event.type === 'match_end') {
+        matchEndPayloadRef.current = event;
+        if (event.summary) {
+          setCompletedState((prev: any) => ({ ...(prev || {}), ...event.summary }));
+        }
       }
     });
   }, [room, onMatchComplete]);
@@ -605,11 +615,80 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
     }
   };
 
+  const getFullMatchResult = () => {
+    const base = completedState || room.state;
+    const matchEnd = matchEndPayloadRef.current;
+    const playersObj = base?.players || matchEnd?.summary?.players;
+    return {
+      ...(base ? (typeof base.toJSON === 'function' ? base.toJSON() : base) : {}),
+      winnerSessionId: matchEnd?.winnerSessionId || base?.winnerSessionId,
+      reason: matchEnd?.reason || base?.endReason,
+      mmrDeltas: matchEnd?.mmrDeltas,
+      players: playersObj
+    };
+  };
+
+  const handleDownloadResultCard = async () => {
+    if (isDownloadingCard) return;
+    setIsDownloadingCard(true);
+    try {
+      const isWinner = (matchEndPayloadRef.current?.winnerSessionId || completedState?.winnerSessionId) === room.sessionId;
+      let opp: any = null;
+      completedState?.players?.forEach((p: any, sId: string) => {
+        if (sId !== room.sessionId) opp = p;
+      });
+
+      const myDelta = matchEndPayloadRef.current?.mmrDeltas?.[room.sessionId];
+      const deltaVal = myDelta?.delta ?? (isWinner ? 24 : -16);
+      const playerMmr = myDelta?.newMmr ?? (typeof myPlayer?.mmr === 'number' ? myPlayer.mmr : ((guest as any)?.mmr ?? 1000) + deltaVal);
+      const playerTier = getRankTier(playerMmr);
+
+      // Save match stats immediately if downloading right from the arena overlay
+      const targetId = guest?.id || localStorage.getItem('keyfury_guest_id');
+      if (targetId) {
+        saveMatchStats(targetId, {
+          result: isWinner ? 'WIN' : 'LOSS',
+          wpm: myPlayer?.acceptedWpm ?? 0,
+          accuracy: myPlayer?.accuracy ?? 100,
+          maxCombo: myPlayer?.highestCombo ?? 0,
+          finalHealth: myPlayer?.health ?? 0,
+          wordsCompleted: myPlayer?.wordsCompleted ?? 0,
+          opponentName: opp?.displayName || 'OPPONENT',
+          mmrDelta: deltaVal,
+          finalMmr: playerMmr
+        }).catch(() => {});
+      }
+
+      await downloadMatchCard({
+        playerName: guest?.displayName || myPlayer?.displayName || 'Warrior',
+        playerAvatarUrl: guest?.avatarUrl,
+        playerTier,
+        playerMmr,
+        mmrDelta: deltaVal,
+        opponentName: opp?.displayName || 'Opponent Warrior',
+        opponentAvatarUrl: opp?.avatarUrl,
+        isWinner,
+        wpm: myPlayer?.acceptedWpm ?? 0,
+        accuracy: myPlayer?.accuracy ?? 100,
+        maxCombo: myPlayer?.highestCombo ?? 0,
+        finalHealth: myPlayer?.health ?? 0,
+        wordsCompleted: myPlayer?.wordsCompleted ?? 0,
+      });
+    } finally {
+      setIsDownloadingCard(false);
+    }
+  };
+
   const handleCombatKey = (event: KeyboardEvent) => {
     if (showStatsOverlay || isMatchEndedRef.current) {
       if (event.key === 'Enter') {
         event.preventDefault();
-        onMatchComplete(completedState || room.state);
+        onMatchComplete(getFullMatchResult());
+        return;
+      }
+      if (event.key.toLowerCase() === 'd') {
+        event.preventDefault();
+        handleDownloadResultCard();
         return;
       }
     }
@@ -995,23 +1074,25 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               if (!is3DMode || isIntroComplete) typingInputRef.current?.focus();
             }}
             style={{
-              position: keyboardOffset > 0 || viewportWidth < 768 ? 'relative' : 'absolute',
-              bottom: keyboardOffset > 0 || viewportWidth < 768 ? '0px' : '16px',
-              left: keyboardOffset > 0 || viewportWidth < 768 ? 'auto' : '50%',
-              transform: keyboardOffset > 0 || viewportWidth < 768 ? 'none' : 'translateX(-50%)',
+              position: 'absolute',
+              // ponytail: Option 2 Center Clash placement in standoff space between fighters
+              top: keyboardOffset > 0 ? 'auto' : (viewportWidth < 768 ? '60%' : '54%'),
+              bottom: keyboardOffset > 0 ? '12px' : 'auto',
+              left: '50%',
+              transform: keyboardOffset > 0 ? 'translateX(-50%)' : 'translate(-50%, -50%)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '4px',
+              gap: '6px',
               zIndex: 10,
-              width: '100%',
-              maxWidth: '1080px',
-              padding: viewportWidth < 600 ? '2px 8px 6px 8px' : '0 16px 14px 16px',
+              width: viewportWidth < 600 ? '94%' : 'min(640px, 86vw)',
+              maxWidth: '660px',
+              padding: '0 8px',
               boxSizing: 'border-box',
               flexShrink: 0,
               opacity: is3DMode && !isIntroComplete ? 0.35 : 1,
               pointerEvents: is3DMode && !isIntroComplete ? 'none' : 'auto',
-              transition: 'opacity 0.25s ease'
+              transition: 'opacity 0.25s ease, transform 0.2s ease'
             }}
           >
             {/* Combo Indicator pill - Model 1 Tiered Milestone Finishers */}
@@ -1022,7 +1103,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '3px 10px',
+                  padding: '3px 12px',
                   borderRadius: '999px',
                   background: myCombo >= 8
                     ? 'linear-gradient(90deg, #8b5cf6, #ec4899, #f43f5e)'
@@ -1054,27 +1135,30 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             {/* --- 2-LINE STATIC TYPING STRIP BANNER --- */}
             <div style={{
               width: '100%',
-              background: '#0f172a',
-              border: isErrorFlash ? '2px solid #ef4444' : '1px solid var(--border-card)',
-              borderRadius: '12px',
-              padding: viewportWidth < 600 ? '6px 10px' : '10px 16px',
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: isErrorFlash ? '2px solid #ef4444' : '1px solid rgba(56, 189, 248, 0.45)',
+              borderRadius: '14px',
+              padding: viewportWidth < 600 ? '8px 12px' : '10px 18px',
               boxShadow: isErrorFlash
-                ? '0 0 16px rgba(239, 68, 68, 0.45)'
-                : '0 4px 16px rgba(0, 0, 0, 0.35)',
+                ? '0 0 24px rgba(239, 68, 68, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)'
+                : '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(56, 189, 248, 0.2)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '2px',
+              gap: '4px',
               position: 'relative'
             }}>
               {/* Line 1: Active Line with Monospace Character Stream (Zero Layout Shift) */}
               <div style={{
                 width: '100%',
+                textAlign: 'center',
                 whiteSpace: 'pre',
                 overflowX: 'auto',
-                fontSize: viewportWidth < 600 ? '1.1rem' : 'clamp(1.1rem, 4vw, 1.75rem)',
+                fontSize: viewportWidth < 600 ? '1.1rem' : 'clamp(1.15rem, 2.4vw, 1.45rem)',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
-                letterSpacing: '0px',
-                lineHeight: 1.2
+                letterSpacing: '0.5px',
+                lineHeight: 1.25
               }}>
                 {(() => {
                   const currentLineIndex = Math.floor(activeWordIndex / wordsPerLine);
@@ -1114,15 +1198,16 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               {/* Line 2: Preview Line (Upcoming Line Words in Dimmed Monospace) */}
               <div style={{
                 width: '100%',
+                textAlign: 'center',
                 whiteSpace: 'pre',
                 overflowX: 'auto',
-                fontSize: viewportWidth < 600 ? '0.85rem' : 'clamp(0.85rem, 3vw, 1.2rem)',
+                fontSize: viewportWidth < 600 ? '0.85rem' : 'clamp(0.85rem, 1.8vw, 1.05rem)',
                 fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
                 color: 'var(--text-muted)',
-                opacity: 0.7,
-                borderTop: '1px solid var(--border-card)',
+                opacity: 0.65,
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                 paddingTop: '4px',
-                letterSpacing: '0px'
+                letterSpacing: '0.5px'
               }}>
                 {(() => {
                   const currentLineIndex = Math.floor(activeWordIndex / wordsPerLine);
@@ -1180,10 +1265,15 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               {/* Side by side stats grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                 {/* My Stats Card */}
-                <div style={{
-                  background: 'rgba(30, 41, 59, 0.7)', border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '16px', padding: '14px 16px', textAlign: 'left'
-                }}>
+                <div
+                  style={{
+                    background: 'rgba(30, 41, 59, 0.7)',
+                    border: '1.5px solid rgba(56, 189, 248, 0.35)',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    textAlign: 'left'
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontWeight: 900, color: '#4ade80', fontSize: '0.98rem' }}>
                     <span>🎩</span> {myPlayer?.displayName || 'YOU'}
                   </div>
@@ -1204,6 +1294,26 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                       <span>Max Combo:</span>
                       <strong style={{ color: '#fbbf24' }}>{myPlayer?.highestCombo ?? 0}x</strong>
                     </div>
+                    {(() => {
+                      const isWinner = (matchEndPayloadRef.current?.winnerSessionId || completedState?.winnerSessionId) === room.sessionId;
+                      const myDelta = matchEndPayloadRef.current?.mmrDeltas?.[room.sessionId];
+                      const deltaVal = myDelta?.delta ?? (isWinner ? 24 : -16);
+                      const playerMmr = myDelta?.newMmr ?? (typeof myPlayer?.mmr === 'number' ? myPlayer.mmr : ((guest as any)?.mmr ?? 1000) + deltaVal);
+                      const playerTier = getRankTier(playerMmr);
+
+                      return (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '6px', marginTop: '2px' }}>
+                          <span>Rank & MMR:</span>
+                          <strong style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <RankBadge tier={playerTier} rating={playerMmr} size="sm" />
+                            <span>{playerMmr}</span>
+                            <span style={{ color: deltaVal >= 0 ? '#4ade80' : '#f87171', fontSize: '0.8rem' }}>
+                              ({deltaVal >= 0 ? `+${deltaVal}` : deltaVal})
+                            </span>
+                          </strong>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1224,9 +1334,19 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem', color: '#cbd5e1' }}>
                     {(() => {
                       let opp: any = null;
+                      let oppSId: string | null = null;
                       completedState?.players?.forEach((p: any, sId: string) => {
-                        if (sId !== room.sessionId) opp = p;
+                        if (sId !== room.sessionId) {
+                          opp = p;
+                          oppSId = sId;
+                        }
                       });
+                      const isOppWinner = (matchEndPayloadRef.current?.winnerSessionId || completedState?.winnerSessionId) === oppSId;
+                      const oppDelta = oppSId ? matchEndPayloadRef.current?.mmrDeltas?.[oppSId] : null;
+                      const oppDeltaVal = oppDelta?.delta ?? (isOppWinner ? 24 : -16);
+                      const oppMmr = oppDelta?.newMmr ?? (typeof opp?.mmr === 'number' ? opp.mmr : 1000);
+                      const oppTier = getRankTier(oppMmr);
+
                       return (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1245,6 +1365,16 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                             <span>Max Combo:</span>
                             <strong style={{ color: '#fbbf24' }}>{opp?.highestCombo ?? 0}x</strong>
                           </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '6px', marginTop: '2px' }}>
+                            <span>Rank & MMR:</span>
+                            <strong style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <RankBadge tier={oppTier} rating={oppMmr} size="sm" />
+                              <span>{oppMmr}</span>
+                              <span style={{ color: oppDeltaVal >= 0 ? '#4ade80' : '#f87171', fontSize: '0.8rem' }}>
+                                ({oppDeltaVal >= 0 ? `+${oppDeltaVal}` : oppDeltaVal})
+                              </span>
+                            </strong>
+                          </div>
                         </>
                       );
                     })()}
@@ -1255,7 +1385,28 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               {/* Action Button & Skip Prompt */}
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => onMatchComplete(completedState || room.state)}
+                  onClick={handleDownloadResultCard}
+                  disabled={isDownloadingCard}
+                  style={{
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1.5px solid #38bdf8',
+                    borderRadius: '12px',
+                    padding: '12px 20px',
+                    color: '#38bdf8',
+                    fontWeight: 900,
+                    fontSize: '0.92rem',
+                    cursor: isDownloadingCard ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 15px rgba(56, 189, 248, 0.25)',
+                  }}
+                >
+                  <Download size={18} /> {isDownloadingCard ? 'Downloading PNG...' : 'DOWNLOAD RESULT CARD'}
+                </button>
+
+                <button
+                  onClick={() => onMatchComplete(getFullMatchResult())}
                   style={{
                     background: 'linear-gradient(90deg, #22c55e, #16a34a)',
                     border: 'none', borderRadius: '12px', padding: '12px 24px',

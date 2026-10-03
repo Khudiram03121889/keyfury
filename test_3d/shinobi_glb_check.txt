@@ -1,0 +1,47 @@
+=== VOLT SHINOBI BLEND INSPECTION ===
+Mesh: Volt_Shinobi, verts=30164, vgs=20
+Bounds: X=[-0.5252, 0.5252], Y=[-0.2743, 0.2375], Z=[0.0000, 1.9805]
+Armature: Volt_Shinobi_Rig, bones=20
+
+  Bone: Root            Head: (0.0, 0.0, 0.0) Tail: (0.0, 0.0, 0.15)
+  Bone: Hips            Head: (0.0, 0.0, 0.9506) Tail: (0.0, 0.0, 1.1091)
+  Bone: Spine           Head: (0.0, 0.0, 1.1091) Tail: (0.0, 0.0, 1.3665)
+  Bone: Chest           Head: (0.0, 0.0, 1.3665) Tail: (0.0, 0.0, 1.6438)
+  Bone: Neck            Head: (0.0, 0.0, 1.6438) Tail: (0.0, 0.0, 1.7428)
+  Bone: Head            Head: (0.0, 0.0, 1.7428) Tail: (0.0, 0.0, 2.0795)
+  Bone: Shoulder.R      Head: (0.0945, 0.0, 1.5646) Tail: (0.2206, 0.0, 1.5448)
+  Bone: UpperArm.R      Head: (0.2206, 0.0, 1.5448) Tail: (0.3466, 0.0, 1.2873)
+  Bone: Forearm.R       Head: (0.3466, 0.0, 1.2873) Tail: (0.4307, 0.0, 1.0695)
+  Bone: Hand.R          Head: (0.4307, 0.0, 1.0695) Tail: (0.5042, 0.0, 0.9506)
+  Bone: Shoulder.L      Head: (-0.0945, 0.0, 1.5646) Tail: (-0.2206, 0.0, 1.5448)
+  Bone: UpperArm.L      Head: (-0.2206, 0.0, 1.5448) Tail: (-0.3466, 0.0, 1.2873)
+  Bone: Forearm.L       Head: (-0.3466, 0.0, 1.2873) Tail: (-0.4307, 0.0, 1.0695)
+  Bone: Hand.L          Head: (-0.4307, 0.0, 1.0695) Tail: (-0.5042, 0.0, 0.9506)
+  Bone: Thigh.R         Head: (0.1665, 0.0, 0.9506) Tail: (0.185, 0.0, 0.5149)
+  Bone: Shin.R          Head: (0.185, 0.0, 0.5149) Tail: (0.185, 0.0, 0.12)
+  Bone: Foot.R          Head: (0.185, 0.0, 0.12) Tail: (0.185, -0.15, 0.005)
+  Bone: Thigh.L         Head: (-0.1665, 0.0, 0.9506) Tail: (-0.185, 0.0, 0.5149)
+  Bone: Shin.L          Head: (-0.185, 0.0, 0.5149) Tail: (-0.185, 0.0, 0.12)
+  Bone: Foot.L          Head: (-0.185, 0.0, 0.12) Tail: (-0.185, -0.15, 0.005)
+
+Vertex Groups:
+  VG Root           : count=0 max_w=0.000 min_w=0.000
+  VG Hips           : count=7358 max_w=0.723 min_w=0.001
+  VG Spine          : count=8544 max_w=0.789 min_w=0.001
+  VG Chest          : count=7689 max_w=0.590 min_w=0.001
+  VG Neck           : count=4213 max_w=0.555 min_w=0.001
+  VG Head           : count=3411 max_w=0.998 min_w=0.001
+  VG Shoulder.R     : count=4632 max_w=0.777 min_w=0.001
+  VG UpperArm.R     : count=4328 max_w=0.997 min_w=0.001
+  VG Forearm.R      : count=2149 max_w=1.000 min_w=0.001
+  VG Hand.R         : count=2329 max_w=1.000 min_w=0.001
+  VG Shoulder.L     : count=4764 max_w=0.786 min_w=0.001
+  VG UpperArm.L     : count=4428 max_w=0.999 min_w=0.001
+  VG Forearm.L      : count=2421 max_w=1.000 min_w=0.002
+  VG Hand.L         : count=2390 max_w=1.000 min_w=0.001
+  VG Thigh.R        : count=8040 max_w=0.998 min_w=0.001
+  VG Shin.R         : count=2595 max_w=1.000 min_w=0.001
+  VG Foot.R         : count=749 max_w=1.000 min_w=0.004
+  VG Thigh.L        : count=8074 max_w=0.998 min_w=0.001
+  VG Shin.L         : count=2600 max_w=1.000 min_w=0.001
+  VG Foot.L         : count=754 max_w=1.000 min_w=0.032

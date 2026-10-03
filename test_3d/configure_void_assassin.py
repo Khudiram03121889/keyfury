@@ -1,169 +1,292 @@
+"""
+Master Configuration & Calibration Script for Character 4: Void Assassin (Nyx)
+KeyFury 3D Rigging & Blender Integration Pipeline
+
+Functional Improvements:
+1. Symmetrical side-view and front-view body balance (centering torso, spine, hips, neck, head).
+2. Symmetrical leg and foot alignment (Thigh.L/R at X=±0.175).
+3. Exact anatomical arm and hand bone placement for Dual Void Daggers.
+4. High-fidelity vertex weight overhaul:
+   - Hand.R assigned 100% full weight on the right Void Dagger and stealth glove.
+   - Hand.L assigned 100% full weight on the left Void Dagger and offhand grip.
+5. Ground contact calibration (min Z = 0.0000).
+6. Updated Blender scene and standalone GLB export for game engine integration.
+"""
+
 import bpy
-import json
+import bmesh
+import math
+import mathutils
 import os
-from math import radians
 
-print(">>> Configuring Master High-Fidelity 3D Void Assassin (Nyx) in Blender...")
+SOURCE_BLEND = r"d:\Keyboard stickman warrior\test_3d\KeyFury_3D_CyberRooftop_BACKUP_4FIGHTERS.blend"
+WEB_ASSETS_DIR = r"d:\Keyboard stickman warrior\apps\web\public\assets\3d"
+TEST_3D_DIR = r"d:\Keyboard stickman warrior\test_3d"
 
-work_dir = r"d:\Keyboard stickman warrior\test_3d"
-json_path = os.path.join(work_dir, "void_master_mesh_data.json")
+print("======================================================================")
+print(">>> CALIBRATING CHARACTER 4: VOID ASSASSIN IN BLENDER <<<")
+print("======================================================================")
 
-with open(json_path, "r") as f:
-    data = json.load(f)
+# 1. Open Source Blend File
+bpy.ops.wm.open_mainfile(filepath=SOURCE_BLEND)
 
-verts = data["verts"]
-uvs = data["uvs"]
-faces = data["faces"]
-front_count = data["front_count"]
-back_count = data["back_count"]
-side_count = data["side_count"]
-
-print(f"Loaded mesh data: {len(verts)} verts, {len(faces)} faces ({front_count} front, {back_count} back, {side_count} side).")
-
-# 1. Clean up old Void Assassin objects and temporary lights
+# Purge any stray icosphere objects
 for obj in list(bpy.data.objects):
-    if any(obj.name.startswith(p) for p in ["Void_Assassin", "Void_Mesh", "Void_Inspect", "Void_Test", "Void_Studio"]):
+    if "icosphere" in obj.name.lower():
         bpy.data.objects.remove(obj, do_unlink=True)
 
-# 2. Create Master Void Assassin Mesh
-mesh = bpy.data.meshes.new("Void_Assassin_Mesh")
-mesh.from_pydata(verts, [], faces)
-mesh.update()
+mesh_obj = bpy.data.objects.get("Void_Assassin")
+if not mesh_obj:
+    raise RuntimeError("Void_Assassin object not found in blend file!")
 
-uv_layer = mesh.uv_layers.new(name="UVMap")
-CHAR_HEIGHT = 2.22
+print(f"Found mesh: {mesh_obj.name}, verts: {len(mesh_obj.data.vertices)}")
 
-for i, poly in enumerate(mesh.polygons):
-    poly.use_smooth = True
-    is_side = (i >= front_count + back_count)
-    if i < front_count:
-        poly.material_index = 0
-    elif i < front_count + back_count:
-        poly.material_index = 1
-    else:
-        poly.material_index = 2
-        
-    for loop_idx in poly.loop_indices:
-        v_idx = mesh.loops[loop_idx].vertex_index
-        if is_side:
-            v_co = mesh.vertices[v_idx].co
-            # Canonical side turnaround texture:
-            # Character faces Left (Front is u < 0.50, Back is u > 0.50)
-            # In 3D: Front is -Y, Back is +Y
-            u_side = max(0.01, min(0.99, 0.50 + 1.25 * v_co.y))
-            v_side = max(0.01, min(0.99, v_co.z / CHAR_HEIGHT))
-            uv_layer.data[loop_idx].uv = (u_side, v_side)
-        else:
-            uv_layer.data[loop_idx].uv = uvs[v_idx]
+# Remove any old armatures associated with Void_Assassin
+for obj in list(bpy.data.objects):
+    if "Void_Assassin_Rig" in obj.name or "Void_Rig" in obj.name:
+        bpy.data.objects.remove(obj, do_unlink=True)
 
-mesh.update()
+# 2. Side-View & Front-View Proportion & Balance Calibration
+verts = mesh_obj.data.vertices
+min_z = min(v.co.z for v in verts)
+max_z = max(v.co.z for v in verts)
+min_x = min(v.co.x for v in verts)
+max_x = max(v.co.x for v in verts)
+min_y = min(v.co.y for v in verts)
+max_y = max(v.co.y for v in verts)
 
-# 3. Create Master Void Assassin Object
-void_obj = bpy.data.objects.new("Void_Assassin", mesh)
-void_obj.location = (0.0, 0.0, 0.0)
-void_obj.rotation_euler = (0.0, 0.0, 0.0)
-bpy.context.collection.objects.link(void_obj)
+# Calculate torso core center (head, chest, spine, hips) to align the sagittal plane
+core_verts = [v for v in verts if abs(v.co.x) < 0.20 and 0.40 * (max_z - min_z) <= (v.co.z - min_z) <= 0.85 * (max_z - min_z)]
+if core_verts:
+    cx = sum(v.co.x for v in core_verts) / len(core_verts)
+    cy = sum(v.co.y for v in core_verts) / len(core_verts)
+else:
+    cx = (min_x + max_x) / 2.0
+    cy = (min_y + max_y) / 2.0
 
-# 4. Modifiers
-mod_wn = void_obj.modifiers.new(name="WeightedNormal", type="WEIGHTED_NORMAL")
-mod_wn.weight = 50
+print(f"Void Assassin Core Offset: X={cx:.4f}m, Y={cy:.4f}m. Centering to (0, 0, 0)...")
 
-# 5. Materials Setup
-def load_img(name, path, is_non_color=False):
-    img = bpy.data.images.get(name)
-    if img:
-        img.filepath = path
-        img.reload()
-    else:
-        img = bpy.data.images.load(path)
-        img.name = name
-    if is_non_color:
-        img.colorspace_settings.name = "Non-Color"
-    return img
+# Shift mesh geometry so torso core is centered at (0, 0) and feet at Z=0.0000
+mesh_obj.data.transform(mathutils.Matrix.Translation((-cx, -cy, -min_z)))
+mesh_obj.location = (0, 0, 0)
+mesh_obj.data.update()
 
-img_f_col = load_img("void_f_col", os.path.join(work_dir, "void_turnaround_front_master.png"))
-img_f_nrm = load_img("void_f_nrm", os.path.join(work_dir, "void_turnaround_front_normal.png"), is_non_color=True)
-img_f_emi = load_img("void_f_emi", os.path.join(work_dir, "void_turnaround_front_emission.png"))
+height = max(v.co.z for v in mesh_obj.data.vertices)
+hw_l = abs(min(v.co.x for v in mesh_obj.data.vertices))
+hw_r = max(v.co.x for v in mesh_obj.data.vertices)
+hw = max(hw_l, hw_r)
 
-img_b_col = load_img("void_b_col", os.path.join(work_dir, "void_turnaround_back_master.png"))
-img_b_nrm = load_img("void_b_nrm", os.path.join(work_dir, "void_turnaround_back_normal.png"), is_non_color=True)
-img_b_emi = load_img("void_b_emi", os.path.join(work_dir, "void_turnaround_back_emission.png"))
+print(f"Void Assassin Calibrated Height: {height:.4f}m, Half-Width: {hw:.4f}m")
 
-img_s_col = load_img("void_s_col", os.path.join(work_dir, "void_turnaround_side_master.png"))
-img_s_nrm = load_img("void_s_nrm", os.path.join(work_dir, "void_turnaround_side_normal.png"), is_non_color=True)
-img_s_emi = load_img("void_s_emi", os.path.join(work_dir, "void_turnaround_side_emission.png"))
+# 3. Build Anatomically Calibrated 20-Bone Humanoid Armature
+arm_data = bpy.data.armatures.new("Void_Assassin_Rig_Data")
+arm_obj = bpy.data.objects.new("Void_Assassin_Rig", arm_data)
+bpy.context.scene.collection.objects.link(arm_obj)
+bpy.context.view_layer.objects.active = arm_obj
+arm_obj.select_set(True)
 
-def build_pbr_mat(mat_name, img_col, img_nrm, img_emi, metallic=0.15, roughness=0.35, spec=0.45, nrm_str=0.80, emit_str=3.8, diffuse_tint=(0.65, 0.35, 0.95, 1.0)):
-    mat = bpy.data.materials.get(mat_name) or bpy.data.materials.new(mat_name)
-    mat.use_nodes = True
-    mat.blend_method = "OPAQUE"
-    mat.diffuse_color = diffuse_tint
-    nodes = mat.node_tree.nodes
-    nodes.clear()
-    links = mat.node_tree.links
+win = bpy.context.window_manager.windows[0]
+with bpy.context.temp_override(window=win, screen=win.screen, active_object=arm_obj, selected_objects=[arm_obj], selected_editable_objects=[arm_obj]):
+    bpy.ops.object.mode_set(mode='EDIT')
+    eb = arm_data.edit_bones
 
-    out_node = nodes.new("ShaderNodeOutputMaterial")
-    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
-    
-    # Sleek stealth nano-carbon physics
-    bsdf.inputs["Metallic"].default_value = metallic
-    bsdf.inputs["Roughness"].default_value = roughness
-    if "Specular IOR Level" in bsdf.inputs:
-        bsdf.inputs["Specular IOR Level"].default_value = spec
-    elif "Specular" in bsdf.inputs:
-        bsdf.inputs["Specular"].default_value = spec
+    root = eb.new("Root")
+    root.head = (0, 0, 0)
+    root.tail = (0, 0, 0.15)
 
-    # Base color texture
-    tex_c = nodes.new("ShaderNodeTexImage")
-    tex_c.image = img_col
-    links.new(tex_c.outputs["Color"], bsdf.inputs["Base Color"])
+    hips = eb.new("Hips")
+    hips.head = (0, 0, height * 0.48)
+    hips.tail = (0, 0, height * 0.56)
+    hips.parent = root
 
-    # Normal map texture
-    tex_n = nodes.new("ShaderNodeTexImage")
-    tex_n.image = img_nrm
-    nrm_node = nodes.new("ShaderNodeNormalMap")
-    nrm_node.inputs["Strength"].default_value = nrm_str
-    links.new(tex_n.outputs["Color"], nrm_node.inputs["Color"])
-    links.new(nrm_node.outputs["Normal"], bsdf.inputs["Normal"])
+    spine = eb.new("Spine")
+    spine.head = (0, 0, height * 0.56)
+    spine.tail = (0, 0, height * 0.69)
+    spine.parent = hips
 
-    # Emission texture (Amethyst Void #a855f7 glow)
-    tex_e = nodes.new("ShaderNodeTexImage")
-    tex_e.image = img_emi
-    if "Emission Color" in bsdf.inputs:
-        links.new(tex_e.outputs["Color"], bsdf.inputs["Emission Color"])
-        bsdf.inputs["Emission Strength"].default_value = emit_str
-    elif "Emission" in bsdf.inputs:
-        links.new(tex_e.outputs["Color"], bsdf.inputs["Emission"])
+    chest = eb.new("Chest")
+    chest.head = (0, 0, height * 0.69)
+    chest.tail = (0, 0, height * 0.83)
+    chest.parent = spine
 
-    links.new(bsdf.outputs["BSDF"], out_node.inputs["Surface"])
-    return mat
+    neck = eb.new("Neck")
+    neck.head = (0, 0, height * 0.83)
+    neck.tail = (0, 0, height * 0.88)
+    neck.parent = chest
 
-# Slot 0: Front PBR
-mat_front = build_pbr_mat("Mat_Void_FrontPBR", img_f_col, img_f_nrm, img_f_emi, metallic=0.15, roughness=0.35, spec=0.45, nrm_str=0.80, emit_str=3.8)
-void_obj.data.materials.append(mat_front)
+    head = eb.new("Head")
+    head.head = (0, 0, height * 0.88)
+    head.tail = (0, 0, height * 1.05)
+    head.parent = neck
 
-# Slot 1: Back PBR
-mat_back = build_pbr_mat("Mat_Void_BackPBR", img_b_col, img_b_nrm, img_b_emi, metallic=0.15, roughness=0.35, spec=0.45, nrm_str=0.80, emit_str=3.8)
-void_obj.data.materials.append(mat_back)
+    # Right Arm & Weapon Socket Bone Chain (Symmetric Y = 0.0)
+    sh_r = eb.new("Shoulder.R")
+    sh_r.head = (hw * 0.18, 0.0, height * 0.79)
+    sh_r.tail = (hw * 0.42, 0.0, height * 0.78)
+    sh_r.parent = chest
 
-# Slot 2: Side PBR
-mat_side = build_pbr_mat("Mat_Void_SidePBR", img_s_col, img_s_nrm, img_s_emi, metallic=0.18, roughness=0.38, spec=0.40, nrm_str=0.50, emit_str=3.0)
-void_obj.data.materials.append(mat_side)
+    ua_r = eb.new("UpperArm.R")
+    ua_r.head = (hw * 0.42, 0.0, height * 0.78)
+    ua_r.tail = (hw * 0.66, 0.0, height * 0.65)
+    ua_r.parent = sh_r
 
-# 6. Local in-scene soft accent lights
-def setup_pt_light(name, color, energy, loc, radius=0.35):
-    old = bpy.data.objects.get(name)
-    if old: bpy.data.objects.remove(old, do_unlink=True)
-    ld = bpy.data.lights.new(name, "POINT")
-    ld.color = color
-    ld.energy = energy
-    ld.shadow_soft_size = radius
-    obj = bpy.data.objects.new(name, ld)
-    obj.location = loc
-    bpy.context.collection.objects.link(obj)
-    return obj
+    fa_r = eb.new("Forearm.R")
+    fa_r.head = (hw * 0.66, 0.0, height * 0.65)
+    fa_r.tail = (hw * 0.82, 0.0, height * 0.54)
+    fa_r.parent = ua_r
 
-setup_pt_light("Void_Visor_Light", (0.75, 0.35, 1.0), 18.0, (0.0, -0.45, 1.70), radius=0.35)
-setup_pt_light("Void_Spine_Light", (0.75, 0.35, 1.0), 18.0, (0.0, 0.45, 1.45), radius=0.35)
+    h_r = eb.new("Hand.R")
+    # Positioned at right Dual Void Dagger weapon socket
+    h_r.head = (hw * 0.82, 0.0, height * 0.54)
+    h_r.tail = (hw * 0.96, 0.0, height * 0.48)
+    h_r.parent = fa_r
 
-print(">>> Void Assassin configured cleanly in Blender with complete 3-Slot PBR architecture!")
+    # Left Arm & Weapon Socket Bone Chain (Symmetric Y = 0.0)
+    sh_l = eb.new("Shoulder.L")
+    sh_l.head = (-hw * 0.18, 0.0, height * 0.79)
+    sh_l.tail = (-hw * 0.42, 0.0, height * 0.78)
+    sh_l.parent = chest
+
+    ua_l = eb.new("UpperArm.L")
+    ua_l.head = (-hw * 0.42, 0.0, height * 0.78)
+    ua_l.tail = (-hw * 0.66, 0.0, height * 0.65)
+    ua_l.parent = sh_l
+
+    fa_l = eb.new("Forearm.L")
+    fa_l.head = (-hw * 0.66, 0.0, height * 0.65)
+    fa_l.tail = (-hw * 0.82, 0.0, height * 0.54)
+    fa_l.parent = ua_l
+
+    h_l = eb.new("Hand.L")
+    # Positioned at left Dual Void Dagger weapon socket
+    h_l.head = (-hw * 0.82, 0.0, height * 0.54)
+    h_l.tail = (-hw * 0.96, 0.0, height * 0.48)
+    h_l.parent = fa_l
+
+    # Symmetrical Leg Chains
+    leg_x = 0.175
+
+    # Right Leg
+    th_r = eb.new("Thigh.R")
+    th_r.head = (leg_x * 0.90, 0.0, height * 0.48)
+    th_r.tail = (leg_x, 0.0, height * 0.26)
+    th_r.parent = hips
+
+    shn_r = eb.new("Shin.R")
+    shn_r.head = (leg_x, 0.0, height * 0.26)
+    shn_r.tail = (leg_x, 0.0, 0.12)
+    shn_r.parent = th_r
+
+    ft_r = eb.new("Foot.R")
+    ft_r.head = (leg_x, 0.0, 0.12)
+    ft_r.tail = (leg_x, -0.15, 0.005)
+    ft_r.parent = shn_r
+
+    # Left Leg
+    th_l = eb.new("Thigh.L")
+    th_l.head = (-leg_x * 0.90, 0.0, height * 0.48)
+    th_l.tail = (-leg_x, 0.0, height * 0.26)
+    th_l.parent = hips
+
+    shn_l = eb.new("Shin.L")
+    shn_l.head = (-leg_x, 0.0, height * 0.26)
+    shn_l.tail = (-leg_x, 0.0, 0.12)
+    shn_l.parent = th_l
+
+    ft_l = eb.new("Foot.L")
+    ft_l.head = (-leg_x, 0.0, 0.12)
+    ft_l.tail = (-leg_x, -0.15, 0.005)
+    ft_l.parent = shn_l
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+# 4. Skinning & High-Fidelity Weight Painting Calibration
+mesh_obj.vertex_groups.clear()
+for mod in list(mesh_obj.modifiers):
+    if mod.type == 'ARMATURE':
+        mesh_obj.modifiers.remove(mod)
+
+with bpy.context.temp_override(window=win, screen=win.screen, active_object=arm_obj, selected_objects=[mesh_obj, arm_obj], selected_editable_objects=[mesh_obj, arm_obj]):
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+
+vg_hand_r = mesh_obj.vertex_groups.get("Hand.R")
+vg_fa_r = mesh_obj.vertex_groups.get("Forearm.R")
+vg_hand_l = mesh_obj.vertex_groups.get("Hand.L")
+vg_fa_l = mesh_obj.vertex_groups.get("Forearm.L")
+vg_chest = mesh_obj.vertex_groups.get("Chest")
+vg_spine = mesh_obj.vertex_groups.get("Spine")
+vg_foot_l = mesh_obj.vertex_groups.get("Foot.L")
+vg_foot_r = mesh_obj.vertex_groups.get("Foot.R")
+vg_shin_l = mesh_obj.vertex_groups.get("Shin.L")
+vg_shin_r = mesh_obj.vertex_groups.get("Shin.R")
+
+for v in mesh_obj.data.vertices:
+    # Right Hand & Dual Void Dagger solid weight reinforcement
+    if v.co.x > (hw * 0.65):
+        if v.co.x >= (hw * 0.78):
+            if vg_hand_r: vg_hand_r.add([v.index], 1.0, 'REPLACE')
+            if vg_fa_r: vg_fa_r.remove([v.index])
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+        elif v.co.x >= (hw * 0.66):
+            t = (v.co.x - hw * 0.66) / (hw * 0.12)
+            t_smooth = t * t * (3.0 - 2.0 * t)
+            if vg_hand_r: vg_hand_r.add([v.index], t_smooth, 'REPLACE')
+            if vg_fa_r: vg_fa_r.add([v.index], 1.0 - t_smooth, 'REPLACE')
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+
+    # Left Hand & Dual Void Dagger solid weight reinforcement
+    if v.co.x < (-hw * 0.65):
+        if v.co.x <= (-hw * 0.78):
+            if vg_hand_l: vg_hand_l.add([v.index], 1.0, 'REPLACE')
+            if vg_fa_l: vg_fa_l.remove([v.index])
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+        elif v.co.x <= (-hw * 0.66):
+            t = (abs(v.co.x) - hw * 0.66) / (hw * 0.12)
+            t_smooth = t * t * (3.0 - 2.0 * t)
+            if vg_hand_l: vg_hand_l.add([v.index], t_smooth, 'REPLACE')
+            if vg_fa_l: vg_fa_l.add([v.index], 1.0 - t_smooth, 'REPLACE')
+            if vg_chest: vg_chest.remove([v.index])
+            if vg_spine: vg_spine.remove([v.index])
+
+    # Foot bone isolation
+    if v.co.z > 0.18:
+        if vg_foot_l: vg_foot_l.remove([v.index])
+        if vg_foot_r: vg_foot_r.remove([v.index])
+    elif v.co.z <= 0.035:
+        if v.co.x < 0 and vg_foot_l:
+            vg_foot_l.add([v.index], 1.0, 'REPLACE')
+            if vg_shin_l: vg_shin_l.remove([v.index])
+        elif v.co.x > 0 and vg_foot_r:
+            vg_foot_r.add([v.index], 1.0, 'REPLACE')
+            if vg_shin_r: vg_shin_r.remove([v.index])
+
+# 5. Save Updated Master Blend File
+bpy.ops.wm.save_as_mainfile(filepath=SOURCE_BLEND)
+print(f">>> Saved updated master blend: {SOURCE_BLEND}")
+
+# 6. Export Standalone Void_Assassin.glb
+bpy.ops.object.select_all(action='DESELECT')
+mesh_obj.select_set(True)
+arm_obj.select_set(True)
+bpy.context.view_layer.objects.active = arm_obj
+
+web_path = os.path.join(WEB_ASSETS_DIR, "Void_Assassin.glb")
+test_path = os.path.join(TEST_3D_DIR, "Void_Assassin.glb")
+
+for target_path in [web_path, test_path]:
+    with bpy.context.temp_override(window=win, screen=win.screen):
+        bpy.ops.export_scene.gltf(
+            filepath=target_path,
+            export_format='GLB',
+            use_selection=True,
+            export_apply=False,
+            export_skins=True,
+            export_cameras=False,
+            export_lights=False
+        )
+    print(f">>> Exported {target_path} ({os.path.getsize(target_path):,} bytes)")
+
+print(">>> VOID ASSASSIN CALIBRATION COMPLETE!")

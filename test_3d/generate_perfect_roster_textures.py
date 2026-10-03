@@ -96,10 +96,9 @@ def remove_drop_shadow(im):
 # =========================================================================
 # 1. SHADOW RONIN (KAGE)
 # =========================================================================
-print("Processing Shadow Ronin textures with clean boots & true asymmetrical turnaround...")
-ronin_f = fit_to_canvas(remove_drop_shadow(Image.open(os.path.join(work_dir, 'clean_ronin_slice_front.png'))))
-ronin_b = fit_to_canvas(remove_drop_shadow(Image.open(os.path.join(work_dir, 'clean_ronin_slice_back.png'))))
-ronin_s = fit_to_canvas(remove_drop_shadow(Image.open(os.path.join(work_dir, 'check_bg_ronin_slice_side_clean3.png'))))
+ronin_f = fit_to_canvas(Image.open(os.path.join(work_dir, 'ronin_slice_front.png')))
+ronin_b = fit_to_canvas(Image.open(os.path.join(work_dir, 'ronin_slice_back.png')))
+ronin_s = fit_to_canvas(Image.open(os.path.join(work_dir, 'pure_ronin_slice_side.png')))
 
 f_arr = np.array(ronin_f)
 b_arr = np.array(ronin_b)
@@ -184,10 +183,9 @@ print("Shadow Ronin textures generated successfully with clean separated boots."
 # =========================================================================
 # 2. CYBER VALKYRIE (FREYA)
 # =========================================================================
-print("Processing Cyber Valkyrie textures...")
-valk_f = fit_to_canvas(Image.open(os.path.join(work_dir, 'valk_clean_front_perfect.png')), target_h=685, target_y_bottom=748)
-valk_b = fit_to_canvas(Image.open(os.path.join(work_dir, 'valk_clean_back_perfect.png')), target_h=685, target_y_bottom=748)
-valk_s = fit_to_canvas(Image.open(os.path.join(work_dir, 'valk_clean_side.png')), target_h=685, target_y_bottom=748)
+valk_f = fit_to_canvas(Image.open(os.path.join(work_dir, 'valk_atlas_front.png')), target_h=685, target_y_bottom=748)
+valk_b = fit_to_canvas(Image.open(os.path.join(work_dir, 'valk_atlas_back.png')), target_h=685, target_y_bottom=748)
+valk_s = fit_to_canvas(Image.open(os.path.join(work_dir, 'valk_atlas_side.png')), target_h=685, target_y_bottom=748)
 
 vf_arr = np.array(valk_f)
 vb_arr = np.array(valk_b)

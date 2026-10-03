@@ -1,0 +1,12 @@
+=== GLB MATERIALS AND TEXTURES AUDIT ===
+
+Material: Mat_Ronin_BackPBR, use_nodes=True
+  BSDF node: Principled BSDF, BaseColor=(1.0, 1.0, 1.0, 1.0), linked_from=[]
+
+Material: Mat_Ronin_FrontPBR, use_nodes=True
+  BSDF node: Principled BSDF, BaseColor=(1.0, 1.0, 1.0, 1.0), linked_from=[]
+
+Material: Mat_Ronin_SidePBR, use_nodes=True
+  BSDF node: Principled BSDF, BaseColor=(1.0, 1.0, 1.0, 1.0), linked_from=[]
+
+Images in GLB: 0

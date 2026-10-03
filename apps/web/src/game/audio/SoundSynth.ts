@@ -392,6 +392,98 @@ export class SoundSynth {
       });
     }
   }
+
+  /**
+   * Procedural Thunder Strike & Electric Crackle Synthesizer
+   * Creates an epic thunderbolt crash with sub-bass punch and high-voltage crackle
+   */
+  public playThunderStrike(): void {
+    if (this.muted) return;
+    const ctx = this.getAudioContext();
+    if (!ctx || !this.masterGain) return;
+
+    const now = ctx.currentTime;
+    const duration = 2.2;
+
+    // 1. Initial High-Voltage Snap / Pre-crack
+    const snapOsc = ctx.createOscillator();
+    const snapGain = ctx.createGain();
+    snapOsc.type = 'sawtooth';
+    snapOsc.frequency.setValueAtTime(1200, now);
+    snapOsc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+    snapGain.gain.setValueAtTime(0.4, now);
+    snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    snapOsc.connect(snapGain);
+    snapGain.connect(this.masterGain);
+    snapOsc.start(now);
+    snapOsc.stop(now + 0.08);
+
+    // 2. Sub-Bass Thunder Blast Impact (Shockwave)
+    const boomOsc = ctx.createOscillator();
+    const boomGain = ctx.createGain();
+    boomOsc.type = 'sine';
+    boomOsc.frequency.setValueAtTime(180, now + 0.02);
+    boomOsc.frequency.exponentialRampToValueAtTime(32, now + 0.8);
+    boomGain.gain.setValueAtTime(0.7, now + 0.02);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    boomOsc.connect(boomGain);
+    boomGain.connect(this.masterGain);
+    boomOsc.start(now + 0.02);
+    boomOsc.stop(now + duration);
+
+    // 3. Crackling Rumble (Filtered Noise with envelope)
+    const bufferSize = Math.floor(ctx.sampleRate * duration);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.7));
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.setValueAtTime(850, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(80, now + duration);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.55, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.masterGain);
+
+    noise.start(now);
+    noise.stop(now + duration);
+  }
+
+  /**
+   * Procedural Electric Arc / Ionization Discharge
+   */
+  public playElectricDischarge(): void {
+    if (this.muted) return;
+    const ctx = this.getAudioContext();
+    if (!ctx || !this.masterGain) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(450, now);
+    osc.frequency.linearRampToValueAtTime(900, now + 0.06);
+    osc.frequency.linearRampToValueAtTime(250, now + 0.15);
+
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.18);
+  }
 }
 
 export const soundSynth = new SoundSynth();

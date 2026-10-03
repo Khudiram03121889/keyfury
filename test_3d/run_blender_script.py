@@ -5,10 +5,16 @@ import os
 
 blender_exe = r"C:\Users\Dell\AppData\Local\Microsoft\WindowsApps\blender-launcher.exe"
 script_to_run = sys.argv[1] if len(sys.argv) > 1 else r"d:\Keyboard stickman warrior\test_3d\test_run.py"
+blend_to_open = sys.argv[2] if len(sys.argv) > 2 else None
 log_path = r"d:\Keyboard stickman warrior\test_3d\blender_exec.log"
 
-cmd = f'"{blender_exe}" -b -P "{script_to_run}" > "{log_path}" 2>&1'
-print(f">>> Launching Blender with: {script_to_run}")
+if blend_to_open:
+    cmd = f'"{blender_exe}" -b "{blend_to_open}" -P "{script_to_run}" > "{log_path}" 2>&1'
+    print(f">>> Launching Blender with blend: {blend_to_open} and script: {script_to_run}")
+else:
+    cmd = f'"{blender_exe}" -b -P "{script_to_run}" > "{log_path}" 2>&1'
+    print(f">>> Launching Blender with: {script_to_run}")
+
 subprocess.run(cmd, shell=True)
 
 # Give blender.exe time to spawn
