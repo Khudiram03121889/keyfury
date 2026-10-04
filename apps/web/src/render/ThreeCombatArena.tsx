@@ -814,26 +814,68 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     const preset = CAMERA_PRESETS[presetIdx % CAMERA_PRESETS.length];
     const t = preset.getTransform(arenaDef);
 
-    // ponytail: Dynamic portrait compensation when aspect < 1.0 to fit both fighters
+    // ponytail: Dedicated per-preset portrait compensation when aspect < 1.0
     const container = containerRef.current;
     const aspect = container && container.clientHeight > 0
       ? container.clientWidth / container.clientHeight
       : (typeof window !== 'undefined' ? window.innerWidth / Math.max(window.innerHeight, 1) : 1.77);
 
     if (aspect < 1.0) {
-      // In portrait mode, pull camera back along Z and elevate Y slightly
-      const baseDist = Math.hypot(t.pos[0] - t.lookAt[0], t.pos[1] - t.lookAt[1], t.pos[2] - t.lookAt[2]);
-      const portraitZDist = Math.max(baseDist * 1.35, 11.2);
-
-      // Calculate vertical FOV required to maintain a horizontal visible width of ~6.8m
-      const targetHWidth = 6.8;
-      const requiredHalfVFovRad = Math.atan(targetHWidth / (2 * portraitZDist * aspect));
-      const requiredVFovDeg = (requiredHalfVFovRad * 2 * 180) / Math.PI;
-      const clampedFov = Math.min(Math.max(requiredVFovDeg, 34), 52);
-
-      targetCamPos.current.set(t.pos[0] * 0.7, t.pos[1] + 0.75, portraitZDist);
-      targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1] + 0.25, t.lookAt[2]);
-      targetCamFov.current = clampedFov;
+      const floorY = arenaDef.fighterFloorY;
+      switch (preset.id) {
+        case 'front':
+        case 'dynamic': {
+          // Close, heroic Front Zoom framing both fighters tightly
+          targetCamPos.current.set(t.lookAt[0], floorY + 1.5, 8.6);
+          targetCamLookAt.current.set(t.lookAt[0], floorY + 1.1, t.lookAt[2]);
+          targetCamFov.current = 64.0;
+          break;
+        }
+        case 'back': {
+          // Elevated reverse angle behind fighters looking forward into the arena (negative Z)
+          targetCamPos.current.set(t.lookAt[0], floorY + 2.0, -8.6);
+          targetCamLookAt.current.set(t.lookAt[0], floorY + 1.1, t.lookAt[2]);
+          targetCamFov.current = 64.0;
+          break;
+        }
+        case 'left': {
+          // 45° elevated flank with tight duel zoom framing both fighters
+          targetCamPos.current.set(-6.2, floorY + 2.2, 6.2);
+          targetCamLookAt.current.set(0, floorY + 1.1, 0);
+          targetCamFov.current = 62.0;
+          break;
+        }
+        case 'right': {
+          // 45° elevated flank with tight duel zoom framing both fighters
+          targetCamPos.current.set(6.2, floorY + 2.2, 6.2);
+          targetCamLookAt.current.set(0, floorY + 1.1, 0);
+          targetCamFov.current = 62.0;
+          break;
+        }
+        case 'spider_cam': {
+          targetCamPos.current.set(-1.8, floorY + 6.2, 5.2);
+          targetCamLookAt.current.set(0, floorY + 0.9, 0);
+          targetCamFov.current = 56.0;
+          break;
+        }
+        case 'focused_60': {
+          targetCamPos.current.set(0, floorY + 8.0, 4.8);
+          targetCamLookAt.current.set(0, floorY + 0.8, 0);
+          targetCamFov.current = 54.0;
+          break;
+        }
+        case 'wide_front': {
+          targetCamPos.current.set(t.lookAt[0], floorY + 2.8, 14.5);
+          targetCamLookAt.current.set(t.lookAt[0], floorY + 1.1, t.lookAt[2]);
+          targetCamFov.current = 52.0;
+          break;
+        }
+        default: {
+          targetCamPos.current.set(t.pos[0], t.pos[1], t.pos[2]);
+          targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1], t.lookAt[2]);
+          targetCamFov.current = t.fov;
+        }
+      }
     } else {
       targetCamPos.current.set(t.pos[0], t.pos[1], t.pos[2]);
       targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1], t.lookAt[2]);
@@ -851,6 +893,13 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     activePresetIndexRef.current = next;
     setActivePresetIndex(next);
     applyPresetTransform(next);
+    if (isIntroCompleteRef.current && cameraRef.current) {
+      cameraRef.current.position.copy(targetCamPos.current);
+      currentCamLookAt.current.copy(targetCamLookAt.current);
+      cameraRef.current.fov = targetCamFov.current;
+      cameraRef.current.updateProjectionMatrix();
+      cameraRef.current.lookAt(currentCamLookAt.current);
+    }
     lastAppliedInitialAngleRef.current = CAMERA_PRESETS[next].id;
     saveSelectedCameraAngle(CAMERA_PRESETS[next].id);
   }, [applyPresetTransform]);
@@ -865,6 +914,13 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       activePresetIndexRef.current = idx;
       setActivePresetIndex(idx);
       applyPresetTransform(idx);
+      if (isIntroCompleteRef.current && cameraRef.current) {
+        cameraRef.current.position.copy(targetCamPos.current);
+        currentCamLookAt.current.copy(targetCamLookAt.current);
+        cameraRef.current.fov = targetCamFov.current;
+        cameraRef.current.updateProjectionMatrix();
+        cameraRef.current.lookAt(currentCamLookAt.current);
+      }
       lastAppliedInitialAngleRef.current = CAMERA_PRESETS[idx].id;
       saveSelectedCameraAngle(CAMERA_PRESETS[idx].id);
     }
@@ -899,8 +955,14 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     if (arrivalFlareRef.current) arrivalFlareRef.current.style.display = 'none';
 
     // Snap fighters to marks
-    if (p1FighterRef.current) p1FighterRef.current.setEntranceProgress(1.0, resolvedArenaId);
-    if (p2FighterRef.current) p2FighterRef.current.setEntranceProgress(1.0, resolvedArenaId);
+    if (p1FighterRef.current) {
+      p1FighterRef.current.group.visible = true;
+      p1FighterRef.current.setEntranceProgress(1.0, resolvedArenaId);
+    }
+    if (p2FighterRef.current) {
+      p2FighterRef.current.group.visible = true;
+      p2FighterRef.current.setEntranceProgress(1.0, resolvedArenaId);
+    }
 
     // Apply active combat camera preset
     applyPresetTransformRef.current(activePresetIndexRef.current);
@@ -1264,16 +1326,18 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       console.error(`Failed to load arena ${arenaDef.name}:`, err);
     });
 
-    // 5. Load Fighters
+    // 5. Load Fighters (initially hidden until arrival sequence at t >= 1.4s)
     const p1 = new Character3DFighter(resolvedP1, 'left', loader);
     p1.baseY = arenaDef.fighterFloorY;
     p1.group.position.y = arenaDef.fighterFloorY;
+    p1.group.visible = false;
     scene.add(p1.group);
     p1FighterRef.current = p1;
 
     const p2 = new Character3DFighter(resolvedP2, 'right', loader);
     p2.baseY = arenaDef.fighterFloorY;
     p2.group.position.y = arenaDef.fighterFloorY;
+    p2.group.visible = false;
     scene.add(p2.group);
     p2FighterRef.current = p2;
 
@@ -1286,6 +1350,7 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     (window as any).__p2 = p2;
     (window as any).__threeCamera = camera;
     (window as any).__threeRenderer = renderer;
+    (window as any).__setCameraPreset = (preset: CameraPreset) => setCameraPresetByIdRef.current(preset);
     (window as any).__triggerHit = (side: 'left' | 'right', severity: 'light' | 'heavy' = 'light') => {
       const fighter = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
       if (!fighter) return;
@@ -1451,11 +1516,17 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         introTimerRef.current += delta;
         const t = introTimerRef.current;
 
-        // Synchronize P1 & P2 Map-Specific Entrance Kinematics
+        // Synchronize P1 & P2 Map-Specific Entrance Kinematics & Visibility
         const p1Prog = getFighterEntranceProgress(t, 'left');
         const p2Prog = getFighterEntranceProgress(t, 'right');
-        if (p1FighterRef.current) p1FighterRef.current.setEntranceProgress(p1Prog, resolvedArenaId);
-        if (p2FighterRef.current) p2FighterRef.current.setEntranceProgress(p2Prog, resolvedArenaId);
+        if (p1FighterRef.current) {
+          p1FighterRef.current.setEntranceProgress(p1Prog, resolvedArenaId);
+          p1FighterRef.current.group.visible = t >= 1.4;
+        }
+        if (p2FighterRef.current) {
+          p2FighterRef.current.setEntranceProgress(p2Prog, resolvedArenaId);
+          p2FighterRef.current.group.visible = t >= 3.4;
+        }
 
         // Update Intro Act state
         const currentAct = getIntroActForTime(t);
@@ -1509,45 +1580,63 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
           }
         }
 
+        const aspect = container.clientWidth / Math.max(container.clientHeight, 1);
+        const isPortrait = aspect < 1.0;
+
         // ACT 1: Stage Showcase, 3D Game Title & Logo Transition & Smooth Handoff (0.0s - 1.5s)
         if (currentAct === 'stage') {
           setActiveFighterBanner(null);
           setCountdownNum(null);
           const p = Math.min(Math.max(t / 1.5, 0), 1);
 
-          // Target values at t = 1.5s where Act 2 begins
-          const p1TargetX = -4.2;
-          const p1TargetY = arenaDef.camPos[1] + 0.6;
-          const p1TargetZ = arenaDef.camPos[2] * 0.6;
-          const p1LookX = -1.75;
-          const p1LookY = 1.1 + arenaDef.fighterFloorY;
-          const p1LookZ = 0;
-          const p1TargetFov = 32.0;
-
           if (p < 0.6) {
             // Phase 1 (0.0s - 0.9s): Wide arena drift showcasing the 3D Game Title & Logo
             const subP = easeOutCubic(p / 0.6);
-            camera.position.x = THREE.MathUtils.lerp(0, -0.6, subP);
-            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 2.4, arenaDef.camPos[1] + 1.8, subP);
-            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 3.2, arenaDef.camPos[2] + 1.8, subP);
-            camera.fov = arenaDef.camFov;
-            currentCamLookAt.current.set(
-              THREE.MathUtils.lerp(arenaDef.camLookAt[0], arenaDef.camLookAt[0] - 0.3, subP),
-              THREE.MathUtils.lerp(arenaDef.camLookAt[1] + 0.4, arenaDef.camLookAt[1] + 0.25, subP),
-              arenaDef.camLookAt[2]
-            );
+            if (isPortrait) {
+              camera.position.x = THREE.MathUtils.lerp(0, -0.6, subP);
+              camera.position.y = THREE.MathUtils.lerp(arenaDef.fighterFloorY + 2.5, arenaDef.fighterFloorY + 1.8, subP);
+              camera.position.z = THREE.MathUtils.lerp(12.0, 9.5, subP);
+              camera.fov = 48.0;
+              currentCamLookAt.current.set(
+                THREE.MathUtils.lerp(0, -0.4, subP),
+                arenaDef.fighterFloorY + 1.2,
+                0
+              );
+            } else {
+              camera.position.x = THREE.MathUtils.lerp(0, -0.6, subP);
+              camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 2.4, arenaDef.camPos[1] + 1.8, subP);
+              camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 3.2, arenaDef.camPos[2] + 1.8, subP);
+              camera.fov = arenaDef.camFov;
+              currentCamLookAt.current.set(
+                THREE.MathUtils.lerp(arenaDef.camLookAt[0], arenaDef.camLookAt[0] - 0.3, subP),
+                THREE.MathUtils.lerp(arenaDef.camLookAt[1] + 0.4, arenaDef.camLookAt[1] + 0.25, subP),
+                arenaDef.camLookAt[2]
+              );
+            }
           } else {
-            // Phase 2 (0.9s - 1.5s): Smooth cubic curve swoop directly into Player 1 entry tracking shot
+            // Phase 2 (0.9s - 1.5s): Smooth cubic curve swoop directly into Player 1 entry tracking shot at left wing
             const subP = easeInOutCubic((p - 0.6) / 0.4);
-            camera.position.x = THREE.MathUtils.lerp(-0.6, p1TargetX, subP);
-            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 1.8, p1TargetY, subP);
-            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 1.8, p1TargetZ, subP);
-            camera.fov = THREE.MathUtils.lerp(arenaDef.camFov, p1TargetFov, subP);
-            currentCamLookAt.current.set(
-              THREE.MathUtils.lerp(arenaDef.camLookAt[0] - 0.3, p1LookX, subP),
-              THREE.MathUtils.lerp(arenaDef.camLookAt[1] + 0.25, p1LookY, subP),
-              THREE.MathUtils.lerp(arenaDef.camLookAt[2], p1LookZ, subP)
-            );
+            if (isPortrait) {
+              camera.position.x = THREE.MathUtils.lerp(-0.6, -5.2, subP);
+              camera.position.y = THREE.MathUtils.lerp(arenaDef.fighterFloorY + 1.8, arenaDef.fighterFloorY + 1.5, subP);
+              camera.position.z = THREE.MathUtils.lerp(9.5, 7.0, subP);
+              camera.fov = THREE.MathUtils.lerp(48.0, 42.0, subP);
+              currentCamLookAt.current.set(
+                THREE.MathUtils.lerp(-0.4, -5.5, subP),
+                arenaDef.fighterFloorY + 1.1,
+                0
+              );
+            } else {
+              camera.position.x = THREE.MathUtils.lerp(-0.6, -5.0, subP);
+              camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 1.8, arenaDef.camPos[1] + 0.6, subP);
+              camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] + 1.8, arenaDef.camPos[2] * 0.6, subP);
+              camera.fov = THREE.MathUtils.lerp(arenaDef.camFov, 32.0, subP);
+              currentCamLookAt.current.set(
+                THREE.MathUtils.lerp(arenaDef.camLookAt[0] - 0.3, -4.5, subP),
+                THREE.MathUtils.lerp(arenaDef.camLookAt[1] + 0.25, 1.1 + arenaDef.fighterFloorY, subP),
+                0
+              );
+            }
           }
           camera.updateProjectionMatrix();
           camera.lookAt(currentCamLookAt.current);
@@ -1567,13 +1656,29 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
 
           const p = Math.min(Math.max((t - 1.5) / 2.0, 0), 1);
           const easeP = easeInOutCubic(p);
-          // Dynamic low 3/4 tracking shot of Player 1 with fluid easing
-          camera.position.x = THREE.MathUtils.lerp(-4.2, -1.8, easeP);
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, easeP);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, easeP);
-          camera.fov = 32.0;
+          // Pan camera from outer left end with Player 1 toward center duel spot
+          if (isPortrait) {
+            camera.position.x = THREE.MathUtils.lerp(-5.2, -1.8, easeP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.fighterFloorY + 2.2, arenaDef.fighterFloorY + 1.4, easeP);
+            camera.position.z = THREE.MathUtils.lerp(7.2, 7.6, easeP);
+            camera.fov = 44.0;
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(-5.5, -1.5, easeP),
+              THREE.MathUtils.lerp(arenaDef.fighterFloorY + 1.8, arenaDef.fighterFloorY + 1.1, easeP),
+              0
+            );
+          } else {
+            camera.position.x = THREE.MathUtils.lerp(-5.0, -1.8, easeP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, easeP);
+            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, easeP);
+            camera.fov = 32.0;
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(-4.5, -1.75, easeP),
+              1.1 + arenaDef.fighterFloorY,
+              0
+            );
+          }
           camera.updateProjectionMatrix();
-          currentCamLookAt.current.set(-1.75, 1.1 + arenaDef.fighterFloorY, 0);
           camera.lookAt(currentCamLookAt.current);
         }
         // ACT 3: Player 2 / AI Opponent Unique Map Entrance & Spotlight (3.5s - 5.5s)
@@ -1591,13 +1696,29 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
 
           const p = Math.min(Math.max((t - 3.5) / 2.0, 0), 1);
           const easeP = easeInOutCubic(p);
-          // Fluid eased tracking shot of Player 2
-          camera.position.x = THREE.MathUtils.lerp(4.2, 1.8, easeP);
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, easeP);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, easeP);
-          camera.fov = 32.0;
+          // Pan camera from outer right end with Player 2 toward center duel spot
+          if (isPortrait) {
+            camera.position.x = THREE.MathUtils.lerp(5.2, 1.8, easeP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.fighterFloorY + 2.2, arenaDef.fighterFloorY + 1.4, easeP);
+            camera.position.z = THREE.MathUtils.lerp(7.2, 7.6, easeP);
+            camera.fov = 44.0;
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(5.5, 1.5, easeP),
+              THREE.MathUtils.lerp(arenaDef.fighterFloorY + 1.8, arenaDef.fighterFloorY + 1.1, easeP),
+              0
+            );
+          } else {
+            camera.position.x = THREE.MathUtils.lerp(5.0, 1.8, easeP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] + 0.6, arenaDef.camPos[1] * 0.7 + 0.3, easeP);
+            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.6, arenaDef.camPos[2] * 0.45, easeP);
+            camera.fov = 32.0;
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(4.5, 1.75, easeP),
+              1.1 + arenaDef.fighterFloorY,
+              0
+            );
+          }
           camera.updateProjectionMatrix();
-          currentCamLookAt.current.set(1.75, 1.1 + arenaDef.fighterFloorY, 0);
           camera.lookAt(currentCamLookAt.current);
         }
         // ACT 4: Standoff Camera Return & Synchronized 3-2-1 Countdown (5.5s - 7.5s)
@@ -1613,13 +1734,24 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
           const tPos = targetCamPos.current;
           const tLook = targetCamLookAt.current;
 
-          camera.position.x = THREE.MathUtils.lerp(1.8, tPos.x, easeP);
-          camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] * 0.7 + 0.3, tPos.y, easeP);
-          camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.45, tPos.z, easeP);
-          camera.fov = THREE.MathUtils.lerp(32.0, targetCamFov.current, easeP);
+          if (isPortrait) {
+            camera.position.x = THREE.MathUtils.lerp(1.8, tPos.x, easeP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.fighterFloorY + 1.4, tPos.y, easeP);
+            camera.position.z = THREE.MathUtils.lerp(7.6, tPos.z, easeP);
+            camera.fov = THREE.MathUtils.lerp(44.0, targetCamFov.current, easeP);
+            currentCamLookAt.current.set(
+              THREE.MathUtils.lerp(1.5, tLook.x, easeP),
+              THREE.MathUtils.lerp(arenaDef.fighterFloorY + 1.1, tLook.y, easeP),
+              THREE.MathUtils.lerp(0, tLook.z, easeP)
+            );
+          } else {
+            camera.position.x = THREE.MathUtils.lerp(1.8, tPos.x, easeP);
+            camera.position.y = THREE.MathUtils.lerp(arenaDef.camPos[1] * 0.7 + 0.3, tPos.y, easeP);
+            camera.position.z = THREE.MathUtils.lerp(arenaDef.camPos[2] * 0.45, tPos.z, easeP);
+            camera.fov = THREE.MathUtils.lerp(32.0, targetCamFov.current, easeP);
+            currentCamLookAt.current.lerp(tLook, easeP * 0.25);
+          }
           camera.updateProjectionMatrix();
-
-          currentCamLookAt.current.lerp(tLook, easeP * 0.25);
           camera.lookAt(currentCamLookAt.current);
 
           // Synchronized 3-2-1 Countdown (5.5-6.2s: "3", 6.2-6.9s: "2", 6.9-7.3s: "1", 7.3-7.5s: "FIGHT!")

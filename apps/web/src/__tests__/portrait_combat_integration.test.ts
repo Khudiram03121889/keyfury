@@ -58,17 +58,25 @@ describe('Portrait Mode Mobile Combat Architecture Integration Tests', () => {
   });
 
   describe('4. Three.js Portrait Dynamic Camera FOV & Frustum Compensation', () => {
-    it('P4.1: detects aspect < 1.0 in ThreeCombatArena and calculates portrait camera transform', () => {
+    it('P4.1: detects aspect < 1.0 in ThreeCombatArena and configures dedicated angle transforms', () => {
       expect(arenaCode).toMatch(/if\s*\(aspect\s*<\s*1\.0\)/);
-      expect(arenaCode).toContain('targetCamPos.current.set(t.pos[0] * 0.7, t.pos[1] + 0.75, portraitZDist);');
-      expect(arenaCode).toContain('targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1] + 0.25, t.lookAt[2]);');
+      expect(arenaCode).toContain("case 'front':");
+      expect(arenaCode).toContain("case 'back':");
+      expect(arenaCode).toContain("case 'left':");
+      expect(arenaCode).toContain("case 'right':");
     });
 
-    it('P4.2: clamps portrait FOV between 34 and 52 degrees to prevent wide-angle distortion', () => {
-      expect(arenaCode).toMatch(/Math\.min\(Math\.max\(requiredVFovDeg,\s*34\),\s*52\)/);
+    it('P4.2: preserves negative Z for Back View in portrait mode to keep reverse angle behind fighters', () => {
+      expect(arenaCode).toContain("case 'back':");
+      expect(arenaCode).toMatch(/targetCamPos\.current\.set\(t\.lookAt\[0\],\s*floorY\s*\+\s*2\.0,\s*-8\.6\);/);
     });
 
-    it('P4.3: handles resize events and integrates ResizeObserver for container bounds', () => {
+    it('P4.3: pans camera from outer ends to center for both characters during entrance cinematics', () => {
+      expect(arenaCode).toContain('THREE.MathUtils.lerp(-5.5, -1.5, easeP)');
+      expect(arenaCode).toContain('THREE.MathUtils.lerp(5.5, 1.5, easeP)');
+    });
+
+    it('P4.4: handles resize events and integrates ResizeObserver for container bounds', () => {
       expect(arenaCode).toContain('camera.aspect = container.clientWidth / Math.max(container.clientHeight, 1);');
       expect(arenaCode).toContain('applyPresetTransformRef.current(activePresetIndexRef.current);');
       expect(arenaCode).toContain('resizeObserver.observe(container);');
