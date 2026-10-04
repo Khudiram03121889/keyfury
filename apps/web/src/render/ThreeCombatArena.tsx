@@ -813,9 +813,32 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
   const applyPresetTransform = useCallback((presetIdx: number) => {
     const preset = CAMERA_PRESETS[presetIdx % CAMERA_PRESETS.length];
     const t = preset.getTransform(arenaDef);
-    targetCamPos.current.set(t.pos[0], t.pos[1], t.pos[2]);
-    targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1], t.lookAt[2]);
-    targetCamFov.current = t.fov;
+
+    // ponytail: Dynamic portrait compensation when aspect < 1.0 to fit both fighters
+    const container = containerRef.current;
+    const aspect = container && container.clientHeight > 0
+      ? container.clientWidth / container.clientHeight
+      : (typeof window !== 'undefined' ? window.innerWidth / Math.max(window.innerHeight, 1) : 1.77);
+
+    if (aspect < 1.0) {
+      // In portrait mode, pull camera back along Z and elevate Y slightly
+      const baseDist = Math.hypot(t.pos[0] - t.lookAt[0], t.pos[1] - t.lookAt[1], t.pos[2] - t.lookAt[2]);
+      const portraitZDist = Math.max(baseDist * 1.35, 11.2);
+
+      // Calculate vertical FOV required to maintain a horizontal visible width of ~6.8m
+      const targetHWidth = 6.8;
+      const requiredHalfVFovRad = Math.atan(targetHWidth / (2 * portraitZDist * aspect));
+      const requiredVFovDeg = (requiredHalfVFovRad * 2 * 180) / Math.PI;
+      const clampedFov = Math.min(Math.max(requiredVFovDeg, 34), 52);
+
+      targetCamPos.current.set(t.pos[0] * 0.7, t.pos[1] + 0.75, portraitZDist);
+      targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1] + 0.25, t.lookAt[2]);
+      targetCamFov.current = clampedFov;
+    } else {
+      targetCamPos.current.set(t.pos[0], t.pos[1], t.pos[2]);
+      targetCamLookAt.current.set(t.lookAt[0], t.lookAt[1], t.lookAt[2]);
+      targetCamFov.current = t.fov;
+    }
   }, [arenaDef]);
 
   const applyPresetTransformRef = useRef(applyPresetTransform);
@@ -1302,11 +1325,19 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     // 6. Handle Window Resize
     const handleResize = () => {
       if (!container || !camera || !renderer) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.aspect = container.clientWidth / Math.max(container.clientHeight, 1);
+      applyPresetTransformRef.current(activePresetIndexRef.current);
+      camera.fov = targetCamFov.current;
       camera.updateProjectionMatrix();
       renderer.setSize(container.clientWidth, container.clientHeight);
     };
     window.addEventListener('resize', handleResize);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => handleResize());
+      resizeObserver.observe(container);
+    }
 
     // 7. Keyboard shortcut listener for camera switching (C) and skip intro (Space/Enter)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1670,6 +1701,7 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       canvasElement.removeEventListener('webglcontextlost', handleContextLost);
       canvasElement.removeEventListener('webglcontextrestored', handleContextRestored);
       window.removeEventListener('resize', handleResize);
+      if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener('keydown', handleKeyDown);
 
       if (p1FighterRef.current) p1FighterRef.current.dispose();

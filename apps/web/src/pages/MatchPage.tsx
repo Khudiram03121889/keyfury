@@ -71,14 +71,22 @@ export const MatchPage: React.FC<MatchPageProps> = ({
   const [currentBotDifficulty, setCurrentBotDifficulty] = useState<string>(() => (room as any)?.options?.botDifficulty || 'adaptive');
 
   const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [viewportHeight, setViewportHeight] = useState<number>(() => typeof window !== 'undefined' ? window.innerHeight : 768);
   const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
   const [visibleHeight, setVisibleHeight] = useState<number>(() => typeof window !== 'undefined' ? (window.visualViewport?.height || window.innerHeight) : 600);
 
   useEffect(() => {
-    const handleResize = () => setViewportWidth(window.innerWidth);
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+      setViewportHeight(window.innerHeight);
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const isPortrait = React.useMemo(() => {
+    return viewportWidth < 768 || viewportHeight > viewportWidth;
+  }, [viewportWidth, viewportHeight]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
@@ -99,11 +107,12 @@ export const MatchPage: React.FC<MatchPageProps> = ({
 
   // ponytail: Tune wordsPerLine so text stays centered in the duel clash reticle between fighters
   const wordsPerLine = React.useMemo(() => {
+    if (isPortrait) return 2;
     if (viewportWidth < 480) return 2;
     if (viewportWidth < 768) return 3;
     if (viewportWidth < 1200) return 4;
     return 5;
-  }, [viewportWidth]);
+  }, [viewportWidth, isPortrait]);
 
   const isBotMode = React.useMemo(() => {
     if ((room as any)?.metadata?.withBot) return true;
@@ -888,178 +897,335 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         />
 
         {/* --- TOP HUD OVERLAYS --- */}
-        <div style={{
-          position: 'absolute',
-          top: viewportWidth < 600 ? '4px' : '12px',
-          left: viewportWidth < 600 ? '4px' : '12px',
-          right: viewportWidth < 600 ? '4px' : '12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: viewportWidth < 600 ? '4px' : '8px',
-          zIndex: 10,
-          pointerEvents: 'none'
-        }}>
-          {/* Top-Left: Left Fighter Health & Name */}
-          <div style={{
-            pointerEvents: 'auto',
-            flex: '1 1 0',
-            maxWidth: viewportWidth < 600 ? '140px' : '280px',
-            minWidth: 0,
-            background: 'var(--pill-bg)',
-            backdropFilter: 'blur(8px)',
-            padding: viewportWidth < 600 ? '4px 8px' : '8px 12px',
-            borderRadius: '12px',
-            border: '1px solid var(--border-card)',
-            overflow: 'hidden'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', gap: '2px' }}>
-              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: viewportWidth < 600 ? '0.72rem' : '0.82rem', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                🎩 {leftPlayer?.displayName || 'PLAYER 1'}
+        {isPortrait ? (
+          <div
+            data-testid="top-hud-portrait"
+            style={{
+              position: 'absolute',
+              top: 'env(safe-area-inset-top, 6px)',
+              left: '8px',
+              right: '8px',
+              height: '36px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '0 10px',
+              background: 'rgba(15, 23, 42, 0.88)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: '10px',
+              border: '1px solid var(--border-card)',
+              zIndex: 20,
+              pointerEvents: 'auto',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)'
+            }}
+          >
+            {/* Left: Player 1 Name & Numeric HP */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: '1 1 0' }}>
+              <span style={{
+                fontWeight: 900,
+                color: 'var(--text-main)',
+                fontSize: '0.75rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.3px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '90px'
+              }}>
+                🎩 {leftPlayer?.displayName || 'P1'}
               </span>
-              <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem', flexShrink: 0 }}>
-                {leftHealth} / 200
+              <span
+                data-testid="left-health"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 800,
+                  color: leftHealth <= 40 ? '#ef4444' : '#4ade80',
+                  fontSize: '0.82rem',
+                  flexShrink: 0
+                }}
+              >
+                {leftHealth} HP
               </span>
             </div>
-            <div style={{ width: '100%', height: viewportWidth < 600 ? '7px' : '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-              <div style={{
-                width: `${Math.max(0, Math.min(100, (leftHealth / 200) * 100))}%`, height: '100%',
-                background: 'linear-gradient(90deg, #22c55e, #4ade80)', transition: 'width 0.2s ease',
-                boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)'
-              }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', fontSize: viewportWidth < 600 ? '0.62rem' : '0.68rem', fontFamily: 'var(--font-mono)' }}>
-              <span style={{ fontWeight: 700, color: '#38bdf8' }}>{leftPlayer?.acceptedWpm ?? 0} WPM</span>
-              <span style={{ fontWeight: 700, color: '#34d399' }}>{Math.round(leftPlayer?.accuracy ?? 100)}%</span>
-            </div>
-          </div>
 
-          {/* Top-Center: Digital Match Timer */}
-          <div style={{
-            pointerEvents: 'auto',
-            background: 'var(--pill-bg)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid var(--border-card)',
-            borderRadius: '14px',
-            padding: viewportWidth < 600 ? '2px 8px' : '4px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: viewportWidth < 600 ? '4px' : '8px',
-            boxShadow: '0 6px 20px var(--card-shadow)',
-            flexShrink: 0
-          }}>
-            <span style={{
-              fontSize: viewportWidth < 600 ? '1.2rem' : 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
-              color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
-            }}>
-              {remainingTime}
-            </span>
-            <button
-              onClick={() => {
-                const newMuted = soundManager.toggleMuted();
-                setMuted(newMuted);
-              }}
-              style={{
-                background: 'none', border: 'none', color: muted ? '#f43f5e' : '#34d399',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px'
-              }}
-              title={muted ? 'Unmute Audio' : 'Mute Audio'}
-            >
-              {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
+            {/* Center: Digital Match Timer & Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              <span style={{
+                fontSize: '1.05rem',
+                fontWeight: 900,
+                fontFamily: 'var(--font-mono)',
+                color: remainingTime <= 15 ? '#ef4444' : '#fbbf24',
+                lineHeight: 1
+              }}>
+                {remainingTime}s
+              </span>
+              <button
+                onClick={() => {
+                  const newMuted = soundManager.toggleMuted();
+                  setMuted(newMuted);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: muted ? '#f43f5e' : '#34d399',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '2px'
+                }}
+                title={muted ? 'Unmute Audio' : 'Mute Audio'}
+              >
+                {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
 
-            {isBotMode && (
-              <>
+              {isBotMode && (
                 <button
                   onClick={handleTogglePause}
                   style={{
-                    background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
-                    color: '#eab308', borderRadius: '8px', padding: '4px 8px',
-                    fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                    background: 'rgba(234, 179, 8, 0.18)',
+                    border: '1px solid rgba(234, 179, 8, 0.35)',
+                    color: '#eab308',
+                    borderRadius: '6px',
+                    padding: '2px 5px',
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
                   }}
                   title={isPaused ? 'Resume' : 'Pause'}
                 >
-                  {isPaused ? <Play size={14} /> : <Pause size={14} />}
-                  <span className="nav-btn-text">{isPaused ? 'RESUME' : 'PAUSE'}</span>
+                  {isPaused ? <Play size={12} /> : <Pause size={12} />}
                 </button>
-                <select
-                  aria-label="Bot Difficulty"
-                  value={currentBotDifficulty}
-                  onChange={(e) => {
-                    const val = e.target.value as any;
-                    setCurrentBotDifficulty(val);
-                    room.send('update_options', { botDifficulty: val });
-                  }}
+              )}
+
+              {!isBotMode && (
+                <button
+                  onClick={() => setShowLeaveConfirmModal(true)}
                   style={{
-                    background: 'rgba(56, 189, 248, 0.15)',
-                    border: '1px solid rgba(56, 189, 248, 0.3)',
-                    color: 'var(--accent-cyan)',
-                    borderRadius: '8px',
-                    padding: '3px 6px',
-                    fontSize: viewportWidth < 600 ? '0.62rem' : '0.70rem',
+                    background: 'rgba(239, 68, 68, 0.18)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    color: '#ef4444',
+                    borderRadius: '6px',
+                    padding: '2px 5px',
+                    fontSize: '0.62rem',
                     fontWeight: 800,
                     cursor: 'pointer',
-                    outline: 'none'
+                    display: 'flex',
+                    alignItems: 'center'
                   }}
+                  title="Leave Match"
                 >
-                  <option value="adaptive" style={{ background: '#0f172a', color: '#fff' }}>⚡ Adaptive</option>
-                  <option value="novice" style={{ background: '#0f172a', color: '#fff' }}>🛡️ Novice (35)</option>
-                  <option value="fighter" style={{ background: '#0f172a', color: '#fff' }}>⚔️ Fighter (60)</option>
-                  <option value="pro" style={{ background: '#0f172a', color: '#fff' }}>🔥 Pro (90)</option>
-                </select>
-              </>
-            )}
+                  <LogOut size={12} />
+                </button>
+              )}
+            </div>
 
-            {!isBotMode && (
-              <button
-                onClick={() => setShowLeaveConfirmModal(true)}
+            {/* Right: Opponent Numeric HP & Name */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', minWidth: 0, flex: '1 1 0' }}>
+              <span
+                data-testid="right-health"
                 style={{
-                  background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444', borderRadius: '8px', padding: '4px 8px',
-                  fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 800,
+                  color: rightHealth <= 40 ? '#ef4444' : '#f87171',
+                  fontSize: '0.82rem',
+                  flexShrink: 0
                 }}
-                title="Leave Match (Forfeit Loss)"
               >
-                <LogOut size={14} />
-                <span className="nav-btn-text">LEAVE</span>
-              </button>
-            )}
+                {rightHealth} HP
+              </span>
+              <span style={{
+                fontWeight: 900,
+                color: 'var(--text-main)',
+                fontSize: '0.75rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.3px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '90px',
+                textAlign: 'right'
+              }}>
+                👓 {rightPlayer?.displayName || 'OPPONENT'}
+              </span>
+            </div>
           </div>
-
-          {/* Top-Right: Right Fighter Health & Name */}
+        ) : (
           <div style={{
-            pointerEvents: 'auto',
-            flex: '1 1 0',
-            maxWidth: viewportWidth < 600 ? '140px' : '280px',
-            minWidth: 0,
-            background: 'var(--pill-bg)',
-            backdropFilter: 'blur(8px)',
-            padding: viewportWidth < 600 ? '4px 8px' : '8px 12px',
-            borderRadius: '12px',
-            border: '1px solid var(--border-card)',
-            overflow: 'hidden'
+            position: 'absolute',
+            top: viewportWidth < 600 ? '4px' : '12px',
+            left: viewportWidth < 600 ? '4px' : '12px',
+            right: viewportWidth < 600 ? '4px' : '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: viewportWidth < 600 ? '4px' : '8px',
+            zIndex: 10,
+            pointerEvents: 'none'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', gap: '2px' }}>
-              <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: viewportWidth < 600 ? '0.72rem' : '0.82rem', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                👓 {rightPlayer?.displayName || 'PLAYER 2'}
-              </span>
-              <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem', flexShrink: 0 }}>
-                {rightHealth} / 200
-              </span>
+            {/* Top-Left: Left Fighter Health & Name */}
+            <div style={{
+              pointerEvents: 'auto',
+              flex: '1 1 0',
+              maxWidth: viewportWidth < 600 ? '140px' : '280px',
+              minWidth: 0,
+              background: 'var(--pill-bg)',
+              backdropFilter: 'blur(8px)',
+              padding: viewportWidth < 600 ? '4px 8px' : '8px 12px',
+              borderRadius: '12px',
+              border: '1px solid var(--border-card)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', gap: '2px' }}>
+                <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: viewportWidth < 600 ? '0.72rem' : '0.82rem', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🎩 {leftPlayer?.displayName || 'PLAYER 1'}
+                </span>
+                <span data-testid="left-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#4ade80', fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem', flexShrink: 0 }}>
+                  {leftHealth} / 200
+                </span>
+              </div>
+              <div style={{ width: '100%', height: viewportWidth < 600 ? '7px' : '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                <div style={{
+                  width: `${Math.max(0, Math.min(100, (leftHealth / 200) * 100))}%`, height: '100%',
+                  background: 'linear-gradient(90deg, #22c55e, #4ade80)', transition: 'width 0.2s ease',
+                  boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)'
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', fontSize: viewportWidth < 600 ? '0.62rem' : '0.68rem', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontWeight: 700, color: '#38bdf8' }}>{leftPlayer?.acceptedWpm ?? 0} WPM</span>
+                <span style={{ fontWeight: 700, color: '#34d399' }}>{Math.round(leftPlayer?.accuracy ?? 100)}%</span>
+              </div>
             </div>
-            <div style={{ width: '100%', height: viewportWidth < 600 ? '7px' : '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
-              <div style={{
-                width: `${Math.max(0, Math.min(100, (rightHealth / 200) * 100))}%`, height: '100%',
-                background: 'linear-gradient(90deg, #ef4444, #f87171)', transition: 'width 0.2s ease',
-                boxShadow: '0 0 10px rgba(239, 68, 68, 0.8)'
-              }} />
+
+            {/* Top-Center: Digital Match Timer */}
+            <div style={{
+              pointerEvents: 'auto',
+              background: 'var(--pill-bg)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid var(--border-card)',
+              borderRadius: '14px',
+              padding: viewportWidth < 600 ? '2px 8px' : '4px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: viewportWidth < 600 ? '4px' : '8px',
+              boxShadow: '0 6px 20px var(--card-shadow)',
+              flexShrink: 0
+            }}>
+              <span style={{
+                fontSize: viewportWidth < 600 ? '1.2rem' : 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
+                color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
+              }}>
+                {remainingTime}
+              </span>
+              <button
+                onClick={() => {
+                  const newMuted = soundManager.toggleMuted();
+                  setMuted(newMuted);
+                }}
+                style={{
+                  background: 'none', border: 'none', color: muted ? '#f43f5e' : '#34d399',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px'
+                }}
+                title={muted ? 'Unmute Audio' : 'Mute Audio'}
+              >
+                {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+
+              {isBotMode && (
+                <>
+                  <button
+                    onClick={handleTogglePause}
+                    style={{
+                      background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.3)',
+                      color: '#eab308', borderRadius: '8px', padding: '4px 8px',
+                      fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                    }}
+                    title={isPaused ? 'Resume' : 'Pause'}
+                  >
+                    {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                    <span className="nav-btn-text">{isPaused ? 'RESUME' : 'PAUSE'}</span>
+                  </button>
+                  <select
+                    aria-label="Bot Difficulty"
+                    value={currentBotDifficulty}
+                    onChange={(e) => {
+                      const val = e.target.value as any;
+                      setCurrentBotDifficulty(val);
+                      room.send('update_options', { botDifficulty: val });
+                    }}
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.15)',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      color: 'var(--accent-cyan)',
+                      borderRadius: '8px',
+                      padding: '3px 6px',
+                      fontSize: viewportWidth < 600 ? '0.62rem' : '0.70rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="adaptive" style={{ background: '#0f172a', color: '#fff' }}>⚡ Adaptive</option>
+                    <option value="novice" style={{ background: '#0f172a', color: '#fff' }}>🛡️ Novice (35)</option>
+                    <option value="fighter" style={{ background: '#0f172a', color: '#fff' }}>⚔️ Fighter (60)</option>
+                    <option value="pro" style={{ background: '#0f172a', color: '#fff' }}>🔥 Pro (90)</option>
+                  </select>
+                </>
+              )}
+
+              {!isBotMode && (
+                <button
+                  onClick={() => setShowLeaveConfirmModal(true)}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#ef4444', borderRadius: '8px', padding: '4px 8px',
+                    fontSize: viewportWidth < 600 ? '0.65rem' : '0.72rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  }}
+                  title="Leave Match (Forfeit Loss)"
+                >
+                  <LogOut size={14} />
+                  <span className="nav-btn-text">LEAVE</span>
+                </button>
+              )}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', fontSize: viewportWidth < 600 ? '0.62rem' : '0.68rem', fontFamily: 'var(--font-mono)' }}>
-              <span style={{ fontWeight: 700, color: '#38bdf8' }}>{rightPlayer?.acceptedWpm ?? 0} WPM</span>
-              <span style={{ fontWeight: 700, color: '#34d399' }}>{Math.round(rightPlayer?.accuracy ?? 100)}%</span>
+
+            {/* Top-Right: Right Fighter Health & Name */}
+            <div style={{
+              pointerEvents: 'auto',
+              flex: '1 1 0',
+              maxWidth: viewportWidth < 600 ? '140px' : '280px',
+              minWidth: 0,
+              background: 'var(--pill-bg)',
+              backdropFilter: 'blur(8px)',
+              padding: viewportWidth < 600 ? '4px 8px' : '8px 12px',
+              borderRadius: '12px',
+              border: '1px solid var(--border-card)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', gap: '2px' }}>
+                <span style={{ fontWeight: 900, color: 'var(--text-main)', fontSize: viewportWidth < 600 ? '0.72rem' : '0.82rem', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  👓 {rightPlayer?.displayName || 'PLAYER 2'}
+                </span>
+                <span data-testid="right-health" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#f87171', fontSize: viewportWidth < 600 ? '0.7rem' : '0.78rem', flexShrink: 0 }}>
+                  {rightHealth} / 200
+                </span>
+              </div>
+              <div style={{ width: '100%', height: viewportWidth < 600 ? '7px' : '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                <div style={{
+                  width: `${Math.max(0, Math.min(100, (rightHealth / 200) * 100))}%`, height: '100%',
+                  background: 'linear-gradient(90deg, #ef4444, #f87171)', transition: 'width 0.2s ease',
+                  boxShadow: '0 0 10px rgba(239, 68, 68, 0.8)'
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', fontSize: viewportWidth < 600 ? '0.62rem' : '0.68rem', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontWeight: 700, color: '#38bdf8' }}>{rightPlayer?.acceptedWpm ?? 0} WPM</span>
+                <span style={{ fontWeight: 700, color: '#34d399' }}>{Math.round(rightPlayer?.accuracy ?? 100)}%</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* --- TRANSLUCENT HORIZONTAL TYPING STRIP BANNER --- */}
         {!showStatsOverlay && (
@@ -1075,19 +1241,19 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             }}
             style={{
               position: 'absolute',
-              // ponytail: Option 2 Center Clash placement in standoff space between fighters
-              top: keyboardOffset > 0 ? 'auto' : (viewportWidth < 768 ? '60%' : '54%'),
-              bottom: keyboardOffset > 0 ? '12px' : 'auto',
+              // ponytail: In portrait mode, dock cleanly at bottom above keyboard; in landscape center between fighters
+              top: isPortrait ? 'auto' : (keyboardOffset > 0 ? 'auto' : (viewportWidth < 768 ? '60%' : '54%')),
+              bottom: isPortrait ? (keyboardOffset > 0 ? '8px' : '18px') : (keyboardOffset > 0 ? '12px' : 'auto'),
               left: '50%',
-              transform: keyboardOffset > 0 ? 'translateX(-50%)' : 'translate(-50%, -50%)',
+              transform: (isPortrait || keyboardOffset > 0) ? 'translateX(-50%)' : 'translate(-50%, -50%)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '6px',
+              gap: isPortrait ? '4px' : '6px',
               zIndex: 10,
-              width: viewportWidth < 600 ? '94%' : 'min(640px, 86vw)',
+              width: isPortrait ? 'calc(100% - 16px)' : (viewportWidth < 600 ? '94%' : 'min(640px, 86vw)'),
               maxWidth: '660px',
-              padding: '0 8px',
+              padding: isPortrait ? '0 4px' : '0 8px',
               boxSizing: 'border-box',
               flexShrink: 0,
               opacity: is3DMode && !isIntroComplete ? 0.35 : 1,
@@ -1155,8 +1321,8 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                 textAlign: 'center',
                 whiteSpace: 'pre',
                 overflowX: 'auto',
-                fontSize: viewportWidth < 600 ? '1.1rem' : 'clamp(1.15rem, 2.4vw, 1.45rem)',
-                fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
+                fontSize: isPortrait ? '1.25rem' : (viewportWidth < 600 ? '1.1rem' : 'clamp(1.15rem, 2.4vw, 1.45rem)'),
+                fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', Courier, 'Roboto Mono', monospace",
                 letterSpacing: '0.5px',
                 lineHeight: 1.25
               }}>
@@ -1201,8 +1367,8 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                 textAlign: 'center',
                 whiteSpace: 'pre',
                 overflowX: 'auto',
-                fontSize: viewportWidth < 600 ? '0.85rem' : 'clamp(0.85rem, 1.8vw, 1.05rem)',
-                fontFamily: "'Courier New', Courier, 'Roboto Mono', monospace",
+                fontSize: isPortrait ? '0.92rem' : (viewportWidth < 600 ? '0.85rem' : 'clamp(0.85rem, 1.8vw, 1.05rem)'),
+                fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', Courier, 'Roboto Mono', monospace",
                 color: 'var(--text-muted)',
                 opacity: 0.65,
                 borderTop: '1px solid rgba(255, 255, 255, 0.1)',
