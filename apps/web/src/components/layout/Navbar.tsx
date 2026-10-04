@@ -35,9 +35,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
         />
         <div>
-          <h1 style={{ fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1, color: 'var(--text-heading)' }}>
+          <span
+            className="nav-brand-title"
+            style={{ fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: 1, color: 'var(--text-heading)', display: 'block' }}
+          >
             KEY<span style={{ color: 'var(--accent-cyan)' }}>FURY</span>
-          </h1>
+          </span>
           <span className="nav-brand-subtext" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
             ESPORTS 1V1
           </span>

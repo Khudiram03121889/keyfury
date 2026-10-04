@@ -1320,3 +1320,5 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     </div>
   );
 };
+
+export default LobbyPage;

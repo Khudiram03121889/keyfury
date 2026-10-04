@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content, viewport-fit=cover" />
-    <title>KeyFury — 1v1 Competitive Typing Combat | Free Online Multiplayer Typing Game</title>
-    <meta name="description" content="KeyFury is a 1v1 competitive typing combat game. Duel real players and battle bot warriors in real-time typing fights. Free online multiplayer typing game." />
-    <meta name="keywords" content="1v1 typing game, typing combat, typing duel, competitive typing game, typing fight, multiplayer typing game, free online typing game" />
+    <title>KeyFury — 3D Typing Fighting Game | 1v1 WebGL Combat &amp; Typing Duels</title>
+    <meta name="description" content="KeyFury is a high-speed 3D typing fighting game powered by Three.js and WebGL. Duel real players and AI bot warriors in real-time 1v1 combat duels. Type words to land hits, trigger combos, and KO opponents. Free Monkeytype alternative." />
+    <meta name="keywords" content="3D typing game, typing fighting game, 1v1 typing combat, 3D WebGL game, Three.js typing game, typing duel, competitive typing game, monkeytype alternative, typeracer alternative, multiplayer typing game, typing of the dead alternative" />
     <link rel="canonical" href="https://keyfury.in/" />
     <link rel="icon" type="image/jpeg" href="/logo.jpg" />
     <link rel="apple-touch-icon" href="/logo.jpg" />
@@ -14,19 +14,74 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://keyfury.in/" />
     <meta property="og:site_name" content="KeyFury" />
-    <meta property="og:title" content="KeyFury — 1v1 Competitive Typing Combat" />
-    <meta property="og:description" content="Duel real players &amp; battle bot warriors in real-time typing fights. Type words to land hits and win the duel." />
+    <meta property="og:title" content="KeyFury — 3D Typing Fighting Game | 1v1 WebGL Combat" />
+    <meta property="og:description" content="Duel real players &amp; battle AI warriors in real-time 3D typing fights. Type words to land strikes, trigger combos, and KO opponents in WebGL arenas." />
     <meta property="og:image" content="https://keyfury.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="KeyFury 3D Champions and WebGL Combat Arena" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="KeyFury — 1v1 Competitive Typing Combat" />
-    <meta name="twitter:description" content="Duel real players &amp; battle bot warriors in real-time typing fights. Type words to land hits and win the duel." />
+    <meta name="twitter:title" content="KeyFury — 3D Typing Fighting Game | 1v1 WebGL Combat" />
+    <meta name="twitter:description" content="Duel real players &amp; battle AI warriors in real-time 3D typing fights. Type words to land strikes, trigger combos, and KO opponents in WebGL arenas." />
     <meta name="twitter:image" content="https://keyfury.in/og-image.png" />
+    <meta name="twitter:image:alt" content="KeyFury 3D Champions and WebGL Combat Arena" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Prevent Flash of Fallback Text in JavaScript Browsers -->
+    <script>
+      document.documentElement.classList.add('js-enabled');
+    </script>
+
+    <!-- Critical CSS for Instant Dark-Theme Render & Anti-FOUC -->
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        background-color: #030712;
+        color: #f8fafc;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      /* Prevent pre-rendered crawler text from flashing before splash screen mounts */
+      html.js-enabled #root:not([data-hydrated="true"]) {
+        visibility: hidden;
+        opacity: 0;
+      }
+      #root > header, #root > main, #root > footer {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 16px 20px;
+      }
+      #root a {
+        color: #38bdf8;
+        text-decoration: none;
+      }
+      #root a:hover {
+        text-decoration: underline;
+      }
+      #root ul {
+        list-style: none;
+        padding-left: 0;
+      }
+      #root li {
+        margin-bottom: 8px;
+      }
+      #root dt {
+        font-weight: 700;
+        color: #38bdf8;
+        margin-top: 14px;
+      }
+      #root dd {
+        margin-left: 0;
+        color: #94a3b8;
+      }
+    </style>
 
     <!-- Schema.org Structured Data -->
     <script type="application/ld+json">
@@ -38,27 +93,29 @@
           "@id": "https://keyfury.in/#game",
           "name": "KeyFury",
           "url": "https://keyfury.in/",
-          "description": "KeyFury is a 1v1 competitive typing combat game. Duel real players and battle bot warriors in real-time typing fights.",
+          "description": "KeyFury is a 3D typing fighting game powered by Three.js and WebGL. Duel real players and AI bot warriors in real-time 1v1 typing combat duels.",
+          "image": "https://keyfury.in/og-image.png",
+          "screenshot": "https://keyfury.in/og-image.png",
+          "inLanguage": "en",
           "genre": [
-            "Typing Game",
+            "3D Typing Game",
+            "Fighting Game",
             "Competitive Action",
-            "Fighting",
-            "Multiplayer"
+            "WebGL 3D Game",
+            "Multiplayer",
+            "Esports"
           ],
-          "operatingSystem": "Web Browser",
+          "operatingSystem": "Web Browser (Chrome, Firefox, Safari, Edge)",
           "applicationCategory": "Game",
           "playMode": [
             "SinglePlayer",
             "MultiPlayer"
           ],
-          "gamePlatform": "Web Browser",
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "ratingCount": "1250",
-            "bestRating": "5",
-            "worstRating": "1"
-          },
+          "gamePlatform": [
+            "Web Browser",
+            "WebGL",
+            "Three.js"
+          ],
           "offers": {
             "@type": "Offer",
             "price": "0",
@@ -88,21 +145,17 @@
           "@id": "https://keyfury.in/#software",
           "name": "KeyFury",
           "url": "https://keyfury.in/",
-          "description": "KeyFury is a free online 1v1 competitive typing combat web application combining real-time martial arts fighting mechanics with high-speed keyboard typing practice.",
-          "operatingSystem": "Web Browser, Windows, macOS, Linux, iOS, Android",
+          "description": "KeyFury is a free online 3D typing fighting game web application combining real-time martial arts combat mechanics with high-speed 3D WebGL keyboard duels.",
+          "image": "https://keyfury.in/og-image.png",
+          "screenshot": "https://keyfury.in/og-image.png",
+          "inLanguage": "en",
+          "operatingSystem": "Web Browser, Windows, macOS, Linux, ChromeOS",
           "applicationCategory": "GameApplication",
           "offers": {
             "@type": "Offer",
             "price": "0",
             "priceCurrency": "USD",
             "availability": "https://schema.org/InStock"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "ratingCount": "1250",
-            "bestRating": "5",
-            "worstRating": "1"
           },
           "author": {
             "@id": "https://keyfury.in/#organization"
@@ -120,31 +173,47 @@
               "name": "What is KeyFury?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "KeyFury is a fast-paced 1v1 competitive typing combat game where typing speed and accuracy directly power real-time stickman warrior martial arts fights against real players or AI bot warriors."
+                "text": "KeyFury is a free, web-based 3D typing fighting game powered by WebGL and Three.js. Keystrokes directly trigger real-time martial arts strikes, combos, and specials between 3D champions in cinematic arenas. Instead of passive WPM tests, players duel in fast-paced 60-to-90-second 1v1 battles to deplete the opponent's 200 HP health bar."
               }
             },
             {
               "@type": "Question",
-              "name": "Is KeyFury free to play?",
+              "name": "How does 3D typing fighting combat work?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Yes, KeyFury is 100% free to play directly in your web browser with no downloads or mandatory account registration required."
+                "text": "Both warriors enter the arena with 200 HP. Players receive synchronized, seeded word decks. Typing short words executes rapid Jabs, medium words trigger Kicks, and long words launch Heavy Strikes. Consecutive error-free words build combo streaks for bonus damage and weapon finishers. Each typing error incurs a -2 HP penalty, penalizing reckless mashing and rewarding pinpoint typing accuracy."
               }
             },
             {
               "@type": "Question",
-              "name": "How does 1v1 typing combat work?",
+              "name": "What 3D champions and arenas are available in KeyFury?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Players type target words accurately to perform combat actions. Fast and accurate typing lands strikes and drains your opponent's health bar in 90-second real-time duels."
+                "text": "KeyFury features 4 distinct 3D champions—Shadow Ronin (precision katana), Cyber Valkyrie (heavy exo-brawler), Volt Shinobi (lightning rushdown), and Void Assassin (dimensional stealth)—across 4 cinematic 3D arenas: Highland Sanctuary, Cyber Rooftop, Volcanic Caldera, and Celestial Void."
               }
             },
             {
               "@type": "Question",
-              "name": "How does KeyFury compare to TypeRacer and Monkeytype?",
+              "name": "Is KeyFury free to play, and do I need to download software?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Unlike traditional typing tests like TypeRacer or Monkeytype that measure WPM on plain text, KeyFury combines typing precision with fighting game action, real-time health bars, bot matchmaking, MMR ratings, and animated stickman battles."
+                "text": "Yes, KeyFury is 100% free to play directly in any modern desktop web browser (Chrome, Firefox, Safari, Edge). No downloads, plugins, or account registration are required—guest accounts start instantly with one keystroke."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does KeyFury compare to Monkeytype, TypeRacer, and Typing of the Dead?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Unlike Monkeytype (solo metric benchmarks) or TypeRacer (car racing text snippets), KeyFury delivers true 1v1 action fighting game combat with real-time 3D models, health bars, dynamic camera pans, and Elo MMR matchmaking. Unlike retro rail-shooters like Typing of the Dead, KeyFury runs directly in the browser with competitive real-time multiplayer and instant AI bot fallback."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does the bot matchmaking fallback work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "When you queue for Ranked or Quick Play, KeyFury searches for human opponents within your Elo rating. If no human matches within 5 seconds, an adaptive AI Bot Warrior is seamlessly substituted at your skill tier (40–120 WPM simulation) so you never wait in an empty queue."
               }
             }
           ]
@@ -154,7 +223,88 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Pre-rendered semantic HTML for search engine crawlers and LLM parsers before React hydration -->
+    <div id="root">
+      <header style="display: none;">
+        <nav aria-label="Main Navigation">
+          <span class="nav-brand-title"><strong>KeyFury</strong> — 3D Typing Combat</span>
+          <ul>
+            <li><a href="/ranked">Ranked Match</a></li>
+            <li><a href="/leaderboard">Leaderboard</a></li>
+            <li><a href="https://www.youtube.com/@keyfurytype">YouTube</a></li>
+            <li><a href="https://www.instagram.com/keyfury.in">Instagram</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <main style="display: none;">
+        <section>
+          <h1>KeyFury: 3D Typing Fighting Game — Type Words. Strike Hits. KO Opponents.</h1>
+          <p>
+            KeyFury is the ultimate 3D WebGL typing fighting game powered by Three.js.
+            Duel real players and AI bot warriors in high-speed 1v1 combat. Accurate typing powers punches,
+            kicks, katana strikes, and energy combos to drain your opponent's 200 HP health bar in 90-second duels.
+          </p>
+          <a href="/ranked">Start 1v1 Typing Duel</a>
+        </section>
+
+        <section aria-labelledby="champions-heading">
+          <h2 id="champions-heading">Four Playable 3D Cybernetic Champions</h2>
+          <ul>
+            <li><strong>Shadow Ronin (Kage):</strong> Precision Katana Striker channeling Azure Plasma strikes with razor precision.</li>
+            <li><strong>Cyber Valkyrie (Freya):</strong> Vanguard Heavy Exo-Brawler armed with titanium hydraulic gauntlets and Crimson Core energy.</li>
+            <li><strong>Volt Shinobi (Raijin):</strong> High-Voltage Cyber Infiltrator delivering rapid lightning rushdown strikes and storm kunai.</li>
+            <li><strong>Void Assassin (Nyx):</strong> Shadow Rift Dimensional Stalker wielding lethal amethyst void daggers from thin air.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="arenas-heading">
+          <h2 id="arenas-heading">Four Dynamic 3D WebGL Battle Arenas</h2>
+          <ul>
+            <li><strong>Highland Sanctuary:</strong> Floating zen sanctuary atop misty mountain peaks with glowing neon lanterns.</li>
+            <li><strong>Cyber Rooftop:</strong> Rain-slicked Neo-Kyoto skyscraper rooftop framed by towering holographic advertisements.</li>
+            <li><strong>Volcanic Caldera:</strong> Cracked obsidian combat platform suspended over swirling molten lava and magma geysers.</li>
+            <li><strong>Celestial Void:</strong> Deep-space cosmic monolith surrounded by stellar nebulae and shattered astrolabes.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="combat-heading">
+          <h2 id="combat-heading">How 1v1 Typing Combat Works</h2>
+          <p>
+            Combatants receive synchronized, seeded word decks. Short words trigger rapid Jabs, medium words deliver Kicks,
+            and long words strike Heavy Attacks. Typing accuracy streaks unlock combo tiers and lethal weapon finishers.
+            Typing mistakes incur a -2 HP penalty, rewarding speed backed by flawless accuracy.
+          </p>
+        </section>
+
+        <section aria-labelledby="faq-heading">
+          <h2 id="faq-heading">Frequently Asked Questions</h2>
+          <dl>
+            <dt><strong>What is KeyFury?</strong></dt>
+            <dd>KeyFury is a free, web-based 3D typing fighting game powered by WebGL and Three.js. Keystrokes directly trigger real-time martial arts strikes, combos, and specials between 3D champions in cinematic arenas.</dd>
+
+            <dt><strong>How does 3D typing fighting combat work?</strong></dt>
+            <dd>Both warriors enter the arena with 200 HP. Players receive synchronized, seeded word decks. Typing short words executes rapid Jabs, medium words trigger Kicks, and long words launch Heavy Strikes. Consecutive error-free words build combo streaks.</dd>
+
+            <dt><strong>What 3D champions and arenas are available in KeyFury?</strong></dt>
+            <dd>KeyFury features 4 distinct 3D champions (Shadow Ronin, Cyber Valkyrie, Volt Shinobi, Void Assassin) across 4 cinematic 3D arenas (Highland Sanctuary, Cyber Rooftop, Volcanic Caldera, Celestial Void).</dd>
+
+            <dt><strong>Is KeyFury free to play?</strong></dt>
+            <dd>Yes, KeyFury is 100% free to play directly in any desktop web browser with no downloads, extensions, or account registration required.</dd>
+
+            <dt><strong>How does KeyFury compare to Monkeytype, TypeRacer, and Typing of the Dead?</strong></dt>
+            <dd>Unlike Monkeytype (solo metric benchmarks) or TypeRacer (car racing text snippets), KeyFury delivers true 1v1 action fighting game combat with real-time 3D models, health bars, dynamic camera pans, and Elo MMR matchmaking.</dd>
+
+            <dt><strong>How does the bot matchmaking fallback work?</strong></dt>
+            <dd>When you queue for Ranked or Quick Play, if no human player matches within 5 seconds, an adaptive AI Bot Warrior is seamlessly substituted at your skill tier so you never wait in an empty queue.</dd>
+          </dl>
+        </section>
+      </main>
+
+      <footer style="display: none;">
+        <p>&copy; KeyFury. Free online 3D typing fighting game. Play instantly at <a href="https://keyfury.in/">keyfury.in</a>.</p>
+      </footer>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

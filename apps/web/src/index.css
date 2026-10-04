@@ -575,4 +575,73 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* ==========================================================================
+   SCROLL REVEAL ANIMATIONS (High-Performance 60+ FPS, Zero Dependencies)
+   ========================================================================== */
+
+/*
+ * Default State: All elements are visible (opacity: 1, transform: none) by default.
+ * Only when JavaScript attaches .scroll-reveal-init (confirming IntersectionObserver
+ * is present, no prefers-reduced-motion, and not a crawler/bot) do elements hide
+ * and wait for intersection. This guarantees 100% crawler safety & zero-FOUC.
+ */
+
+.scroll-reveal-init .scroll-reveal {
+  opacity: 0;
+  transform: translateY(35px);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-init .scroll-reveal-header {
+  opacity: 0;
+  transform: translateY(35px);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-init .scroll-reveal-card {
+  opacity: 0;
+  transform: translateY(48px) scale(0.94);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-init .scroll-reveal-badge {
+  opacity: 0;
+  transform: translateY(20px) scale(0.92);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+/* Revealed States */
+.scroll-reveal-init .scroll-reveal.is-revealed,
+.scroll-reveal-init .scroll-reveal-header.is-revealed,
+.scroll-reveal-init .scroll-reveal-badge.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.scroll-reveal-init .scroll-reveal-card.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Smooth Interactive Hover Lift for Revealed Cards */
+.scroll-reveal-init .scroll-reveal-card.is-revealed:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 18px 40px var(--card-shadow);
+  transition-delay: 0s !important;
+}
+
+.scroll-reveal-init .scroll-reveal-card.is-revealed:hover .arena-card-img {
+  transform: scale(1.06);
+}
+
 

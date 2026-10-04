@@ -1704,3 +1704,5 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
     </div>
   );
 };
+
+export default MatchPage;

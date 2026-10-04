@@ -1,19 +1,88 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Room } from 'colyseus.js';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { ensureGuestSession, GuestProfile, UserProfile, getUserProfile } from './lib/supabase';
 import { LandingPage } from './pages/LandingPage';
-import { LobbyPage } from './pages/LobbyPage';
-import { MatchPage } from './pages/MatchPage';
-import { ResultPage } from './pages/ResultPage';
 import { Navbar } from './components/layout/Navbar';
 import { AuthModal } from './components/auth/AuthModal';
 import { ProfileModal } from './components/profile/ProfileModal';
 import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
-import { KeyFurySplashScreen } from './components/splash/KeyFurySplashScreen';
+
+// Code-split heavy routes & 3D WebGL modules to ensure ultra-fast Landing Page FCP/LCP
+const LobbyPage = lazy(() => import('./pages/LobbyPage'));
+const MatchPage = lazy(() => import('./pages/MatchPage'));
+const ResultPage = lazy(() => import('./pages/ResultPage'));
+const KeyFurySplashScreen = lazy(() => import('./components/splash/KeyFurySplashScreen'));
+
+/**
+ * Detect whether the splash screen should be bypassed:
+ * 1. Search engine crawlers & LLM scrapers (Googlebot, Bingbot, GPTBot, PerplexityBot, ClaudeBot, etc.)
+ * 2. URL parameters (?nosplash=1, ?skipSplash=true, ?splash=0)
+ * 3. Session storage (user already saw the splash screen in this session)
+ */
+export const shouldBypassSplashScreen = (): boolean => {
+  if (typeof window === 'undefined' && typeof navigator === 'undefined' && typeof globalThis === 'undefined') return true;
+
+  const loc = typeof window !== 'undefined' && window.location ? window.location : (typeof globalThis !== 'undefined' ? (globalThis as any).location : undefined);
+
+  try {
+    const search = loc?.search || '';
+    if (search) {
+      const params = new URLSearchParams(search);
+      if (params.has('nosplash') || params.has('skipSplash') || params.get('splash') === '0' || params.has('room') || params.has('view')) {
+        return true;
+      }
+    }
+  } catch (_e) {
+    // Ignore query parsing errors
+  }
+
+  try {
+    const pathname = (loc?.pathname || '').toLowerCase().replace(/\/$/, '');
+    if (pathname === '/ranked' || pathname === '/practice' || pathname === '/leaderboard' || pathname === '/lobby') {
+      return true;
+    }
+  } catch (_e) {
+    // Ignore pathname parsing errors
+  }
+
+  try {
+    const hash = loc?.hash || '';
+    if (hash && hash.length > 1) {
+      return true;
+    }
+  } catch (_e) {
+    // Ignore hash parsing errors
+  }
+
+  try {
+    const storage = typeof window !== 'undefined' ? window.sessionStorage : (typeof sessionStorage !== 'undefined' ? sessionStorage : null);
+    if (storage && storage.getItem('keyfury_splash_seen') === 'true') {
+      return true;
+    }
+  } catch (_e) {
+    // Ignore storage errors in restricted contexts
+  }
+
+  const nav = typeof navigator !== 'undefined' ? navigator : (typeof window !== 'undefined' ? window.navigator : undefined);
+  const ua = (nav?.userAgent || '').toLowerCase();
+  const isBotOrCrawler = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|twitterbot|facebookexternalhit|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest|slackbot|vkshare|w3c_validator|crawler|spider|bot|crawl|lighthouse|headlesschrome|gptbot|chatgpt|claudebot|perplexity|anthropic|cohere|applebot|oai-searchbot|diffbot|bytespider/i.test(ua);
+  if (isBotOrCrawler) {
+    return true;
+  }
+
+  return false;
+};
+
+const PageLoadingFallback: React.FC = () => (
+  <div style={{ textAlign: 'center', margin: '140px auto', color: '#94a3b8' }}>
+    <RefreshCw size={28} className="spin" style={{ marginBottom: '12px', color: '#38bdf8' }} />
+    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Loading KeyFury 3D Arena...</div>
+  </div>
+);
 
 export const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [showSplash, setShowSplash] = useState<boolean>(() => !shouldBypassSplashScreen());
   const [guest, setGuest] = useState<GuestProfile | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -82,9 +151,16 @@ export const App: React.FC = () => {
 
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
+    const viewParam = params.get('view');
+    const pathname = window.location.pathname.toLowerCase().replace(/\/$/, '');
+
     if (roomParam) {
       setInitialRoomCode(roomParam);
       setView('lobby');
+    } else if (pathname === '/ranked' || pathname === '/lobby' || pathname === '/practice' || viewParam === 'ranked' || viewParam === 'lobby' || viewParam === 'practice') {
+      setView('lobby');
+    } else if (pathname === '/leaderboard' || viewParam === 'leaderboard') {
+      setLeaderboardModalOpen(true);
     }
 
     return () => {
@@ -97,6 +173,13 @@ export const App: React.FC = () => {
     const savedTheme = userProfile?.keycapTheme || localStorage.getItem('keyfury_theme') || 'cyberpunk';
     document.documentElement.dataset.theme = savedTheme;
   }, [userProfile?.keycapTheme]);
+
+  const handleSplashComplete = () => {
+    try {
+      sessionStorage.setItem('keyfury_splash_seen', 'true');
+    } catch (_e) {}
+    setShowSplash(false);
+  };
 
   const handlePlayClick = () => {
     setView('lobby');
@@ -132,10 +215,12 @@ export const App: React.FC = () => {
 
   if (showSplash) {
     return (
-      <KeyFurySplashScreen
-        durationSeconds={5.0}
-        onComplete={() => setShowSplash(false)}
-      />
+      <Suspense fallback={null}>
+        <KeyFurySplashScreen
+          durationSeconds={5.0}
+          onComplete={handleSplashComplete}
+        />
+      </Suspense>
     );
   }
 
@@ -184,39 +269,41 @@ export const App: React.FC = () => {
         height: view === 'match' ? '100vh' : (view === 'result' ? 'calc(100vh - 78px)' : undefined),
         overflow: (view === 'match' || view === 'result') ? 'hidden' : undefined
       }}>
-        {view === 'landing' && (
-          <LandingPage guest={guest} onPlayClick={handlePlayClick} />
-        )}
+        <Suspense fallback={<PageLoadingFallback />}>
+          {view === 'landing' && (
+            <LandingPage guest={guest} onPlayClick={handlePlayClick} />
+          )}
 
-        {view === 'lobby' && (
-          <LobbyPage
-            guest={guest}
-            userProfile={userProfile}
-            initialRoomCode={initialRoomCode}
-            onMatchStart={handleMatchStart}
-            onBackToLanding={handleBackToLanding}
-            onOpenAuth={(mode) => openAuthWithMode(mode || 'register')}
-          />
-        )}
+          {view === 'lobby' && (
+            <LobbyPage
+              guest={guest}
+              userProfile={userProfile}
+              initialRoomCode={initialRoomCode}
+              onMatchStart={handleMatchStart}
+              onBackToLanding={handleBackToLanding}
+              onOpenAuth={(mode) => openAuthWithMode(mode || 'register')}
+            />
+          )}
 
-        {view === 'match' && room && (
-          <MatchPage
-            room={room}
-            guest={guest}
-            onMatchComplete={handleMatchComplete}
-          />
-        )}
+          {view === 'match' && room && (
+            <MatchPage
+              room={room}
+              guest={guest}
+              onMatchComplete={handleMatchComplete}
+            />
+          )}
 
-        {view === 'result' && room && (
-          <ResultPage
-            room={room}
-            guest={guest}
-            matchResult={matchResult}
-            userProfile={userProfile}
-            onReturnToLobby={handleReturnToLobby}
-            onOpenProfile={() => setProfileModalOpen(true)}
-          />
-        )}
+          {view === 'result' && room && (
+            <ResultPage
+              room={room}
+              guest={guest}
+              matchResult={matchResult}
+              userProfile={userProfile}
+              onReturnToLobby={handleReturnToLobby}
+              onOpenProfile={() => setProfileModalOpen(true)}
+            />
+          )}
+        </Suspense>
       </div>
 
       {/* Global Modals */}

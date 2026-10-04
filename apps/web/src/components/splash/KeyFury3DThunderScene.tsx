@@ -764,7 +764,7 @@ export const KeyFury3DThunderScene: React.FC<KeyFury3DThunderSceneProps> = ({
               transform: 'translateZ(30px)',
             }}
           >
-            KEYBOARD STICKMAN WARRIOR
+            3D TYPING FIGHTING GAME
           </div>
 
           {/* Combat Pill Badge */}

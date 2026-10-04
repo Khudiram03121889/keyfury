@@ -10,6 +10,9 @@ Allow: /
 User-agent: GPTBot
 Allow: /
 
+User-agent: OAI-SearchBot
+Allow: /
+
 User-agent: ClaudeBot
 Allow: /
 
@@ -18,5 +21,21 @@ Allow: /
 
 User-agent: Google-Extended
 Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+# LLM Context Documents
+# https://keyfury.in/llms.txt
+# https://keyfury.in/llms-full.txt
 
 Sitemap: https://keyfury.in/sitemap.xml

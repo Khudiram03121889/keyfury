@@ -9,7 +9,10 @@ if (import.meta.env.DEV) {
   (window as any).__generateMatchCardBlob = generateMatchCardBlob;
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')!;
+rootElement.setAttribute('data-hydrated', 'true');
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
