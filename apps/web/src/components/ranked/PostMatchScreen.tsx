@@ -54,6 +54,18 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
 
   const hasSavedRef = useRef(false);
 
+  const [viewportWidth, setViewportWidth] = useState<number>(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = viewportWidth < 768;
+
   useEffect(() => {
     let step = 0;
     const totalSteps = 25;
@@ -200,37 +212,39 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
       width: '100%',
       maxWidth: '1180px',
       margin: '0 auto',
-      padding: '10px 16px',
+      padding: isMobile ? '12px 12px 48px' : '10px 16px',
       boxSizing: 'border-box',
-      height: 'calc(100vh - 82px)',
-      maxHeight: 'calc(100vh - 82px)',
+      minHeight: isMobile ? 'calc(100vh - 70px)' : 'calc(100vh - 82px)',
+      height: isMobile ? 'auto' : 'calc(100vh - 82px)',
+      maxHeight: isMobile ? 'none' : 'calc(100vh - 82px)',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
-      overflow: 'hidden',
+      justifyContent: isMobile ? 'flex-start' : 'center',
+      overflow: isMobile ? 'visible' : 'hidden',
       animation: 'fadeIn 0.4s ease'
     }}>
-      {/* Main 2-Column Responsive Dashboard */}
+      {/* Main Responsive Dashboard: Single column on mobile, 2-column on desktop */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.45fr) minmax(0, 0.95fr)',
-        gap: '14px',
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
+        gridTemplateColumns: isMobile ? undefined : 'minmax(0, 1.45fr) minmax(0, 0.95fr)',
+        gap: isMobile ? '12px' : '14px',
         alignItems: 'stretch',
-        height: '100%',
-        maxHeight: '100%',
+        height: isMobile ? 'auto' : '100%',
+        maxHeight: isMobile ? 'none' : '100%',
         boxSizing: 'border-box'
       }}>
         {/* ================= LEFT COLUMN: MATCH STATS & OUTCOME HUD ================= */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
-          height: '100%',
-          overflow: 'hidden'
+          gap: isMobile ? '12px' : '10px',
+          height: isMobile ? 'auto' : '100%',
+          overflow: isMobile ? 'visible' : 'hidden'
         }}>
           {/* Victory / Defeat Hero Banner */}
           <div className="glass-panel" style={{
-            padding: '12px 18px',
+            padding: isMobile ? '14px 16px' : '12px 18px',
             textAlign: 'center',
             position: 'relative',
             overflow: 'hidden',
@@ -265,10 +279,16 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'nowrap' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: isMobile ? 'wrap' : 'nowrap'
+            }}>
               {/* Outcome Title */}
               <h1 style={{
-                fontSize: 'clamp(1.6rem, 3.2vw, 2.3rem)',
+                fontSize: isMobile ? '2.1rem' : 'clamp(1.6rem, 3.2vw, 2.3rem)',
                 fontWeight: 900,
                 letterSpacing: '-0.5px',
                 margin: 0,
@@ -287,7 +307,7 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                 backgroundColor: 'rgba(15, 23, 42, 0.85)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 borderRadius: '10px',
-                padding: '4px 10px',
+                padding: isMobile ? '5px 12px' : '4px 10px',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
               }}>
                 <RankBadge tier={currentTier} rating={currentMmr} size="sm" showLabel />
@@ -332,15 +352,16 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
             </div>
           </div>
 
-          {/* Stat Comparison Section (Fills remaining height) */}
+          {/* Stat Comparison Section */}
           <div className="glass-panel" style={{
-            padding: '12px 16px',
+            padding: isMobile ? '14px 16px' : '12px 16px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            flex: 1,
+            gap: isMobile ? '12px' : undefined,
+            flex: isMobile ? 'none' : 1,
             borderRadius: '16px',
-            overflow: 'hidden'
+            overflow: isMobile ? 'visible' : 'hidden'
           }}>
             {/* Players Head-to-Head Header */}
             <div style={{
@@ -352,11 +373,11 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               marginBottom: '4px'
             }}>
-              <div style={{ textAlign: 'left', fontWeight: 800, fontSize: '0.82rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+              <div style={{ textAlign: 'left', fontWeight: 800, fontSize: isMobile ? '0.86rem' : '0.82rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
                 <img
                   src={playerStats.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=Player'}
                   alt="You"
-                  style={{ width: '22px', height: '22px', borderRadius: '5px', border: '1px solid #38bdf8', flexShrink: 0 }}
+                  style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid #38bdf8', flexShrink: 0 }}
                 />
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{playerStats.displayName} (YOU)</span>
               </div>
@@ -372,18 +393,18 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                 VS
               </div>
 
-              <div style={{ textAlign: 'right', fontWeight: 800, fontSize: '0.82rem', color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', overflow: 'hidden' }}>
+              <div style={{ textAlign: 'right', fontWeight: 800, fontSize: isMobile ? '0.86rem' : '0.82rem', color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', overflow: 'hidden' }}>
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opponentStats.displayName}</span>
                 <img
                   src={opponentStats.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=Opponent'}
                   alt="Opponent"
-                  style={{ width: '22px', height: '22px', borderRadius: '5px', border: '1px solid #f43f5e', flexShrink: 0 }}
+                  style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid #f43f5e', flexShrink: 0 }}
                 />
               </div>
             </div>
 
             {/* 4 Sleek Comparative Bars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: 'auto 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '10px' : '8px', margin: isMobile ? '4px 0' : 'auto 0' }}>
               {/* 1. SPEED (WPM) */}
               <CompactStatRow
                 label="TYPING SPEED"
@@ -436,11 +457,11 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               <div style={{
                 background: 'rgba(15, 23, 42, 0.6)',
                 borderRadius: '8px',
-                padding: '4px 8px',
+                padding: '6px 8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                fontSize: '0.72rem'
+                fontSize: '0.74rem'
               }}>
                 <span style={{ color: '#94a3b8', fontWeight: 700 }}>Words Typed:</span>
                 <span style={{ color: '#fbbf24', fontWeight: 900, fontFamily: 'var(--font-mono)' }}>{playerStats.wordsCompleted}</span>
@@ -449,11 +470,11 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               <div style={{
                 background: 'rgba(15, 23, 42, 0.6)',
                 borderRadius: '8px',
-                padding: '4px 8px',
+                padding: '6px 8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                fontSize: '0.72rem'
+                fontSize: '0.74rem'
               }}>
                 <span style={{ color: '#94a3b8', fontWeight: 700 }}>Opponent Words:</span>
                 <span style={{ color: '#f43f5e', fontWeight: 900, fontFamily: 'var(--font-mono)' }}>{opponentStats.wordsCompleted}</span>
@@ -464,59 +485,62 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
 
         {/* ================= RIGHT COLUMN: MATCH ACTIONS & RESULT CARD HUB ================= */}
         <div className="glass-panel" style={{
-          padding: '14px 16px',
+          padding: isMobile ? '16px' : '14px 16px',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
+          gap: isMobile ? '12px' : undefined,
+          justifyContent: isMobile ? 'flex-start' : 'space-between',
           borderRadius: '16px',
-          height: '100%',
-          overflow: 'hidden',
+          height: isMobile ? 'auto' : '100%',
+          overflow: isMobile ? 'visible' : 'hidden',
           border: '1px solid rgba(56, 189, 248, 0.3)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
         }}>
-          {/* Top Brand Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingBottom: '10px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            flexShrink: 0
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img
-                src="/logo.jpg"
-                alt="Key Fury Logo"
-                style={{ width: '24px', height: '24px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #38bdf8' }}
-              />
-              <span style={{ fontWeight: 900, fontSize: '0.92rem', color: '#f8fafc', letterSpacing: '-0.3px' }}>
-                KEY <span style={{ color: '#38bdf8' }}>FURY</span>
-              </span>
+          {/* Top Brand Header - only on desktop since mobile already has Navbar */}
+          {!isMobile && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: '10px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img
+                  src="/logo.jpg"
+                  alt="Key Fury Logo"
+                  style={{ width: '24px', height: '24px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #38bdf8' }}
+                />
+                <span style={{ fontWeight: 900, fontSize: '0.92rem', color: '#f8fafc', letterSpacing: '-0.3px' }}>
+                  KEY <span style={{ color: '#38bdf8' }}>FURY</span>
+                </span>
+              </div>
+              <a
+                href="https://keyfury.in"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  color: '#38bdf8',
+                  textDecoration: 'none',
+                  fontFamily: 'var(--font-mono)',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  background: 'rgba(56, 189, 248, 0.12)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)'
+                }}
+              >
+                keyfury.in
+              </a>
             </div>
-            <a
-              href="https://keyfury.in"
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                color: '#38bdf8',
-                textDecoration: 'none',
-                fontFamily: 'var(--font-mono)',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                background: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.3)'
-              }}
-            >
-              keyfury.in
-            </a>
-          </div>
+          )}
 
-          {/* Unlocked Achievements & Promotion Banner - Right Side Only */}
+          {/* Unlocked Achievements & Promotion Banner */}
           {(unlockedAchievements.length > 0 || isPromoted) && (
             <div style={{
-              padding: '10px 12px',
+              padding: isMobile ? '12px 14px' : '10px 12px',
               borderRadius: '12px',
               background: isPromoted
                 ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(236, 72, 153, 0.18))'
@@ -544,7 +568,7 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                   <div key={ach.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.76rem', color: '#f8fafc', background: 'rgba(0, 0, 0, 0.3)', padding: '6px 8px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                     <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>{ach.icon}</span>
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontWeight: 800, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ach.title}</span>
+                      <span style={{ fontWeight: 800, color: '#f1f5f9' }}>{ach.title}</span>
                       <span style={{ fontSize: '0.68rem', color: '#94a3b8', lineHeight: 1.2 }}>{ach.description}</span>
                     </div>
                   </div>
@@ -557,8 +581,8 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
-            margin: 'auto 0'
+            gap: isMobile ? '10px' : '8px',
+            margin: isMobile ? '0' : 'auto 0'
           }}>
             {/* Primary Action: REMATCH */}
             <button
@@ -566,8 +590,8 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               onClick={onPlayAgain}
               style={{
                 width: '100%',
-                padding: '11px 16px',
-                fontSize: '0.92rem',
+                padding: isMobile ? '14px 18px' : '11px 16px',
+                fontSize: isMobile ? '1rem' : '0.92rem',
                 fontWeight: 900,
                 textTransform: 'uppercase',
                 justifyContent: 'center',
@@ -576,7 +600,7 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                 boxShadow: '0 4px 20px rgba(56, 189, 248, 0.4)'
               }}
             >
-              <RotateCcw size={17} /> Play Again / Rematch <span className="kbd-badge" style={{ background: 'rgba(0, 0, 0, 0.25)', color: '#fff' }}>Enter</span>
+              <RotateCcw size={17} /> Play Again / Rematch {!isMobile && <span className="kbd-badge" style={{ background: 'rgba(0, 0, 0, 0.25)', color: '#fff' }}>Enter</span>}
             </button>
 
             {/* Result Card Download Button */}
@@ -586,8 +610,8 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               disabled={isDownloading}
               style={{
                 width: '100%',
-                padding: '10px 14px',
-                fontSize: '0.88rem',
+                padding: isMobile ? '12px 16px' : '10px 14px',
+                fontSize: isMobile ? '0.92rem' : '0.88rem',
                 fontWeight: 800,
                 borderColor: '#38bdf8',
                 color: '#38bdf8',
@@ -597,7 +621,7 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                 cursor: isDownloading ? 'wait' : 'pointer'
               }}
             >
-              <Download size={16} /> {isDownloading ? 'Downloading PNG...' : 'Download Result Card (PNG)'} <span className="kbd-badge">D</span>
+              <Download size={16} /> {isDownloading ? 'Downloading PNG...' : 'Download Result Card (PNG)'} {!isMobile && <span className="kbd-badge">D</span>}
             </button>
 
             {/* Quick Copy Stats Text */}
@@ -606,8 +630,8 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               onClick={handleCopyStatCard}
               style={{
                 width: '100%',
-                padding: '9px 14px',
-                fontSize: '0.84rem',
+                padding: isMobile ? '11px 16px' : '9px 14px',
+                fontSize: isMobile ? '0.88rem' : '0.84rem',
                 fontWeight: 700,
                 borderColor: copied ? '#34d399' : 'rgba(255, 255, 255, 0.15)',
                 color: copied ? '#34d399' : '#f8fafc',
@@ -616,7 +640,7 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
               }}
             >
               {copied ? <Check size={15} color="#34d399" /> : <Copy size={15} />}
-              {copied ? 'Stats Copied to Clipboard!' : 'Copy Match Summary'} <span className="kbd-badge">C</span>
+              {copied ? 'Stats Copied to Clipboard!' : 'Copy Match Summary'} {!isMobile && <span className="kbd-badge">C</span>}
             </button>
 
             {/* Navigation Group: Lobby & Profile */}
@@ -625,14 +649,14 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                 className="btn-secondary"
                 onClick={onReturnToLobby}
                 style={{
-                  padding: '9px 12px',
-                  fontSize: '0.82rem',
+                  padding: isMobile ? '12px' : '9px 12px',
+                  fontSize: isMobile ? '0.88rem' : '0.82rem',
                   fontWeight: 700,
                   justifyContent: 'center',
                   borderRadius: '10px'
                 }}
               >
-                <Home size={15} /> Lobby <span className="kbd-badge">Esc</span>
+                <Home size={15} /> Lobby {!isMobile && <span className="kbd-badge">Esc</span>}
               </button>
 
               {onViewProfile && (
@@ -640,8 +664,8 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
                   className="btn-secondary"
                   onClick={onViewProfile}
                   style={{
-                    padding: '9px 12px',
-                    fontSize: '0.82rem',
+                    padding: isMobile ? '12px' : '9px 12px',
+                    fontSize: isMobile ? '0.88rem' : '0.82rem',
                     fontWeight: 700,
                     justifyContent: 'center',
                     borderRadius: '10px'

@@ -87,4 +87,30 @@ describe('Portrait Mode Mobile Combat Architecture Integration Tests', () => {
       expect(manifestCode).toContain('android:windowSoftInputMode="adjustResize"');
     });
   });
+
+  describe('6. Mobile Post-Match Results Screen Architecture', () => {
+    const postMatchPath = path.resolve(__dirname, '../components/ranked/PostMatchScreen.tsx');
+    const appPath = path.resolve(__dirname, '../App.tsx');
+    const postMatchCode = fs.readFileSync(postMatchPath, 'utf-8');
+    const appCode = fs.readFileSync(appPath, 'utf-8');
+
+    it('P6.1: detects mobile viewport in PostMatchScreen', () => {
+      expect(postMatchCode).toContain('const isMobile = viewportWidth < 768;');
+    });
+
+    it('P6.2: switches to single-column flex layout on mobile instead of fixed 2-column grid', () => {
+      expect(postMatchCode).toContain("display: isMobile ? 'flex' : 'grid'");
+      expect(postMatchCode).toContain("gridTemplateColumns: isMobile ? undefined : 'minmax(0, 1.45fr) minmax(0, 0.95fr)'");
+    });
+
+    it('P6.3: enables vertical scrolling and removes overflow-hidden clipping on mobile', () => {
+      expect(postMatchCode).toContain("overflow: isMobile ? 'visible' : 'hidden'");
+      expect(appCode).toContain("view === 'result' ? { minHeight: '100vh', overflowY: 'auto' }");
+    });
+
+    it('P6.4: streamlines match end overlay in MatchPage for mobile portrait', () => {
+      expect(matchPageCode).toContain("padding: isPortrait ? '16px 14px' : '24px 20px'");
+      expect(matchPageCode).toContain("gridTemplateColumns: isPortrait ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))'");
+    });
+  });
 });

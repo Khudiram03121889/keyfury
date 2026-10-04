@@ -166,7 +166,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="app-container" style={view === 'match' || view === 'result' ? { height: '100vh', overflow: 'hidden' } : undefined}>
+    <div className="app-container" style={view === 'match' ? { height: '100vh', overflow: 'hidden' } : (view === 'result' ? { minHeight: '100vh', overflowY: 'auto' } : undefined)}>
       {/* Top Navbar */}
       {view !== 'match' && (
         <Navbar

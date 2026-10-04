@@ -1396,14 +1396,15 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         {showStatsOverlay && (
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'rgba(7, 15, 28, 0.78)', backdropFilter: 'blur(12px)',
+            background: 'rgba(7, 15, 28, 0.88)', backdropFilter: 'blur(12px)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            zIndex: 40, padding: '16px'
+            zIndex: 40, padding: isPortrait ? '12px 10px' : '16px'
           }}>
             <div className="glass-panel" style={{
-              width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '24px 20px',
+              width: '100%', maxWidth: '780px', maxHeight: isPortrait ? '94vh' : '90vh', overflowY: 'auto',
+              padding: isPortrait ? '16px 14px' : '24px 20px',
               background: 'rgba(15, 23, 42, 0.95)', border: '2px solid rgba(74, 222, 128, 0.4)',
-              borderRadius: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
+              borderRadius: isPortrait ? '18px' : '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
               textAlign: 'center', position: 'relative'
             }}>
               {/* Top Winner Badge */}
@@ -1413,15 +1414,16 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                 background: completedState?.winnerSessionId === room.sessionId ? 'rgba(74, 222, 128, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                 border: completedState?.winnerSessionId === room.sessionId ? '1px solid rgba(74, 222, 128, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
                 color: completedState?.winnerSessionId === room.sessionId ? '#4ade80' : '#f87171',
-                fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px',
-                marginBottom: '12px'
+                fontSize: isPortrait ? '0.74rem' : '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px',
+                marginBottom: isPortrait ? '8px' : '12px'
               }}>
                 <Trophy size={16} />
                 {completedState?.winnerSessionId === room.sessionId ? 'VICTORY BY KNOCKOUT!' : 'DEFEATED IN MATCH'}
               </div>
 
               <h2 style={{
-                fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', fontWeight: 900, marginBottom: '20px',
+                fontSize: isPortrait ? '1.6rem' : 'clamp(1.8rem, 5vw, 2.8rem)', fontWeight: 900,
+                marginBottom: isPortrait ? '12px' : '20px',
                 color: completedState?.winnerSessionId === room.sessionId ? '#4ade80' : '#f87171',
                 textTransform: 'uppercase', letterSpacing: '2px', textShadow: '0 4px 16px rgba(0,0,0,0.8)'
               }}>
@@ -1429,21 +1431,26 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               </h2>
 
               {/* Side by side stats grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isPortrait ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: isPortrait ? '8px' : '12px',
+                marginBottom: isPortrait ? '14px' : '24px'
+              }}>
                 {/* My Stats Card */}
                 <div
                   style={{
                     background: 'rgba(30, 41, 59, 0.7)',
                     border: '1.5px solid rgba(56, 189, 248, 0.35)',
                     borderRadius: '16px',
-                    padding: '14px 16px',
+                    padding: isPortrait ? '10px 12px' : '14px 16px',
                     textAlign: 'left'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontWeight: 900, color: '#4ade80', fontSize: '0.98rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: 900, color: '#4ade80', fontSize: isPortrait ? '0.9rem' : '0.98rem' }}>
                     <span>🎩</span> {myPlayer?.displayName || 'YOU'}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: isPortrait ? '0.8rem' : '0.85rem', color: '#cbd5e1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>Remaining HP:</span>
                       <strong style={{ color: '#4ade80' }}>{myPlayer?.health ?? 0} / 200</strong>
@@ -1486,9 +1493,9 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                 {/* Opponent Stats Card */}
                 <div style={{
                   background: 'rgba(30, 41, 59, 0.7)', border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '16px', padding: '14px 16px', textAlign: 'left'
+                  borderRadius: '16px', padding: isPortrait ? '10px 12px' : '14px 16px', textAlign: 'left'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontWeight: 900, color: '#f87171', fontSize: '0.98rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: 900, color: '#f87171', fontSize: isPortrait ? '0.9rem' : '0.98rem' }}>
                     <span>👓</span> {(() => {
                       let opp: any = null;
                       completedState?.players?.forEach((p: any, sId: string) => {
@@ -1497,7 +1504,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
                       return opp?.displayName || 'OPPONENT';
                     })()}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: isPortrait ? '0.8rem' : '0.85rem', color: '#cbd5e1' }}>
                     {(() => {
                       let opp: any = null;
                       let oppSId: string | null = null;
@@ -1549,45 +1556,59 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               </div>
 
               {/* Action Button & Skip Prompt */}
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: isPortrait ? 'column' : 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: isPortrait ? '8px' : '12px',
+                width: '100%'
+              }}>
+                <button
+                  onClick={() => onMatchComplete(getFullMatchResult())}
+                  style={{
+                    width: isPortrait ? '100%' : 'auto',
+                    background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+                    border: 'none', borderRadius: '12px',
+                    padding: isPortrait ? '14px 20px' : '12px 24px',
+                    color: '#ffffff', fontWeight: 900,
+                    fontSize: isPortrait ? '0.98rem' : '0.95rem',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    boxShadow: '0 6px 20px rgba(34, 197, 94, 0.4)'
+                  }}
+                >
+                  CONTINUE TO FULL RESULTS <ArrowRight size={18} />
+                </button>
+
                 <button
                   onClick={handleDownloadResultCard}
                   disabled={isDownloadingCard}
                   style={{
+                    width: isPortrait ? '100%' : 'auto',
                     background: 'rgba(56, 189, 248, 0.15)',
                     border: '1.5px solid #38bdf8',
                     borderRadius: '12px',
-                    padding: '12px 20px',
+                    padding: isPortrait ? '12px 18px' : '12px 20px',
                     color: '#38bdf8',
                     fontWeight: 900,
                     fontSize: '0.92rem',
                     cursor: isDownloadingCard ? 'wait' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '8px',
                     boxShadow: '0 4px 15px rgba(56, 189, 248, 0.25)',
                   }}
                 >
                   <Download size={18} /> {isDownloadingCard ? 'Downloading PNG...' : 'DOWNLOAD RESULT CARD'}
                 </button>
-
-                <button
-                  onClick={() => onMatchComplete(getFullMatchResult())}
-                  style={{
-                    background: 'linear-gradient(90deg, #22c55e, #16a34a)',
-                    border: 'none', borderRadius: '12px', padding: '12px 24px',
-                    color: '#ffffff', fontWeight: 900, fontSize: '0.95rem',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                    boxShadow: '0 6px 20px rgba(34, 197, 94, 0.4)'
-                  }}
-                >
-                  CONTINUE TO FULL RESULTS <ArrowRight size={18} />
-                </button>
               </div>
 
-              <div style={{ marginTop: '16px', fontSize: '0.85rem', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <FastForward size={14} color="#eab308" /> Press <strong style={{ color: '#ffffff', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>ENTER</strong> to skip
-              </div>
+              {!isPortrait && (
+                <div style={{ marginTop: '16px', fontSize: '0.85rem', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <FastForward size={14} color="#eab308" /> Press <strong style={{ color: '#ffffff', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>ENTER</strong> to skip
+                </div>
+              )}
             </div>
           </div>
         )}
