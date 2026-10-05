@@ -3,6 +3,7 @@
   "appName": "KeyFury",
   "webDir": "dist",
   "server": {
+    "url": "https://keyfury.in",
     "androidScheme": "https",
     "cleartext": true
   },
