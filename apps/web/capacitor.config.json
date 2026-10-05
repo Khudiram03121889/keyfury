@@ -3,7 +3,12 @@
   "appName": "KeyFury",
   "webDir": "dist",
   "server": {
-    "url": "https://keyfury.in",
+    "url": "https://www.keyfury.in",
+    "allowNavigation": [
+      "*.keyfury.in",
+      "keyfury.in",
+      "www.keyfury.in"
+    ],
     "androidScheme": "https",
     "cleartext": true
   },
