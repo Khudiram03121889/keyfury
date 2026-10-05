@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Room } from 'colyseus.js';
 import { Users, Link, Copy, Check, ArrowLeft, RefreshCw, AlertCircle, Wifi, WifiOff, LogIn, Bot, Swords, Sparkles, MapPin, Compass } from 'lucide-react';
-import { joinQuickQueue, createChallengeRoom, joinChallengeRoom, startBotDuel, fetchLiveServerStats } from '../lib/colyseus';
+import { joinQuickQueue, createChallengeRoom, joinChallengeRoom, startBotDuel, fetchLiveServerStats, fetchLiveMapStats } from '../lib/colyseus';
 import { GuestProfile, UserProfile, getSavedSelectedCharacter, saveSelectedCharacter, getSavedSelectedArena, saveSelectedArena, updateUserProfile } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
 import { QueueTimeoutModal } from '../components/matchmaking/QueueTimeoutModal';
@@ -49,6 +49,16 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   const [opponentName, setOpponentName] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'Connected' | 'Reconnecting' | 'Connection lost'>('Connected');
 
+  // Map online warrior counts & challenge host/duration states
+  const [mapCounts, setMapCounts] = useState<Record<string, number>>({
+    highland_sanctuary: 0,
+    cyber_rooftop: 0,
+    volcanic_caldera: 0,
+    celestial_void: 0
+  });
+  const [challengeDuration, setChallengeDuration] = useState<number>(60);
+  const [isChallengeHost, setIsChallengeHost] = useState<boolean>(true);
+
   // Synchronize character if activeUser profile updates
   useEffect(() => {
     if (activeUser.selectedCharacter || activeUser.characterId) {
@@ -64,11 +74,21 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       selectedCharacter: newCharId,
       characterId: newCharId
     });
+    if (room && mode === 'challenge') {
+      try {
+        room.send('update_options', { characterId: newCharId });
+      } catch (_e) {}
+    }
   };
 
   const handleArenaSelect = (newArenaId: ArenaId) => {
     setSelectedArena(newArenaId);
     saveSelectedArena(newArenaId);
+    if (room && isChallengeHost && mode === 'challenge') {
+      try {
+        room.send('update_options', { arenaId: newArenaId });
+      } catch (_e) {}
+    }
   };
 
   // Real live online server stats state
@@ -85,6 +105,25 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     updateStats();
     const interval = setInterval(updateStats, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Poll real-time online warrior count per map every 2.0s
+  useEffect(() => {
+    let mounted = true;
+    const updateMapStats = async () => {
+      try {
+        const stats = await fetchLiveMapStats();
+        if (mounted && stats?.counts) {
+          setMapCounts(stats.counts);
+        }
+      } catch (_e) {}
+    };
+    updateMapStats();
+    const interval = setInterval(updateMapStats, 2000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Auto join challenge room if URL parameter present
@@ -228,11 +267,12 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     const arenaId = arenaToUse || selectedArena;
     const charId = charToUse || selectedCharacter;
     setMode('challenge');
+    setIsChallengeHost(true);
     setErrorMsg(null);
     setServerWarming(true);
 
     try {
-      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, charId, arenaId);
+      const rm = await createChallengeRoom(activeUser.id, activeUser.displayName, activeUser.mmr, charId, arenaId, challengeDuration);
       setServerWarming(false);
       setRoomCode(rm.id);
       attachRoomListeners(rm);
@@ -281,6 +321,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     }
 
     setMode('challenge');
+    setIsChallengeHost(false);
     setErrorMsg(null);
     setServerWarming(true);
 
@@ -314,11 +355,20 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         onMatchStart(rm);
       }
 
+      if (state.arenaId) {
+        setSelectedArena(state.arenaId);
+      }
+
       if (state.players) {
         const playerMap = state.players instanceof Map ? state.players : (state.players.toJSON ? state.players.toJSON() : state.players);
         const keys = playerMap instanceof Map ? Array.from(playerMap.keys()) : Object.keys(playerMap);
         keys.forEach((sessionId) => {
-          if (sessionId !== rm.sessionId) {
+          if (sessionId === rm.sessionId) {
+            const me = playerMap instanceof Map ? playerMap.get(sessionId) : playerMap[sessionId];
+            if (me) {
+              setIsChallengeHost(me.side !== 'right');
+            }
+          } else {
             const p = playerMap instanceof Map ? playerMap.get(sessionId) : playerMap[sessionId];
             if (p) setOpponentName(p.displayName || 'Opponent Warrior');
           }
@@ -706,11 +756,23 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                     textTransform: 'uppercase',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    flexWrap: 'wrap'
                   }}>
                     <span>BATTLEGROUND</span>
                     <span>•</span>
                     <span>{activeArenaDef.subtitle}</span>
+                    <span>•</span>
+                    <span style={{
+                      backgroundColor: `${activeArenaDef.theme.primaryColor}22`,
+                      color: activeArenaDef.theme.primaryColor,
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      border: `1px solid ${activeArenaDef.theme.primaryColor}44`,
+                      fontSize: '0.70rem'
+                    }}>
+                      🔥 {mapCounts[activeArenaDef.id] ?? 0} Warriors Online
+                    </span>
                   </div>
                   <div style={{ fontSize: '1.02rem', fontWeight: 900, color: 'var(--text-heading)', marginTop: '1px' }}>
                     {getCleanArenaName(activeArenaDef.name)}
@@ -885,26 +947,80 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                 </div>
               </div>
 
-              <button
+              <div
                 className="glass-panel"
-                onClick={initiateCreateChallenge}
                 style={{
-                  padding: '24px 16px',
-                  cursor: 'pointer',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
-                  transition: 'all 0.2s ease',
-                  textAlign: 'center'
+                  padding: '20px 16px',
+                  border: '1px solid rgba(244, 63, 94, 0.4)',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}
               >
-                <div style={{
-                  width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(244, 63, 94, 0.15)',
-                  color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px'
-                }}>
-                  <Link size={24} />
+                <div>
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(244, 63, 94, 0.2)',
+                    color: '#f43f5e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px'
+                  }}>
+                    <Link size={24} />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: '#f43f5e' }}>Challenge a Friend</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '10px' }}>
+                    Set match timer (60s – 120s). Duration is locked for the match.
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-heading)' }}>Challenge a Friend</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Create a private room link & invite someone</p>
-              </button>
+
+                <div>
+                  {/* Timer selection pills */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '8px' }}>
+                    {[60, 75, 90, 120].map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        onClick={() => setChallengeDuration(sec)}
+                        style={{
+                          padding: '5px 2px',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          border: challengeDuration === sec ? '1px solid #f43f5e' : '1px solid var(--border-card)',
+                          background: challengeDuration === sec ? 'rgba(244, 63, 94, 0.25)' : 'var(--btn-sec-bg)',
+                          color: challengeDuration === sec ? '#f43f5e' : 'var(--text-muted)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {sec}s
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Range slider for custom duration */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <input
+                      type="range"
+                      min={60}
+                      max={120}
+                      step={5}
+                      value={challengeDuration}
+                      onChange={(e) => setChallengeDuration(Math.min(120, Math.max(60, Number(e.target.value) || 60)))}
+                      style={{ flex: 1, accentColor: '#f43f5e', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f43f5e', minWidth: '38px', textAlign: 'right' }}>
+                      {challengeDuration}s
+                    </span>
+                  </div>
+
+                  <button
+                    className="btn-primary"
+                    onClick={initiateCreateChallenge}
+                    style={{ width: '100%', padding: '8px', fontSize: '0.85rem', background: '#e11d48', borderColor: '#f43f5e' }}
+                  >
+                    Create Room ({challengeDuration}s)
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Manual Join Section */}
@@ -1088,64 +1204,152 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
         {mode === 'challenge' && !serverWarming && (() => {
           const currentArenaDef = getArenaDefinition(selectedArena);
+          const currentCharDef = getCharacterDefinition(selectedCharacter);
           const arenaBg = ARENA_BACKGROUNDS[currentArenaDef.id];
+          const lockedDuration = room?.state?.matchDuration || challengeDuration;
 
           return (
             <div>
               <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Private Challenge Room</h2>
 
-              {/* Selected Arena Preview & Quick-Switch in Challenge Lobby */}
-              <div
-                onClick={() => {
-                  soundManager.playClick();
-                  setIsArenaModalOpen(true);
-                }}
-                style={{
-                  maxWidth: '480px',
-                  margin: '12px auto 16px',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  height: '100px',
-                  border: `1.5px solid ${currentArenaDef.theme.primaryColor}88`,
-                  boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 20px ${currentArenaDef.theme.ambientGlow}`,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  padding: '12px 16px',
-                  textAlign: 'left'
-                }}
-              >
-                <img
-                  src={arenaBg}
-                  alt={currentArenaDef.name}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.3) 100%)' }} />
+              {/* Locked Match Duration Banner */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 16px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                border: '1px solid rgba(244, 63, 94, 0.35)',
+                color: '#f43f5e',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                marginBottom: '14px'
+              }}>
+                <span>⏱️ Match Timer: {lockedDuration}s</span>
+                <span>•</span>
+                <span>{isChallengeHost ? 'Locked for match' : 'Locked by host'}</span>
+              </div>
 
-                <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
-                  <div>
-                    <div style={{ fontSize: '0.7rem', color: currentArenaDef.theme.accentColor, fontWeight: 800, textTransform: 'uppercase' }}>
-                      ARENA • {currentArenaDef.subtitle}
-                    </div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#ffffff' }}>
-                      {getCleanArenaName(currentArenaDef.name)}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={(e) => {
-                      e.stopPropagation();
+              {/* Grid with Battleground Card and Fighter Card */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', maxWidth: '520px', margin: '0 auto 16px' }}>
+                {/* Battleground Card */}
+                <div
+                  onClick={() => {
+                    if (isChallengeHost) {
                       soundManager.playClick();
                       setIsArenaModalOpen(true);
-                    }}
-                    style={{ padding: '5px 10px', fontSize: '0.72rem', borderColor: `${currentArenaDef.theme.primaryColor}88` }}
-                  >
-                    <Compass size={12} color={currentArenaDef.theme.primaryColor} /> Change
-                  </button>
+                    }
+                  }}
+                  style={{
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    height: '110px',
+                    border: `1.5px solid ${currentArenaDef.theme.primaryColor}88`,
+                    boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 20px ${currentArenaDef.theme.ambientGlow}`,
+                    cursor: isChallengeHost ? 'pointer' : 'default',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    padding: '12px 14px',
+                    textAlign: 'left'
+                  }}
+                >
+                  <img
+                    src={arenaBg}
+                    alt={currentArenaDef.name}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(9, 13, 22, 0.95) 0%, rgba(9, 13, 22, 0.3) 100%)' }} />
+
+                  <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+                    <div>
+                      <div style={{ fontSize: '0.68rem', color: currentArenaDef.theme.accentColor, fontWeight: 800, textTransform: 'uppercase' }}>
+                        {isChallengeHost ? 'ARENA (HOST)' : 'ARENA (LOCKED BY HOST)'}
+                      </div>
+                      <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#ffffff' }}>
+                        {getCleanArenaName(currentArenaDef.name)}
+                      </div>
+                    </div>
+                    {isChallengeHost ? (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundManager.playClick();
+                          setIsArenaModalOpen(true);
+                        }}
+                        style={{ padding: '4px 8px', fontSize: '0.70rem', borderColor: `${currentArenaDef.theme.primaryColor}88` }}
+                      >
+                        <Compass size={12} color={currentArenaDef.theme.primaryColor} /> Change
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, padding: '3px 6px', background: 'rgba(0,0,0,0.4)', borderRadius: '6px' }}>
+                        🔒 Locked
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fighter Selection Card (joining player & host can change character) */}
+                <div
+                  onClick={() => {
+                    soundManager.playClick();
+                    setIsCharacterModalOpen(true);
+                  }}
+                  style={{
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    height: '110px',
+                    border: '1.5px solid rgba(56, 189, 248, 0.5)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    padding: '12px 14px',
+                    textAlign: 'left',
+                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%)'
+                  }}
+                >
+                  <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <img
+                        src={CHARACTER_PORTRAITS[currentCharDef.id]}
+                        alt={currentCharDef.name}
+                        style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(56, 189, 248, 0.5)' }}
+                      />
+                      <div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 800, textTransform: 'uppercase' }}>
+                          YOUR FIGHTER
+                        </div>
+                        <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#ffffff' }}>
+                          {currentCharDef.name}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        soundManager.playClick();
+                        setIsCharacterModalOpen(true);
+                      }}
+                      style={{ padding: '4px 8px', fontSize: '0.70rem', borderColor: 'rgba(56, 189, 248, 0.5)' }}
+                    >
+                      Change
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {!isChallengeHost && (
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '12px' }}>
+                  The host has chosen the battleground. You may customize your fighter.
+                </div>
+              )}
 
               {roomCode && (
                 <div style={{ margin: '16px 0' }}>
@@ -1316,6 +1520,8 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
             ? 'Private Challenge Duel'
             : 'Duel'
         }
+        isMapLocked={mode === 'challenge' && !isChallengeHost}
+        mapCounts={mapCounts}
       />
     </div>
   );

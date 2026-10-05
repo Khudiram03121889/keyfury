@@ -32,7 +32,9 @@ export const ClientMessageSkipIntroSchema = z.object({
 
 export const ClientMessageUpdateOptionsSchema = z.object({
   type: z.literal('update_options'),
-  botDifficulty: z.enum(['novice', 'fighter', 'pro', 'adaptive']).optional()
+  botDifficulty: z.enum(['novice', 'fighter', 'pro', 'adaptive']).optional(),
+  arenaId: z.string().optional(),
+  characterId: z.string().optional()
 });
 
 export const ClientMessageSchema = z.discriminatedUnion('type', [
@@ -87,6 +89,7 @@ export interface MatchStateSnapshot {
   winnerSessionId?: string;
   endReason?: 'time' | 'knockout' | 'forfeit' | 'disconnect' | 'draw';
   arenaId?: string;
+  matchDuration?: number;
 }
 
 export type FinisherTier = 'none' | 'power_strike' | 'weapon_finisher' | 'overdrive';
@@ -101,6 +104,9 @@ export type ServerEvent =
   | { type: 'match_start'; countdownSeconds: number }
   | { type: 'match_end'; winnerSessionId?: string; reason: string; summary: MatchStateSnapshot }
   | { type: 'rematch_update'; votes: Record<string, boolean> }
+  | { type: 'rematch_request'; requesterSessionId: string; requesterDisplayName: string; timeoutSeconds: number }
+  | { type: 'rematch_dismissed'; reason: 'timeout' | 'declined'; declinedBy?: string }
+  | { type: 'intro_sync_update'; readyPlayers: string[]; waitingForOpponent: boolean }
   | { type: 'bot_fallback'; message: string }
   | { type: 'options_updated'; botDifficulty: 'novice' | 'fighter' | 'pro' | 'adaptive' };
 
@@ -119,6 +125,7 @@ export interface RankedQueueOptions {
   level?: number;
   token?: string;
   characterId?: string;
+  arenaId?: string;
 }
 
 export interface EloResult {

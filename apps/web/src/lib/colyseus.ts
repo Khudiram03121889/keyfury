@@ -17,17 +17,67 @@ export async function joinQuickQueue(profileId: string, displayName: string, mmr
   });
 }
 
-export async function createChallengeRoom(profileId: string, displayName: string, mmr?: number, characterId?: string, arenaId?: string): Promise<Room> {
+export async function createChallengeRoom(
+  profileId: string,
+  displayName: string,
+  mmr?: number,
+  characterId?: string,
+  arenaId?: string,
+  matchDuration: number = 60
+): Promise<Room> {
   const activeChar = characterId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_character') : null) || 'shadow_ronin';
   const activeArena = arenaId || (typeof localStorage !== 'undefined' ? localStorage.getItem('keyfury_selected_arena') : null) || undefined;
+  const clampedDuration = Math.min(120, Math.max(60, matchDuration));
   return await colyseusClient.create('duel_room', {
     profileId,
     displayName,
     mmr,
     characterId: activeChar,
     arenaId: activeArena,
+    matchDuration: clampedDuration,
     isChallenge: true
   });
+}
+
+export async function fetchLiveMapStats(): Promise<{ counts: Record<string, number>; totalOnline: number }> {
+  try {
+    const httpBase = serverUrl.replace(/^ws(s)?:/, 'http$1:');
+    const res = await fetch(`${httpBase}/api/map-stats`);
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        counts: data.counts || {},
+        totalOnline: data.totalOnline || 0
+      };
+    }
+  } catch (_err) {
+    // Fallback if HTTP endpoint is unreachable
+  }
+
+  try {
+    const rooms = await colyseusClient.getAvailableRooms('duel_room');
+    const counts: Record<string, number> = {
+      highland_sanctuary: 0,
+      cyber_rooftop: 0,
+      volcanic_caldera: 0,
+      celestial_void: 0
+    };
+    let totalOnline = 0;
+    rooms.forEach((r) => {
+      const arena = r.metadata?.arenaId;
+      const count = r.clients || 0;
+      totalOnline += count;
+      if (arena && counts[arena] !== undefined) {
+        counts[arena] += count;
+      }
+    });
+    return { counts, totalOnline: Math.max(1, totalOnline) };
+  } catch (_e) {
+    return {
+      counts: { highland_sanctuary: 0, cyber_rooftop: 0, volcanic_caldera: 0, celestial_void: 0 },
+      totalOnline: 1
+    };
+  }
 }
 
 export async function joinChallengeRoom(roomId: string, profileId: string, displayName: string, mmr?: number, characterId?: string): Promise<Room> {

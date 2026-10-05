@@ -301,6 +301,7 @@ export const App: React.FC = () => {
               userProfile={userProfile}
               onReturnToLobby={handleReturnToLobby}
               onOpenProfile={() => setProfileModalOpen(true)}
+              onRematchStart={() => setView('match')}
             />
           )}
         </Suspense>

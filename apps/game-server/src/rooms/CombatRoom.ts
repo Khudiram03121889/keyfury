@@ -40,6 +40,7 @@ export class PlayerState extends Schema {
   @type('number') level: number = 1;
   @type('number') matchesPlayed: number = 0;
   @type('string') characterId: string = 'shadow_ronin';
+  @type('boolean') introReady: boolean = false;
 }
 
 export class CombatRoomState extends Schema {
@@ -48,6 +49,7 @@ export class CombatRoomState extends Schema {
   @type('string') deckSeed: string = '';
   @type('number') countdownSeconds: number = 3;
   @type('number') remainingSeconds: number = MATCH_RULES.MATCH_DURATION_SECONDS;
+  @type('number') matchDuration: number = MATCH_RULES.MATCH_DURATION_SECONDS;
   @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
   @type(['string']) words = new ArraySchema<string>();
   @type('string') winnerSessionId: string = '';
@@ -109,6 +111,9 @@ export class CombatRoom extends Room<CombatRoomState> {
   private botFallbackTimeout?: any;
   private challengeExpiryTimeout?: any;
   private rematchVotes = new Map<string, boolean>();
+  private rematchTimeout?: any;
+  private matchDuration: number = MATCH_RULES.MATCH_DURATION_SECONDS;
+  private introReadyPlayers = new Set<string>();
   private rateLimiter = new Map<string, { count: number; resetAt: number; violations: number }>();
   private keystrokeTimes = new Map<string, number[]>();
   private lastKeystrokeTime = new Map<string, number>();
@@ -136,13 +141,24 @@ export class CombatRoom extends Room<CombatRoomState> {
     return true;
   }
 
-  onCreate(options: { isChallenge?: boolean; withBot?: boolean; botDifficulty?: BotDifficulty; arenaId?: string }) {
+  onCreate(options: { isChallenge?: boolean; withBot?: boolean; botDifficulty?: BotDifficulty; arenaId?: string; matchDuration?: number }) {
+    if (options?.matchDuration !== undefined) {
+      if (typeof options.matchDuration !== 'number' || options.matchDuration < 60 || options.matchDuration > 120) {
+        throw new Error('Invalid match duration: must be between 60 and 120 seconds');
+      }
+      this.matchDuration = Math.round(options.matchDuration);
+    } else {
+      this.matchDuration = MATCH_RULES.MATCH_DURATION_SECONDS;
+    }
+
     this.setState(new CombatRoomState());
     this.state.matchId = this.roomId;
     this.state.deckSeed = `deck-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     this.state.isChallenge = !!options.isChallenge;
     this.hasBotOpponent = !!options.withBot;
     this.state.arenaId = options?.arenaId || getRandomArenaId();
+    this.state.matchDuration = this.matchDuration;
+    this.state.remainingSeconds = this.matchDuration;
     if (options.botDifficulty) {
       this.botDifficulty = options.botDifficulty;
     }
@@ -151,7 +167,8 @@ export class CombatRoom extends Room<CombatRoomState> {
       isChallenge: !!options.isChallenge,
       withBot: !!options.withBot,
       isQuickDuel: !options.isChallenge && !options.withBot,
-      arenaId: this.state.arenaId
+      arenaId: this.state.arenaId,
+      matchDuration: this.matchDuration
     });
 
     if (this.state.isChallenge) {
@@ -208,6 +225,17 @@ export class CombatRoom extends Room<CombatRoomState> {
     this.state.inputEnabled = false;
     // Synchronized countdown window: 8 seconds (matching cinematic entrance & standoff)
     this.state.countdownSeconds = 8;
+    this.introReadyPlayers.clear();
+
+    this.state.players.forEach((p) => {
+      p.introReady = false;
+    });
+
+    if (this.hasBotOpponent || this.state.players.has('bot-ai-opponent')) {
+      this.introReadyPlayers.add('bot-ai-opponent');
+      const bot = this.state.players.get('bot-ai-opponent');
+      if (bot) bot.introReady = true;
+    }
 
     console.log(`[ENTRANCE_START] timestamp=${new Date().toISOString()} map=${this.state.arenaId} room=${this.roomId}`);
     console.log(`[COUNTDOWN_START] timestamp=${new Date().toISOString()} count=3 room=${this.roomId}`);
@@ -226,11 +254,7 @@ export class CombatRoom extends Room<CombatRoomState> {
           clearInterval(this.countdownInterval);
           this.countdownInterval = undefined;
         }
-        // In bot matches, wait for human client intro/countdown completion via skip_intro
-        // or the 30s safety timeout to prevent premature bot typing while human loads/watches intro
-        if (!this.hasBotOpponent) {
-          this.startMatch();
-        }
+        this.startMatch();
       }
     }, 1000);
 
@@ -246,7 +270,7 @@ export class CombatRoom extends Room<CombatRoomState> {
     }
   }
 
-  onJoin(client: Client, options: { profileId?: string; displayName?: string; withBot?: boolean; botDifficulty?: BotDifficulty; mmr?: number; level?: number; matchesPlayed?: number; characterId?: string }) {
+  onJoin(client: Client, options: { profileId?: string; displayName?: string; withBot?: boolean; botDifficulty?: BotDifficulty; mmr?: number; level?: number; matchesPlayed?: number; characterId?: string; arenaId?: string }) {
     if (this.state.players.size >= 2) {
       throw new Error('Room is full');
     }
@@ -260,6 +284,23 @@ export class CombatRoom extends Room<CombatRoomState> {
     const level = Math.max(1, options.level ?? 1);
     const matchesPlayed = options.matchesPlayed ?? 0;
     const characterId = options.characterId || 'shadow_ronin';
+
+    // For matchmaking quick duels, enforce map and skill level constraints
+    if (this.state.players.size === 1 && !this.state.isChallenge) {
+      let hostPlayer: PlayerState | undefined;
+      this.state.players.forEach((p) => {
+        if (!hostPlayer) hostPlayer = p;
+      });
+      if (hostPlayer) {
+        if (options.arenaId && options.arenaId !== this.state.arenaId) {
+          throw new Error(`Incompatible map: opponent selected ${this.state.arenaId}`);
+        }
+        const levelDiff = Math.abs(hostPlayer.level - level);
+        if (levelDiff > 2) {
+          throw new Error(`Incompatible level: level gap ${levelDiff} exceeds tolerance of 2`);
+        }
+      }
+    }
 
     if (options.botDifficulty) {
       this.botDifficulty = options.botDifficulty;
@@ -399,11 +440,13 @@ export class CombatRoom extends Room<CombatRoomState> {
     if (this.botInterval) clearTimeout(this.botInterval);
     if (this.botFallbackTimeout) clearTimeout(this.botFallbackTimeout);
     if (this.challengeExpiryTimeout) clearTimeout(this.challengeExpiryTimeout);
+    if (this.rematchTimeout) clearTimeout(this.rematchTimeout);
 
     this.rateLimiter.clear();
     this.keystrokeTimes.clear();
     this.lastKeystrokeTime.clear();
     this.rematchVotes.clear();
+    this.introReadyPlayers.clear();
     this.combatStates.clear();
     console.log(`[CombatRoom] Room disposed: ${this.roomId}`);
   }
@@ -521,7 +564,7 @@ export class CombatRoom extends Room<CombatRoomState> {
     }
   }
 
-  private handleUpdateOptions(_client: Client, msg: { botDifficulty?: BotDifficulty }) {
+  private handleUpdateOptions(client: Client, msg: { botDifficulty?: BotDifficulty; arenaId?: string; characterId?: string }) {
     if (msg.botDifficulty && ['novice', 'fighter', 'pro', 'adaptive'].includes(msg.botDifficulty)) {
       this.botDifficulty = msg.botDifficulty;
       console.log(`[CombatRoom] Updated bot difficulty in room ${this.roomId} to ${this.botDifficulty}`);
@@ -530,11 +573,54 @@ export class CombatRoom extends Room<CombatRoomState> {
         botDifficulty: this.botDifficulty
       } as any);
     }
+    if (msg.arenaId && this.state.status === 'waiting') {
+      const player = this.state.players.get(client.sessionId);
+      if (player && player.side === 'left') {
+        this.state.arenaId = msg.arenaId;
+        this.setMetadata({
+          ...this.metadata,
+          arenaId: msg.arenaId
+        });
+        console.log(`[CombatRoom] Host updated arena to ${msg.arenaId} in room ${this.roomId}`);
+      } else {
+        console.warn(`[CombatRoom] Non-host player ${client.sessionId} attempted to change arena: rejected.`);
+      }
+    }
+    if (msg.characterId && (this.state.status === 'waiting' || this.state.status === 'countdown')) {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.characterId = msg.characterId;
+        console.log(`[CombatRoom] Player ${client.sessionId} changed character to ${msg.characterId}`);
+      }
+    }
   }
 
-  private handleSkipIntro(_client: Client) {
+  private handleSkipIntro(client: Client) {
     if (this.state.status === 'countdown') {
-      console.log(`[CombatRoom] Skip intro / countdown complete requested in room ${this.roomId}, starting match immediately`);
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.introReady = true;
+      }
+      this.introReadyPlayers.add(client.sessionId);
+
+      let allPlayersReady = true;
+      this.state.players.forEach((_p, sId) => {
+        if (!this.introReadyPlayers.has(sId)) {
+          allPlayersReady = false;
+        }
+      });
+
+      if (!allPlayersReady) {
+        console.log(`[CombatRoom] Player ${client.sessionId} ready, waiting for opponent in room ${this.roomId}`);
+        this.broadcast('server_event', {
+          type: 'intro_sync_update',
+          readyPlayers: Array.from(this.introReadyPlayers),
+          waitingForOpponent: true
+        } as ServerEvent);
+        return;
+      }
+
+      console.log(`[CombatRoom] All players ready / intro completed in room ${this.roomId}, starting match immediately`);
       if (this.countdownInterval) {
         clearInterval(this.countdownInterval);
         this.countdownInterval = undefined;
@@ -579,7 +665,7 @@ export class CombatRoom extends Room<CombatRoomState> {
   private startMatch() {
     this.state.status = 'in_progress';
     this.state.inputEnabled = true;
-    this.state.remainingSeconds = MATCH_RULES.MATCH_DURATION_SECONDS;
+    this.state.remainingSeconds = this.matchDuration;
     this.matchStartedAt = Date.now();
     this.eventLog = [];
 
@@ -1022,17 +1108,47 @@ export class CombatRoom extends Room<CombatRoomState> {
   private handleRematchVote(client: Client, accepted: boolean) {
     if (!this.matchEnded) return;
 
-    this.rematchVotes.set(client.sessionId, accepted);
+    const player = this.state.players.get(client.sessionId);
+    const displayName = player?.displayName || 'Opponent';
 
-    let allAccepted = this.rematchVotes.size === 2;
-    this.rematchVotes.forEach((val) => {
-      if (!val) allAccepted = false;
+    if (!accepted) {
+      if (this.rematchTimeout) {
+        clearTimeout(this.rematchTimeout);
+        this.rematchTimeout = undefined;
+      }
+      this.rematchVotes.clear();
+      this.broadcast('server_event', {
+        type: 'rematch_dismissed',
+        reason: 'declined',
+        declinedBy: displayName
+      } as ServerEvent);
+      return;
+    }
+
+    this.rematchVotes.set(client.sessionId, true);
+
+    if (this.hasBotOpponent || this.state.players.has('bot-ai-opponent')) {
+      this.rematchVotes.set('bot-ai-opponent', true);
+    }
+
+    let allAccepted = this.rematchVotes.size >= 2;
+    this.state.players.forEach((_p, sId) => {
+      if (!this.rematchVotes.get(sId)) {
+        allAccepted = false;
+      }
     });
 
     if (allAccepted) {
+      if (this.rematchTimeout) {
+        clearTimeout(this.rematchTimeout);
+        this.rematchTimeout = undefined;
+      }
       this.matchEnded = false;
       this.state.matchId = `match-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      this.state.status = 'waiting';
+      this.state.status = 'countdown';
+      this.state.inputEnabled = false;
+      this.state.remainingSeconds = this.matchDuration;
+      this.state.countdownSeconds = 8;
       this.state.deckSeed = `deck-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
       this.generateRoomDeck();
@@ -1041,9 +1157,11 @@ export class CombatRoom extends Room<CombatRoomState> {
       this.state.endReason = '';
       this.rematchVotes.clear();
       this.eventLog = [];
+      this.introReadyPlayers.clear();
 
       this.state.players.forEach((p, sId) => {
-        p.ready = false;
+        p.ready = true;
+        p.introReady = false;
         p.health = MATCH_RULES.STARTING_HEALTH;
         p.activeWordIndex = 0;
         p.wordTypedCharCount = 0;
@@ -1055,15 +1173,37 @@ export class CombatRoom extends Room<CombatRoomState> {
         this.combatStates.set(sId, createInitialPlayerCombatState(sId));
       });
 
-      if (this.hasBotOpponent) {
+      if (this.hasBotOpponent || this.state.players.has('bot-ai-opponent')) {
         const bot = this.state.players.get('bot-ai-opponent');
-        if (bot) bot.ready = true;
+        if (bot) {
+          bot.ready = true;
+          bot.introReady = true;
+        }
+        this.introReadyPlayers.add('bot-ai-opponent');
       }
 
+      this.startCountdown();
+    } else {
+      // Broadcast immediate rematch request notification to the other player
       this.broadcast('server_event', {
-        type: 'match_start',
-        countdownSeconds: 8
+        type: 'rematch_request',
+        requesterSessionId: client.sessionId,
+        requesterDisplayName: displayName,
+        timeoutSeconds: 20
       } as ServerEvent);
+
+      // Start 20s timeout to dismiss if unaccepted
+      if (this.rematchTimeout) clearTimeout(this.rematchTimeout);
+      this.rematchTimeout = setTimeout(() => {
+        if (this.rematchVotes.size < 2 && this.matchEnded) {
+          console.log(`[CombatRoom] Rematch request timed out in room ${this.roomId}`);
+          this.rematchVotes.clear();
+          this.broadcast('server_event', {
+            type: 'rematch_dismissed',
+            reason: 'timeout'
+          } as ServerEvent);
+        }
+      }, 20000);
     }
   }
 }

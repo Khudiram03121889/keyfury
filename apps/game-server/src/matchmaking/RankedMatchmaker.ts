@@ -14,6 +14,7 @@ export interface RankedQueueEntry {
   status: 'queued' | 'locking' | 'matched';
   lockCancelled?: boolean;
   token?: string;
+  arenaId: string;
 }
 
 export class RankedMatchmaker {
@@ -63,12 +64,23 @@ export class RankedMatchmaker {
       levelTolerance: entry.levelTolerance ?? tolerances.levelTolerance,
       searchRange: entry.mmrTolerance ?? tolerances.mmrTolerance,
       status: 'queued',
-      token: entry.token
+      token: entry.token,
+      arenaId: entry.arenaId || 'highland_sanctuary'
     };
 
     this.queue.set(entry.sessionId, fullEntry);
     this.profileToSession.set(profileId, entry.sessionId);
     return fullEntry;
+  }
+
+  public getMapCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    this.queue.forEach((entry) => {
+      if (entry.status === 'queued') {
+        counts[entry.arenaId] = (counts[entry.arenaId] || 0) + 1;
+      }
+    });
+    return counts;
   }
 
   public removePlayer(sessionId: string): RankedQueueEntry | undefined {
@@ -169,6 +181,8 @@ export class RankedMatchmaker {
           const p2 = queuedEntries[j];
           if (p2.status !== 'queued' || p2.lockCancelled) continue;
           if (p1.profileId === p2.profileId) continue; // Prevent self-matching
+          // Map constraint: players are grouped only with opponents who have selected the same map
+          if (p1.arenaId !== p2.arenaId) continue;
 
           const mmrDiff = Math.abs(p1.mmr - p2.mmr);
           const levelDiff = Math.abs(p1.level - p2.level);
@@ -223,7 +237,7 @@ export class RankedMatchmaker {
     }
 
     try {
-      const room = await matchMaker.createRoom(targetRoomName, { isRanked: true });
+      const room = await matchMaker.createRoom(targetRoomName, { isRanked: true, arenaId: p1.arenaId });
 
       if (p1.lockCancelled || p2.lockCancelled) {
         console.log(`[RankedMatchmaker] Lock cancelled after room creation: p1(${p1.displayName}), p2(${p2.displayName})`);

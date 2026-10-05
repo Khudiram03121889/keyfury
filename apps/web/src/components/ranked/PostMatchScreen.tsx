@@ -25,6 +25,11 @@ export interface PostMatchScreenProps {
   onPlayAgain: () => void;
   onReturnToLobby: () => void;
   onViewProfile?: () => void;
+  rematchStatus?: 'idle' | 'pending' | 'received' | 'accepted' | 'dismissed';
+  rematchRequesterName?: string;
+  dismissReason?: string;
+  onAcceptRematch?: () => void;
+  onDeclineRematch?: () => void;
 }
 
 export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
@@ -34,7 +39,12 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
   userProfile,
   onPlayAgain,
   onReturnToLobby,
-  onViewProfile
+  onViewProfile,
+  rematchStatus = 'idle',
+  rematchRequesterName,
+  dismissReason,
+  onAcceptRematch,
+  onDeclineRematch
 }) => {
   const mmrDelta = playerStats.mmrDelta ?? (isWinner ? 24 : -16);
   const startingMmr = Math.max(0, (userProfile?.mmr ?? 1000));
@@ -585,23 +595,112 @@ export const PostMatchScreen: React.FC<PostMatchScreenProps> = ({
             margin: isMobile ? '0' : 'auto 0'
           }}>
             {/* Primary Action: REMATCH */}
-            <button
-              className="btn-primary"
-              onClick={onPlayAgain}
-              style={{
-                width: '100%',
-                padding: isMobile ? '14px 18px' : '11px 16px',
-                fontSize: isMobile ? '1rem' : '0.92rem',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                justifyContent: 'center',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #6366f1 100%)',
-                boxShadow: '0 4px 20px rgba(56, 189, 248, 0.4)'
-              }}
-            >
-              <RotateCcw size={17} /> Play Again / Rematch {!isMobile && <span className="kbd-badge" style={{ background: 'rgba(0, 0, 0, 0.25)', color: '#fff' }}>Enter</span>}
-            </button>
+            {/* Rematch Section */}
+            {rematchStatus === 'pending' ? (
+              <div
+                data-testid="rematch-pending-banner"
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '12px 16px' : '10px 14px',
+                  borderRadius: '12px',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1.5px solid var(--accent-cyan)',
+                  color: 'var(--accent-cyan)',
+                  fontSize: isMobile ? '0.88rem' : '0.84rem',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <RotateCcw size={16} className="spin" />
+                <span>Rematch Request Pending... Waiting for opponent</span>
+              </div>
+            ) : rematchStatus === 'received' ? (
+              <div
+                data-testid="rematch-received-banner"
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  background: 'rgba(236, 72, 153, 0.15)',
+                  border: '2px solid #ec4899',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{ color: '#fff', fontWeight: 900, fontSize: '0.90rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <Swords size={17} color="#ec4899" />
+                  <span>{rematchRequesterName || 'Opponent'} wants to rematch!</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    className="btn-primary"
+                    onClick={onAcceptRematch}
+                    style={{
+                      padding: '8px',
+                      fontSize: '0.82rem',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      borderColor: '#10b981',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Check size={14} /> Accept Rematch
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={onDeclineRematch}
+                    style={{
+                      padding: '8px',
+                      fontSize: '0.82rem',
+                      borderColor: '#ef4444',
+                      color: '#ef4444',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ) : rematchStatus === 'dismissed' ? (
+              <div
+                data-testid="rematch-dismissed-banner"
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textAlign: 'center'
+                }}
+              >
+                Rematch request dismissed ({dismissReason === 'timeout' ? 'Timed out' : 'Declined'})
+              </div>
+            ) : (
+              <button
+                className="btn-primary"
+                onClick={onPlayAgain}
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '14px 18px' : '11px 16px',
+                  fontSize: isMobile ? '1rem' : '0.92rem',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  justifyContent: 'center',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #6366f1 100%)',
+                  boxShadow: '0 4px 20px rgba(56, 189, 248, 0.4)'
+                }}
+              >
+                <RotateCcw size={17} /> Rematch {!isMobile && <span className="kbd-badge" style={{ background: 'rgba(0, 0, 0, 0.25)', color: '#fff' }}>Enter</span>}
+              </button>
+            )}
 
             {/* Result Card Download Button */}
             <button

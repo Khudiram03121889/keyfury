@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Room } from 'colyseus.js';
 import Phaser from 'phaser';
-import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle, Download } from 'lucide-react';
+import { Volume2, VolumeX, Flame, Trophy, ArrowRight, FastForward, Pause, Play, LogOut, AlertTriangle, Download, RefreshCw, MapPin } from 'lucide-react';
 import { StickFightScene, AttackKind } from '../game/StickFightScene';
 import { GuestProfile, getSavedSelectedArena, getSavedSelectedCameraAngle, saveMatchStats } from '../lib/supabase';
 import { soundManager } from '../audio/SoundManager';
@@ -36,6 +36,7 @@ export const MatchPage: React.FC<MatchPageProps> = ({
 
   // 3D Cinematic Entrance & Countdown Synchronization
   const [isIntroComplete, setIsIntroComplete] = useState<boolean>(() => !is3DMode);
+  const [isWaitingForOpponent, setIsWaitingForOpponent] = useState<boolean>(false);
 
   useEffect(() => {
     console.log(`[ENTRANCE_START] Client entrance started: map=${matchState?.arenaId || (room as any)?.metadata?.arenaId || getSavedSelectedArena() || 'cyber_rooftop'} timestamp=${new Date().toISOString()}`);
@@ -49,6 +50,10 @@ export const MatchPage: React.FC<MatchPageProps> = ({
     if (room?.state?.status === 'countdown') {
       try {
         room.send('skip_intro', {});
+        const isBot = (room as any)?.metadata?.withBot || room?.state?.players?.has?.('bot-ai-opponent');
+        if (!isBot) {
+          setIsWaitingForOpponent(true);
+        }
       } catch (_e) {}
     }
   }, [room]);
@@ -255,6 +260,10 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       setRemainingTime(state.remainingSeconds);
       setCountdown(state.status === 'countdown' ? state.countdownSeconds : null);
 
+      if (state.status === 'in_progress' || state.inputEnabled === true) {
+        setIsWaitingForOpponent(false);
+      }
+
       const { p1CharId, p2CharId } = getPlayerCharacterIds(state);
       if (sceneRef.current) {
         sceneRef.current?.setCharacterSkins(p1CharId, p2CharId);
@@ -427,6 +436,12 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         // Trigger visual guard stumble on 3D model & 2D scene for the errant fighter
         sceneRef.current?.triggerStun(errorSide);
         threeArenaRef.current?.triggerHit(errorSide, 'light');
+      } else if (event.type === 'intro_sync_update') {
+        if (event.waitingForOpponent) {
+          setIsWaitingForOpponent(true);
+        } else {
+          setIsWaitingForOpponent(false);
+        }
       } else if ((event as any).type === 'options_updated') {
         if ((event as any).botDifficulty) {
           setCurrentBotDifficulty((event as any).botDifficulty);
@@ -519,6 +534,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
   // Keep typing input focused during combat once intro completes or in 2D mode
   useEffect(() => {
     const canType = (!is3DMode || isIntroComplete) &&
+      !isWaitingForOpponent &&
       matchState?.status === 'in_progress' &&
       matchState?.inputEnabled !== false;
     if (canType) {
@@ -531,6 +547,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         const liveStatus = matchStateRef.current?.status;
         const liveInputEnabled = matchStateRef.current?.inputEnabled;
         const liveCanType = (!is3DMode || isIntroComplete) &&
+          !isWaitingForOpponent &&
           liveStatus === 'in_progress' &&
           liveInputEnabled !== false;
         if (document.activeElement !== typingInputRef.current && liveCanType) {
@@ -539,14 +556,14 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       }, 500);
       return () => clearInterval(interval);
     }
-  }, [matchState?.status, matchState?.inputEnabled, is3DMode, isIntroComplete]);
+  }, [matchState?.status, matchState?.inputEnabled, is3DMode, isIntroComplete, isWaitingForOpponent]);
 
   // Capture phase is intentional: Phaser can consume keyboard events from its
   // canvas before React sees them. Listening on window makes typing work after
   // clicking anywhere in the arena, not just while the invisible input has
   // focus.
   const handleKeyPress = (char: string) => {
-    if (showStatsOverlay || isMatchEndedRef.current || isPaused) return;
+    if (showStatsOverlay || isMatchEndedRef.current || isPaused || isWaitingForOpponent) return;
     if (is3DMode && !isIntroComplete) return;
     const status = room.state?.status;
     if (status !== 'in_progress' || matchState?.inputEnabled === false || room.state?.inputEnabled === false) return;
@@ -577,7 +594,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
   };
 
   const handleInputDOMEvent = (e: React.FormEvent<HTMLInputElement>) => {
-    if (is3DMode && !isIntroComplete) {
+    if ((is3DMode && !isIntroComplete) || isWaitingForOpponent) {
       syncAndResetInput();
       return;
     }
@@ -717,6 +734,13 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
       }
     }
 
+    if (isWaitingForOpponent) {
+      if (event.key !== 'Escape') {
+        event.preventDefault();
+      }
+      return;
+    }
+
     if (event.key === 'Escape') {
       event.preventDefault();
       if (isBotMode) {
@@ -752,7 +776,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
   useEffect(() => {
     window.addEventListener('keydown', handleCombatKey, true);
     return () => window.removeEventListener('keydown', handleCombatKey, true);
-  }, [room, showStatsOverlay, completedState, isBotMode, isPaused, is3DMode, isIntroComplete, handleIntroComplete]);
+  }, [room, showStatsOverlay, completedState, isBotMode, isPaused, is3DMode, isIntroComplete, isWaitingForOpponent, handleIntroComplete]);
 
   if (!matchState) {
     return (
@@ -786,6 +810,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
 
   const leftHealth = leftPlayer?.health ?? 100;
   const rightHealth = rightPlayer?.health ?? 100;
+  const currentArenaDef = getArenaDefinition(matchState?.arenaId || (room as any)?.metadata?.arenaId || getSavedSelectedArena() || 'highland_sanctuary');
 
   return (
     <div style={{
@@ -863,7 +888,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
           type="text"
           name="combat_keystroke_input"
           id="combat_keystroke_input"
-          disabled={is3DMode && !isIntroComplete}
+          disabled={(is3DMode && !isIntroComplete) || isWaitingForOpponent}
           inputMode="text"
           autoCapitalize="off"
           autoCorrect="off"
@@ -891,10 +916,60 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
             color: 'transparent',
             outline: 'none',
             cursor: 'default',
-            pointerEvents: is3DMode && !isIntroComplete ? 'none' : 'auto',
+            pointerEvents: ((is3DMode && !isIntroComplete) || isWaitingForOpponent) ? 'none' : 'auto',
             zIndex: 1
           }}
         />
+
+        {/* Waiting For Opponent Intro Synchronization Overlay */}
+        {isWaitingForOpponent && (
+          <div
+            data-testid="waiting-for-opponent-banner"
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 35,
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
+              border: '2px solid var(--accent-cyan)',
+              borderRadius: '16px',
+              padding: '24px 32px',
+              backdropFilter: 'blur(16px)',
+              boxShadow: '0 0 50px rgba(56, 189, 248, 0.45), 0 20px 40px rgba(0,0,0,0.85)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              textAlign: 'center',
+              maxWidth: '420px',
+              pointerEvents: 'auto'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <RefreshCw size={24} className="spin" color="var(--accent-cyan)" />
+              <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '0.5px' }}>
+                Waiting for opponent to start...
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+              Typing is locked until both warriors enter the arena.
+            </p>
+            <div style={{
+              fontSize: '0.72rem',
+              padding: '4px 12px',
+              borderRadius: '999px',
+              backgroundColor: 'rgba(56, 189, 248, 0.15)',
+              color: 'var(--accent-cyan)',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              border: '1px solid rgba(56, 189, 248, 0.3)'
+            }}>
+              Intro Synchronization Active
+            </div>
+          </div>
+        )}
 
         {/* --- TOP HUD OVERLAYS --- */}
         {isPortrait ? (
@@ -951,15 +1026,29 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
 
             {/* Center: Digital Match Timer & Controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              <span style={{
-                fontSize: '1.05rem',
-                fontWeight: 900,
-                fontFamily: 'var(--font-mono)',
-                color: remainingTime <= 15 ? '#ef4444' : '#fbbf24',
-                lineHeight: 1
-              }}>
-                {remainingTime}s
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 900,
+                  fontFamily: 'var(--font-mono)',
+                  color: remainingTime <= 15 ? '#ef4444' : '#fbbf24',
+                  lineHeight: 1
+                }}>
+                  {remainingTime}s
+                </span>
+                <span style={{
+                  fontSize: '0.55rem',
+                  fontWeight: 800,
+                  color: currentArenaDef.theme.primaryColor,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.3px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2px'
+                }}>
+                  <MapPin size={8} /> {currentArenaDef.name.split(' ')[0]}
+                </span>
+              </div>
               <button
                 onClick={() => {
                   const newMuted = soundManager.toggleMuted();
@@ -1113,12 +1202,26 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
               boxShadow: '0 6px 20px var(--card-shadow)',
               flexShrink: 0
             }}>
-              <span style={{
-                fontSize: viewportWidth < 600 ? '1.2rem' : 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
-                color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
-              }}>
-                {remainingTime}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={{
+                  fontSize: viewportWidth < 600 ? '1.2rem' : 'clamp(1.5rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-mono)',
+                  color: remainingTime <= 15 ? '#ef4444' : '#4ade80', lineHeight: 1
+                }}>
+                  {remainingTime}
+                </span>
+                <span style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 800,
+                  color: currentArenaDef.theme.primaryColor,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px'
+                }}>
+                  <MapPin size={10} /> {currentArenaDef.name}
+                </span>
+              </div>
               <button
                 onClick={() => {
                   const newMuted = soundManager.toggleMuted();

@@ -11,6 +11,7 @@ interface ResultPageProps {
   userProfile?: UserProfile | null;
   onReturnToLobby: () => void;
   onOpenProfile?: () => void;
+  onRematchStart?: () => void;
 }
 
 export const ResultPage: React.FC<ResultPageProps> = ({
@@ -19,9 +20,41 @@ export const ResultPage: React.FC<ResultPageProps> = ({
   matchResult,
   userProfile,
   onReturnToLobby,
-  onOpenProfile
+  onOpenProfile,
+  onRematchStart
 }) => {
   const isWinner = matchResult?.winnerSessionId === room.sessionId;
+
+  const [rematchStatus, setRematchStatus] = useState<'idle' | 'pending' | 'received' | 'accepted' | 'dismissed'>('idle');
+  const [rematchRequesterName, setRematchRequesterName] = useState<string>('');
+  const [dismissReason, setDismissReason] = useState<string>('');
+
+  useEffect(() => {
+    if (!room) return;
+
+    room.onStateChange((state: any) => {
+      if (state.status === 'countdown' || state.status === 'in_progress') {
+        onRematchStart?.();
+      }
+    });
+
+    room.onMessage('server_event', (event: any) => {
+      if (event.type === 'rematch_request') {
+        if (event.requesterSessionId !== room.sessionId) {
+          setRematchStatus('received');
+          setRematchRequesterName(event.requesterDisplayName || 'Opponent');
+        }
+      } else if (event.type === 'rematch_dismissed') {
+        setRematchStatus('dismissed');
+        setDismissReason(event.reason || 'declined');
+        setTimeout(() => {
+          setRematchStatus('idle');
+        }, 3500);
+      } else if (event.type === 'match_start') {
+        onRematchStart?.();
+      }
+    });
+  }, [room, onRematchStart]);
 
   let myRawStats: any = null;
   let oppRawStats: any = null;
@@ -81,10 +114,28 @@ export const ResultPage: React.FC<ResultPageProps> = ({
     wordsCompleted: oppRawStats?.wordsCompleted ?? oppRawStats?.words_completed ?? 0
   };
 
-  const handleRematch = () => {
+  const handleRequestRematch = () => {
     soundManager.playClick();
-    room.send('rematch_vote', { accepted: true });
-    onReturnToLobby();
+    setRematchStatus('pending');
+    try {
+      room.send('rematch_vote', { accepted: true });
+    } catch (_e) {}
+  };
+
+  const handleAcceptRematch = () => {
+    soundManager.playClick();
+    setRematchStatus('pending');
+    try {
+      room.send('rematch_vote', { accepted: true });
+    } catch (_e) {}
+  };
+
+  const handleDeclineRematch = () => {
+    soundManager.playClick();
+    setRematchStatus('idle');
+    try {
+      room.send('rematch_vote', { accepted: false });
+    } catch (_e) {}
   };
 
   return (
@@ -93,9 +144,14 @@ export const ResultPage: React.FC<ResultPageProps> = ({
       playerStats={playerStats}
       opponentStats={opponentStats}
       userProfile={userProfile || (guest as any)}
-      onPlayAgain={handleRematch}
+      onPlayAgain={handleRequestRematch}
       onReturnToLobby={onReturnToLobby}
       onViewProfile={onOpenProfile}
+      rematchStatus={rematchStatus}
+      rematchRequesterName={rematchRequesterName}
+      dismissReason={dismissReason}
+      onAcceptRematch={handleAcceptRematch}
+      onDeclineRematch={handleDeclineRematch}
     />
   );
 };

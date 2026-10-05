@@ -33,6 +33,8 @@ export interface ArenaSelectModalProps {
   onStartFight?: (arenaId: ArenaId) => void;
   isFightLaunchFlow?: boolean;
   fightModeLabel?: string;
+  isMapLocked?: boolean;
+  mapCounts?: Record<ArenaId, number>;
 }
 
 export function getCleanArenaName(name: string): string {
@@ -56,7 +58,9 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
   onSelectArena,
   onStartFight,
   isFightLaunchFlow = false,
-  fightModeLabel = 'Duel'
+  fightModeLabel = 'Duel',
+  isMapLocked = false,
+  mapCounts
 }) => {
   const arenas = getAllArenas();
   const [focusedId, setFocusedId] = useState<ArenaId>(selectedArenaId);
@@ -452,6 +456,10 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
   if (!isOpen) return null;
 
   const handleConfirmSelection = (arenaId: ArenaId) => {
+    if (isMapLocked) {
+      onClose();
+      return;
+    }
     soundManager.playClick();
     onSelectArena(arenaId);
     saveSelectedArena(arenaId);
@@ -543,10 +551,12 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                   </span>
                 )}
               </div>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
-                {isFightLaunchFlow
+              <p style={{ margin: 0, fontSize: '0.75rem', color: isMapLocked ? '#fbbf24' : '#94a3b8' }}>
+                {isMapLocked
+                  ? '🔒 Map chosen by host • Battleground is locked for this match'
+                  : isFightLaunchFlow
                   ? `Select your battleground, then click Start Fight to begin ${fightModeLabel}`
-                  : 'Choose your battleground • Custom backgrounds, lighting & physics'}
+                  : 'Choose your battleground • Real-time player counts displayed'}
               </p>
             </div>
           </div>
@@ -593,21 +603,26 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                 const isFocused = arena.id === focusedId;
                 const isSelected = arena.id === selectedArenaId;
                 const bgUrl = ARENA_BACKGROUNDS[arena.id];
+                const onlineCount = mapCounts?.[arena.id] ?? 0;
 
                 return (
                 <div
                   key={arena.id}
                   onClick={() => {
+                    if (isMapLocked && arena.id !== selectedArenaId) return;
                     setFocusedId(arena.id);
                     soundManager.playClick();
                   }}
-                  onDoubleClick={() => handleConfirmSelection(arena.id)}
+                  onDoubleClick={() => {
+                    if (!isMapLocked) handleConfirmSelection(arena.id);
+                  }}
                   style={{
                     position: 'relative',
                     height: '84px',
                     borderRadius: '16px',
                     overflow: 'hidden',
-                    cursor: 'pointer',
+                    cursor: (isMapLocked && arena.id !== selectedArenaId) ? 'not-allowed' : 'pointer',
+                    opacity: (isMapLocked && arena.id !== selectedArenaId) ? 0.45 : 1,
                     border: isFocused
                       ? `2px solid ${arena.theme.primaryColor}`
                       : isSelected
@@ -667,8 +682,25 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                             [{idx + 1}]
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: arena.theme.accentColor }}>
-                          {arena.subtitle}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                          <span style={{ fontSize: '0.75rem', color: arena.theme.accentColor }}>
+                            {arena.subtitle}
+                          </span>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            backgroundColor: onlineCount > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(148, 163, 184, 0.1)',
+                            color: onlineCount > 0 ? '#34d399' : '#94a3b8',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            border: `1px solid ${onlineCount > 0 ? 'rgba(16, 185, 129, 0.35)' : 'rgba(148, 163, 184, 0.2)'}`
+                          }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: onlineCount > 0 ? '#34d399' : '#94a3b8' }} />
+                            <span>{onlineCount} {onlineCount === 1 ? 'player' : 'players'}</span>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -981,7 +1013,11 @@ export const ArenaSelectModal: React.FC<ArenaSelectModalProps> = ({
                 e.currentTarget.style.transform = 'translateY(0) scale(1)';
               }}
             >
-              {isFightLaunchFlow ? (
+              {isMapLocked ? (
+                <>
+                  <span>🔒 MAP LOCKED BY HOST</span>
+                </>
+              ) : isFightLaunchFlow ? (
                 <>
                   <Swords size={22} />
                   <span>START FIGHT • {getCleanArenaName(focusedArena.name).toUpperCase()}</span>

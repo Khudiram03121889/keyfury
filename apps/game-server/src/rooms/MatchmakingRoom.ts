@@ -15,6 +15,7 @@ export class QueuePlayerState extends Schema {
   @type('number') levelTolerance: number = 2;
   @type('number') tolerance: number = 100;
   @type('string') status: string = 'queued';
+  @type('string') arenaId: string = 'highland_sanctuary';
 }
 
 export class MatchmakingRoomState extends Schema {
@@ -52,6 +53,7 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
     const displayName = options.displayName || `Challenger ${Math.floor(Math.random() * 900 + 100)}`;
     const mmr = options.mmr ?? 1000;
     const level = Math.max(1, options.level ?? 1);
+    const arenaId = options.arenaId || 'highland_sanctuary';
     const now = Date.now();
 
     const entry = this.matchmaker.addPlayer(
@@ -62,6 +64,7 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
         displayName,
         mmr,
         level,
+        arenaId,
         joinedAt: now,
         token: options.token
       },
@@ -77,6 +80,7 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
     playerState.displayName = displayName;
     playerState.mmr = mmr;
     playerState.level = level;
+    playerState.arenaId = arenaId;
     playerState.joinedAt = now;
     playerState.mmrTolerance = entry.mmrTolerance;
     playerState.levelTolerance = entry.levelTolerance;
@@ -84,7 +88,7 @@ export class MatchmakingRoom extends Room<MatchmakingRoomState> {
     playerState.status = 'queued';
 
     this.state.queue.set(client.sessionId, playerState);
-    console.log(`[MatchmakingRoom] Player queued: ${displayName} (${profileId}) MMR:${mmr} Lvl:${level}`);
+    console.log(`[MatchmakingRoom] Player queued: ${displayName} (${profileId}) MMR:${mmr} Lvl:${level} Map:${arenaId}`);
   }
 
   onLeave(client: Client) {

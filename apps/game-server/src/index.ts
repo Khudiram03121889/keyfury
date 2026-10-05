@@ -55,6 +55,8 @@ app.use(
 );
 app.use(express.json());
 
+import { matchMaker } from 'colyseus';
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -63,6 +65,35 @@ app.get('/health', (req, res) => {
     time: new Date().toISOString(),
     envConfigured: missingVars.length === 0
   });
+});
+
+// Real-time online players per map endpoint
+app.get('/api/map-stats', async (_req, res) => {
+  try {
+    const defaultMaps = ['highland_sanctuary', 'cyber_rooftop', 'volcanic_caldera', 'celestial_void'];
+    const counts: Record<string, number> = {};
+    defaultMaps.forEach((m) => { counts[m] = 0; });
+
+    const rooms = await matchMaker.query({});
+    let totalOnline = 0;
+
+    for (const r of rooms) {
+      const arenaId = r.metadata?.arenaId;
+      const clientCount = r.clients || 0;
+      totalOnline += clientCount;
+      if (arenaId) {
+        counts[arenaId] = (counts[arenaId] || 0) + clientCount;
+      }
+    }
+
+    res.json({
+      counts,
+      totalOnline,
+      updatedAt: Date.now()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to query map stats' });
+  }
 });
 
 const server = http.createServer(app);
@@ -74,9 +105,9 @@ const gameServer = new Server({
 });
 
 // Register rooms
-gameServer.define('combat_room', CombatRoom).filterBy(['isChallenge']);
-gameServer.define('battle_room', BattleRoom).filterBy(['isChallenge']);
-gameServer.define('duel_room', DuelRoom).filterBy(['isChallenge']);
+gameServer.define('combat_room', CombatRoom).filterBy(['isChallenge', 'arenaId']);
+gameServer.define('battle_room', BattleRoom).filterBy(['isChallenge', 'arenaId']);
+gameServer.define('duel_room', DuelRoom).filterBy(['isChallenge', 'arenaId']);
 gameServer.define('matchmaking', MatchmakingRoom);
 
 
