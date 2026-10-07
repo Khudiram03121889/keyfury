@@ -406,7 +406,7 @@ const getPlayerCharacterIds = (state: any): { p1CharId: string; p2CharId: string
         }
 
         // Trigger 3D Martial Strike & Reaction
-        threeArenaRef.current?.triggerAttack(side, tier);
+        threeArenaRef.current?.triggerAttack(side, tier, event.damage, event.newCombo);
         threeArenaRef.current?.triggerHit(side === 'left' ? 'right' : 'left', isHeavyAttack ? 'heavy' : 'light');
 
         if (isHeavyAttack || (event.damage && event.damage >= 25)) {

@@ -159,6 +159,57 @@ export class Character3DFighter {
   private recoilVelocity: number = 0;
   private typingAdvance: number = 0; // cumulative forward creep from keystrokes
 
+  // Dynamic strike target reference (opponent fighter in arena)
+  public opponent: Character3DFighter | null = null;
+  public setOpponent(opp: Character3DFighter | null) {
+    this.opponent = opp;
+  }
+
+  public getChestWorldPosition(outVec?: THREE.Vector3): THREE.Vector3 {
+    const v = outVec || new THREE.Vector3();
+    if (this.bones.chest) {
+      this.bones.chest.getWorldPosition(v);
+    } else {
+      v.set(
+        this.group.position.x - 0.15 * this.facingSign,
+        (this.baseY ?? 0) + 1.55,
+        this.group.position.z
+      );
+    }
+    return v;
+  }
+
+  public getHeadWorldPosition(outVec?: THREE.Vector3): THREE.Vector3 {
+    const v = outVec || new THREE.Vector3();
+    if (this.bones.head) {
+      this.bones.head.getWorldPosition(v);
+    } else {
+      v.set(
+        this.group.position.x - 0.12 * this.facingSign,
+        (this.baseY ?? 0) + 1.95,
+        this.group.position.z
+      );
+    }
+    return v;
+  }
+
+  /**
+   * Computes dynamic forward lunge to bring striker limb/weapon to physical contact (<= 0.15m)
+   * with opponent body surface. If opponent is null (e.g. standalone test), returns fallbackLunge.
+   */
+  public getTargetLunge(limbReach: number, targetHeightType: 'chest' | 'head' = 'chest', fallbackLunge: number): number {
+    if (!this.opponent) return fallbackLunge;
+
+    const tmpVec = new THREE.Vector3();
+    const targetPos = targetHeightType === 'head'
+      ? this.opponent.getHeadWorldPosition(tmpVec)
+      : this.opponent.getChestWorldPosition(tmpVec);
+
+    const currentGroupX = this.group.position.x;
+    const requiredLunge = (targetPos.x - currentGroupX) * this.facingSign - limbReach;
+    return Math.max(0.8, requiredLunge);
+  }
+
   constructor(charId: string, side: 'left' | 'right', loader: GLTFLoader, onLoaded?: () => void) {
     const resolved = resolveCharacterId(charId);
     this.profile = CHARACTER_PROFILES[resolved] || CHARACTER_PROFILES.ronin;
@@ -259,19 +310,34 @@ export class Character3DFighter {
               mats.forEach((mat) => {
                 const stdMat = mat as THREE.MeshStandardMaterial;
                 stdMat.depthWrite = true;
-                // Authentic Blender Material Preview (LookDev) PBR settings:
-                // Ensure dark suits do not turn into silver/chrome tin foil
-                if (stdMat.metalness > 0.40) {
-                  stdMat.metalness = this.profile.id === 'valkyrie' ? 0.45 : 0.30;
-                }
-                if (stdMat.roughness < 0.38) {
-                  stdMat.roughness = 0.44;
-                }
-                // Glowing cyber conduit markings
-                if (stdMat.emissiveMap) {
-                  stdMat.emissiveIntensity = 1.0;
-                } else if (stdMat.emissive && (stdMat.emissive.r > 0 || stdMat.emissive.g > 0 || stdMat.emissive.b > 0)) {
-                  stdMat.emissiveIntensity = 1.0;
+                const matName = stdMat.name || '';
+                const meshName = mesh.name || '';
+
+                if (meshName.includes('Dagger') || matName.includes('Dagger')) {
+                  // Vibrant glowing hard-light amethyst dual stiletto blades
+                  stdMat.emissive = new THREE.Color(0xe879f9);
+                  stdMat.emissiveIntensity = 4.5;
+                  stdMat.roughness = 0.30;
+                  stdMat.metalness = 0.30;
+                } else if (matName.includes('Glaive_Blade') || (meshName.includes('Glaive') && matName.includes('Blade'))) {
+                  // Vibrant glowing solar crimson hard-light crescent blade
+                  stdMat.emissive = new THREE.Color(0xff0055);
+                  stdMat.emissiveIntensity = 4.8;
+                  stdMat.roughness = 0.15;
+                  stdMat.metalness = 0.10;
+                } else {
+                  // Authentic Blender Material Preview (LookDev) PBR settings:
+                  if (stdMat.metalness > (this.profile.id === 'valkyrie' ? 0.45 : 0.30)) {
+                    stdMat.metalness = this.profile.id === 'valkyrie' ? 0.45 : 0.30;
+                  }
+                  if (stdMat.roughness < 0.44) {
+                    stdMat.roughness = 0.44;
+                  }
+                  if (stdMat.emissiveMap) {
+                    stdMat.emissiveIntensity = 1.0;
+                  } else if (stdMat.emissive && (stdMat.emissive.r > 0 || stdMat.emissive.g > 0 || stdMat.emissive.b > 0)) {
+                    stdMat.emissiveIntensity = 1.0;
+                  }
                 }
               });
             }
@@ -320,6 +386,8 @@ export class Character3DFighter {
     if (this.bones.handL && this.socketWeaponL.parent !== this.bones.handL) {
       this.bones.handL.add(this.socketWeaponL);
     }
+
+    // Weapon geometry is directly rigged and parented in Blender GLB model.
 
     // Track the actual Blender mesh materials for the emissive glow flare system.
     // All 4 character GLBs use emissive textures — we collect every MeshStandardMaterial
@@ -403,14 +471,51 @@ export class Character3DFighter {
     const currentX = THREE.MathUtils.lerp(startX, this.targetX, this.entranceProgress);
     this.group.position.x = currentX;
 
-    if (this.entranceProgress >= 1.0) {
+    if (this.entranceProgress < 1.0) {
+      if (this.state === 'ko' || this.state === 'victory') {
+        this.state = 'entrance';
+        this.resetRecoil();
+        this.resetBones();
+      }
+    } else {
       this.verticalBob = 0;
       this.rotationSway = 0;
       this.pitchTilt = 0;
-      if (this.state === 'entrance') {
+      this.lungeOffset = 0;
+      if (this.meshObject) {
+        this.meshObject.position.x = 0;
+        this.meshObject.position.y = 0;
+        this.meshObject.rotation.x = 0;
+        this.meshObject.rotation.z = 0;
+        const baseFacing = this.facingSign > 0 ? Math.PI / 2 : -Math.PI / 2;
+        this.meshObject.rotation.y = baseFacing;
+      }
+      if (this.state === 'entrance' || this.state === 'ko' || this.state === 'victory') {
         this.state = 'idle';
+        this.resetRecoil();
+        this.resetBones();
       }
     }
+  }
+
+  public resetToIdle() {
+    this.state = 'idle';
+    this.stateTimer = 0;
+    this.stateDuration = 0;
+    this.verticalBob = 0;
+    this.rotationSway = 0;
+    this.pitchTilt = 0;
+    this.lungeOffset = 0;
+    if (this.meshObject) {
+      this.meshObject.position.x = 0;
+      this.meshObject.position.y = 0;
+      this.meshObject.rotation.x = 0;
+      this.meshObject.rotation.z = 0;
+      const baseFacing = this.facingSign > 0 ? Math.PI / 2 : -Math.PI / 2;
+      this.meshObject.rotation.y = baseFacing;
+    }
+    this.resetRecoil();
+    this.resetBones();
   }
 
   public triggerEntranceFlair() {
@@ -418,6 +523,7 @@ export class Character3DFighter {
   }
 
   public playKeystroke() {
+    if (this.state === 'ko') return;
     // Immediate reactive tension twitch & micro-shuffle on letter input
     this.keystrokeTimer = 0.18;
     this.glowLight.intensity = this.profile.id === 'valkyrie' ? 2.8 : this.profile.id === 'shinobi' ? 3.0 : 2.6;
@@ -429,6 +535,7 @@ export class Character3DFighter {
   }
 
   public playJab() {
+    if (this.state === 'ko') return;
     this.state = 'jab';
     this.stateTimer = 0;
     // Character-specific attack durations
@@ -437,12 +544,17 @@ export class Character3DFighter {
     else if (this.profile.id === 'void') this.stateDuration = 0.34;
     else this.stateDuration = 0.34;
 
-    this.comboStep = (this.comboStep + 1) % 3;
+    if (this.comboResetTimer > 0) {
+      this.comboStep = (this.comboStep + 1) % 3;
+    } else {
+      this.comboStep = 0;
+    }
     this.comboResetTimer = 1.0;
     this.glowLight.intensity = 2.8;
   }
 
   public playKick() {
+    if (this.state === 'ko') return;
     this.state = 'kick';
     this.stateTimer = 0;
     if (this.profile.id === 'shinobi') this.stateDuration = 0.44;
@@ -455,6 +567,7 @@ export class Character3DFighter {
   }
 
   public playHeavy() {
+    if (this.state === 'ko') return;
     this.state = 'heavy';
     this.stateTimer = 0;
     if (this.profile.id === 'shinobi') this.stateDuration = 0.60;
@@ -467,6 +580,7 @@ export class Character3DFighter {
   }
 
   public playWeapon() {
+    if (this.state === 'ko') return;
     this.state = 'weapon';
     this.stateTimer = 0;
     if (this.profile.id === 'shinobi') this.stateDuration = 0.54;
@@ -479,6 +593,7 @@ export class Character3DFighter {
   }
 
   public playHitLight() {
+    if (this.state === 'ko') return;
     this.state = 'hit_light';
     this.stateTimer = 0;
     if (this.profile.id === 'shinobi') this.stateDuration = 0.20;
@@ -494,6 +609,7 @@ export class Character3DFighter {
   }
 
   public playHitHeavy() {
+    if (this.state === 'ko') return;
     this.state = 'hit_heavy';
     this.stateTimer = 0;
     if (this.profile.id === 'shinobi') this.stateDuration = 0.42;
@@ -510,16 +626,23 @@ export class Character3DFighter {
 
   /** Push the fighter backward from a hit impact. Recovers via spring in update(). */
   public applyKnockback(amount: number) {
-    this.recoilOffset += -amount * this.facingSign;
-    this.recoilVelocity = -amount * 2.5 * this.facingSign;
+    this.recoilVelocity = -amount * 3.5 * this.facingSign;
     // Reset typing advance on getting hit — you lose ground
     this.typingAdvance = 0;
   }
 
+  public resetRecoil() {
+    this.recoilOffset = 0;
+    this.recoilVelocity = 0;
+    this.typingAdvance = 0;
+  }
+
   public playKnockout() {
+    if (this.state === 'ko') return;
     this.state = 'ko';
     this.stateTimer = 0;
     this.stateDuration = 3.0;
+    this.resetRecoil();
   }
 
   public playVictory() {
@@ -530,6 +653,19 @@ export class Character3DFighter {
 
   public getComboStep(): number {
     return this.comboStep;
+  }
+
+  public getImpactDelay(tier: 'jab' | 'kick' | 'heavy' | 'weapon'): number {
+    if (this.profile.id === 'void') {
+      return tier === 'jab' ? 0.13 : tier === 'kick' ? 0.25 : tier === 'heavy' ? 0.42 : 0.40;
+    }
+    if (this.profile.id === 'shinobi') {
+      return tier === 'jab' ? 0.13 : tier === 'kick' ? 0.29 : tier === 'heavy' ? 0.41 : 0.37;
+    }
+    if (this.profile.id === 'valkyrie') {
+      return tier === 'jab' ? 0.13 : tier === 'kick' ? 0.28 : tier === 'heavy' ? 0.42 : 0.42;
+    }
+    return tier === 'jab' ? 0.12 : tier === 'kick' ? 0.27 : tier === 'heavy' ? 0.45 : 0.41;
   }
 
   public update(delta: number, elapsedTotal: number) {
@@ -594,8 +730,9 @@ export class Character3DFighter {
           const dropHeight = (1 - this.entranceProgress) * (1 - this.entranceProgress) * 2.2;
           this.verticalBob = dropHeight + Math.abs(Math.sin(phase)) * 0.08;
         } else if (this.entranceMapId === 'volcanic_caldera') {
-          // Volcanic platform surface stride on solid rock floor — feet stay strictly above ground
-          this.verticalBob = Math.abs(Math.sin(phase)) * 0.08;
+          // Left side executes solid rock platform stride; Right side emerges from molten fissure
+          const moltenEmerge = this.side === 'right' ? -Math.max(0, (1 - this.entranceProgress * 1.5) * 0.8) : 0;
+          this.verticalBob = moltenEmerge + Math.abs(Math.sin(phase)) * 0.08;
         } else if (this.entranceMapId === 'highland_sanctuary') {
           const leapArc = Math.sin(this.entranceProgress * Math.PI) * 0.35;
           this.verticalBob = leapArc + Math.abs(Math.sin(phase)) * 0.09;
@@ -619,10 +756,10 @@ export class Character3DFighter {
         // Character-tailored arm carry during arrival
         if (this.profile.id === 'valkyrie') {
           // Valkyrie two-handed glaive carry across chest
-          this.setBoneRot('upperArmR', -0.60 + stride * 0.20, -0.15, -0.15, 'local');
-          this.setBoneRot('forearmR', 0.70, 0, 0, 'local');
-          this.setBoneRot('upperArmL', -0.50 - stride * 0.20, 0.15, 0.20, 'local');
-          this.setBoneRot('forearmL', 0.70, 0, 0, 'local');
+          this.setBoneRot('upperArmR', -0.42 + stride * 0.15, -0.05, -0.06, 'local');
+          this.setBoneRot('forearmR', 0.58, 0, 0, 'local');
+          this.setBoneRot('upperArmL', -0.38 - stride * 0.15, 0.05, 0.06, 'local');
+          this.setBoneRot('forearmL', 0.58, 0, 0, 'local');
         } else if (this.profile.id === 'shinobi') {
           // Shinobi dual kunai reverse carry (hands tucked ready)
           this.setBoneRot('upperArmR', -0.40 + stride * 0.20, 0, -0.20, 'local');
@@ -658,32 +795,33 @@ export class Character3DFighter {
 
         // Character Archetype Specific Combat Guards & Keystroke Reflexes:
         if (this.profile.id === 'valkyrie') {
-          // Cyber Valkyrie: Imposing two-handed vanguard ready stance with balanced grounded posture
+          // Cyber Valkyrie: Imposing two-handed vanguard ready stance with 3/4 athletic depth
           this.verticalBob = breath * 0.012 - twitch * 0.015;
           this.rotationSway = Math.sin(elapsedTotal * 1.0) * 0.01;
-          this.lungeOffset = Math.sin(twitch * Math.PI) * 0.10 * this.facingSign;
+          this.lungeOffset = Math.sin(twitch * Math.PI) * 0.08 * this.facingSign;
 
-          this.setBoneRot('spine', breath * 0.010 + twitch * 0.02, 0, 0, 'parent');
-          this.setBoneRot('chest', breath * 0.015 + twitch * 0.03, 0, 0, 'parent');
-          this.setBoneRot('head', -twitch * 0.02, 0, 0, 'parent');
+          // 3/4 Torso angle for high 3D perspective and clear muscular silhouette
+          this.setBoneRot('spine', breath * 0.012 + twitch * 0.02, -0.16 * this.facingSign, 0, 'parent');
+          this.setBoneRot('chest', breath * 0.015 + twitch * 0.03, -0.18 * this.facingSign, 0, 'parent');
+          this.setBoneRot('head', -twitch * 0.02, 0.10 * this.facingSign, 0, 'parent');
 
-          // Right arm grips Solar Glaive in forward ready guard
-          this.setBoneRot('upperArmR', -0.50 - breath * 0.03 - twitch * 0.12, -0.15, -0.15, 'local');
-          this.setBoneRot('forearmR', 0.70 - twitch * 0.06, 0, 0, 'local');
-          this.setBoneRot('handR', 0.08, 0, 0, 'local');
+          // Right arm grips Solar Glaive poised forward at chest height in ready vanguard guard
+          this.setBoneRot('upperArmR', -0.55 - breath * 0.02 - twitch * 0.06, -0.10, -0.12, 'local');
+          this.setBoneRot('forearmR', 0.85 - twitch * 0.04, 0, 0, 'local');
+          this.setBoneRot('handR', -1.85, 0, 0, 'local');
 
-          // Left rocket gauntlet raised in protective shield guard
-          this.setBoneRot('upperArmL', -0.42 - twitch * 0.25 + breath * 0.02, 0.18, 0.18, 'local');
-          this.setBoneRot('forearmL', 0.65 - twitch * 0.18, 0, 0, 'local');
-          this.setBoneRot('handL', 0.08 + twitch * 0.12, 0, 0, 'local');
+          // Left rocket gauntlet raised across chest in protective shield guard
+          this.setBoneRot('upperArmL', -0.45 - twitch * 0.12 + breath * 0.02, 0.12, 0.15, 'local');
+          this.setBoneRot('forearmL', 0.78 - twitch * 0.10, 0, 0, 'local');
+          this.setBoneRot('handL', 0.06, 0, 0, 'local');
 
-          // Balanced, grounded mecha vanguard foot stance (symmetrical knee flex)
-          this.setBoneRot('thighR', -0.18 - twitch * 0.05, -0.04, 0.12, 'parent');
-          this.setBoneRot('shinR', 0.26 + twitch * 0.04, 0, 0, 'parent');
-          this.setBoneRot('footR', -0.08 - twitch * 0.03, 0, -0.04, 'parent');
-          this.setBoneRot('thighL', 0.12 + twitch * 0.03, 0.04, -0.12, 'parent');
-          this.setBoneRot('shinL', 0.20, 0, 0, 'parent');
-          this.setBoneRot('footL', -0.06, 0, 0.04, 'parent');
+          // Balanced, athletic mecha vanguard stance (separated legs with natural depth and flexion)
+          this.setBoneRot('thighR', -0.24 - twitch * 0.04, -0.04, 0.14, 'parent');
+          this.setBoneRot('shinR', 0.34 + twitch * 0.04, 0, 0, 'parent');
+          this.setBoneRot('footR', -0.10, 0, 0, 'parent');
+          this.setBoneRot('thighL', 0.20 + twitch * 0.03, 0.04, -0.14, 'parent');
+          this.setBoneRot('shinL', 0.26, 0, 0, 'parent');
+          this.setBoneRot('footL', -0.06, 0, 0, 'parent');
         } else if (this.profile.id === 'shinobi') {
           // Volt Shinobi: Low agility crouch with reverse-grip kunai & nimble spring-bob
           this.verticalBob = breath * 0.018 - twitch * 0.035;
@@ -711,28 +849,33 @@ export class Character3DFighter {
           this.setBoneRot('shinL', 0.34, 0, 0, 'parent');
           this.setBoneRot('footL', -0.08, 0, 0.05, 'parent');
         } else if (this.profile.id === 'void') {
-          // Void Assassin: Dual dagger stiletto forward cross-guard & hovering drift
-          this.verticalBob = breath * 0.015 + twitch * 0.025; // Subtle floating hover
-          this.rotationSway = Math.sin(elapsedTotal * 1.2) * 0.02 + twitch * 0.04;
-          this.lungeOffset = Math.sin(twitch * Math.PI) * 0.15 * this.facingSign;
+          // Void Assassin: Dual in-hand stiletto forward ready guard & athletic stance
+          this.verticalBob = breath * 0.018 - twitch * 0.025;
+          this.rotationSway = Math.sin(elapsedTotal * 1.4) * 0.01;
+          this.lungeOffset = Math.sin(twitch * Math.PI) * 0.12 * this.facingSign;
 
-          this.setBoneRot('spine', breath * 0.015 + twitch * 0.03, 0, 0, 'parent');
-          this.setBoneRot('chest', breath * 0.02 + twitch * 0.04, 0, 0, 'parent');
-          this.setBoneRot('head', -twitch * 0.02, 0, 0, 'parent');
+          this.setBoneRot('spine', 0.04 + breath * 0.015, 0, 0, 'parent');
+          this.setBoneRot('chest', 0.06 + breath * 0.020, 0, 0, 'parent');
+          this.setBoneRot('head', -twitch * 0.03, 0, 0, 'parent');
 
-          // Ethereal stiletto forward cross-guard with ribbon flutter
-          this.setBoneRot('upperArmR', -0.45 - twitch * 0.20, -0.10, -0.15 + twitch * 0.10, 'local');
-          this.setBoneRot('forearmR', 0.55 - twitch * 0.10, 0, 0, 'local');
-          this.setBoneRot('upperArmL', -0.45 + twitch * 0.15, 0.10, 0.15 - twitch * 0.10, 'local');
-          this.setBoneRot('forearmL', 0.55, 0, 0, 'local');
+          // Authentic dual stiletto guard:
+          // Right lead arm poised forward ready to strike with built-in stiletto blade
+          this.setBoneRot('upperArmR', -0.52 - twitch * 0.18, -0.10, -0.12, 'local');
+          this.setBoneRot('forearmR', 0.72 - twitch * 0.10, 0, 0, 'local');
+          this.setBoneRot('handR', 0.06 + twitch * 0.08, 0, 0, 'local');
 
-          // Clean poised legs with floating lightness
-          this.setBoneRot('thighR', -0.24 - twitch * 0.06, -0.05, 0.16, 'parent');
+          // Left rear arm poised across torso in parry guard with second stiletto blade
+          this.setBoneRot('upperArmL', -0.42 + twitch * 0.10, 0.12, 0.15, 'local');
+          this.setBoneRot('forearmL', 0.75, 0, 0, 'local');
+          this.setBoneRot('handL', 0.04 + twitch * 0.06, 0, 0, 'local');
+
+          // Grounded assassin martial stance
+          this.setBoneRot('thighR', -0.24 - twitch * 0.05, -0.04, 0.14, 'parent');
           this.setBoneRot('shinR', 0.34 + twitch * 0.04, 0, 0, 'parent');
-          this.setBoneRot('footR', -0.10 - twitch * 0.04, 0, -0.05, 'parent');
-          this.setBoneRot('thighL', 0.20 + twitch * 0.03, 0.05, -0.16, 'parent');
+          this.setBoneRot('footR', -0.10 - twitch * 0.03, 0, -0.04, 'parent');
+          this.setBoneRot('thighL', 0.20 + twitch * 0.03, 0.04, -0.14, 'parent');
           this.setBoneRot('shinL', 0.26, 0, 0, 'parent');
-          this.setBoneRot('footL', -0.06, 0, 0.05, 'parent');
+          this.setBoneRot('footL', -0.06, 0, 0.04, 'parent');
         } else {
           // Shadow Ronin: Iaido Katana guard & micro-blade draw twitch
           this.verticalBob = breath * 0.018 - twitch * 0.025;
@@ -771,78 +914,117 @@ export class Character3DFighter {
         // Character-Specific Martial Jab Reflexes with Combo String Variations:
         if (this.profile.id === 'valkyrie') {
           // Cyber Valkyrie:
-          // Combo 0: Kinetic Gauntlet Piston Punch (+1.45m lunge, heavy kinetic torque)
-          // Combo 1: Solar Glaive Haft Sweep (+1.30m lunge, wide torso sweep)
-          // Combo 2: Rocket Thruster Uppercut (+1.40m lunge, powerful vertical lift)
-          if (p < 0.35) {
+          // Combo 0: Solar Glaive Kinetic Thrust (+1.72m lunge, direct forward thrust of the glaive blade into chest)
+          // Combo 1: Solar Glaive Horizontal Cleave Sweep (+1.70m lunge, clean horizontal crescent sweep across chest)
+          // Combo 2: Rocket Thruster Uppercut (+1.74m lunge, vertical rocket punch into visor Y ≈ 2.15m)
+          const fallbackLunge = this.comboStep === 1 ? 1.70 : this.comboStep === 2 ? 1.74 : 1.72;
+          const targetHeight = this.comboStep === 2 ? 'head' : 'chest';
+          const reach = this.comboStep === 1 ? 0.70 : 0.65;
+          const targetLunge = this.getTargetLunge(reach, targetHeight, fallbackLunge);
+
+          if (p <= 0.35) {
             const t = p / 0.35;
             const easeIn = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = easeIn * targetLunge * this.facingSign;
+
             if (this.comboStep === 1) {
-              // Solar Glaive Haft Sweep
-              this.lungeOffset = easeIn * 1.30 * this.facingSign;
-              this.verticalBob = -0.02 * easeIn;
-              this.pitchTilt = 0.06 * easeIn;
-              this.rotationSway = easeIn * 0.18 * this.facingSign;
-              this.setBoneRot('spine', 0.04 * easeIn, easeIn * 0.22, 0, 'parent');
-              this.setBoneRot('chest', 0.06 * easeIn, easeIn * 0.20, 0, 'parent');
-              this.setBoneRot('upperArmR', -0.50 - easeIn * 0.35, -0.18, -0.10, 'local');
-              this.setBoneRot('forearmR', 0.70 - easeIn * 0.30, 0, 0, 'local');
-              this.setBoneRot('upperArmL', -0.42 - easeIn * 0.25, 0.18, 0.12, 'local');
-              this.setBoneRot('forearmL', 0.65, 0, 0, 'local');
+              // Combo 1: Solar Glaive Horizontal Cleave Sweep
+              this.verticalBob = 0.15 * easeIn;
+              this.pitchTilt = 0.04 * easeIn;
+              this.rotationSway = easeIn * 0.14 * this.facingSign;
+
+              this.setBoneRot('spine', 0.03 * easeIn, easeIn * 0.10 * this.facingSign, 0, 'parent');
+              this.setBoneRot('chest', 0.04 * easeIn, easeIn * 0.12 * this.facingSign, 0, 'parent');
+              this.setBoneRot('upperArmR', -0.32 - easeIn * 0.35, -0.04, -0.10 + easeIn * 0.35, 'local');
+              this.setBoneRot('forearmR', 0.58 - easeIn * 0.25, 0, 0, 'local');
+              this.setBoneRot('handR', -0.12 + easeIn * 0.15, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.30 - easeIn * 0.25, 0.06, 0.08 - easeIn * 0.20, 'local');
+              this.setBoneRot('forearmL', 0.58 - easeIn * 0.20, 0, 0, 'local');
             } else if (this.comboStep === 2) {
-              // Rocket Thruster Uppercut
-              this.lungeOffset = easeIn * 1.40 * this.facingSign;
-              this.verticalBob = 0.08 * easeIn;
-              this.pitchTilt = -0.10 * easeIn;
-              this.rotationSway = -easeIn * 0.12 * this.facingSign;
-              this.setBoneRot('spine', -0.08 * easeIn, -easeIn * 0.20, 0, 'parent');
-              this.setBoneRot('chest', -0.10 * easeIn, -easeIn * 0.18, 0, 'parent');
-              this.setBoneRot('upperArmL', -0.42 - easeIn * 0.80, 0, 0.10, 'local');
-              this.setBoneRot('forearmL', 0.65 - easeIn * 0.35, 0, 0, 'local');
+              // Combo 2: Rocket Thruster Uppercut (vertical lift into visor)
+              this.verticalBob = 0.38 * easeIn;
+              this.pitchTilt = -0.12 * easeIn;
+              this.rotationSway = -easeIn * 0.08 * this.facingSign;
+
+              this.setBoneRot('spine', -0.04 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('chest', -0.06 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('head', 0.08 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('upperArmL', -0.30 - easeIn * 1.10, 0.06, 0.12, 'local');
+              this.setBoneRot('forearmL', 0.58 - easeIn * 0.40, 0, 0, 'local');
               this.setBoneRot('handL', easeIn * 0.25, 0, 0, 'local');
-              this.setBoneRot('upperArmR', -0.50, -0.18, -0.20, 'local');
+              this.setBoneRot('upperArmR', -0.32 + easeIn * 0.10, -0.04, -0.06, 'local');
+              this.setBoneRot('forearmR', 0.58, 0, 0, 'local');
             } else {
-              // Kinetic Gauntlet Piston Punch
-              this.lungeOffset = easeIn * 1.45 * this.facingSign;
-              this.verticalBob = -0.03 * easeIn;
-              this.pitchTilt = 0.10 * easeIn;
-              this.rotationSway = easeIn * 0.08 * this.facingSign;
-              this.setBoneRot('spine', 0.05 * easeIn, -easeIn * 0.25, 0, 'parent');
-              this.setBoneRot('chest', 0.07 * easeIn, -easeIn * 0.22, 0, 'parent');
-              this.setBoneRot('head', 0, easeIn * 0.14, 0, 'parent');
-              this.setBoneRot('shoulderL', -0.10 * easeIn, 0, 0, 'parent');
-              this.setBoneRot('upperArmL', -0.42 - easeIn * 0.70, 0, 0.12 - easeIn * 0.08, 'local');
-              this.setBoneRot('forearmL', 0.65 - easeIn * 0.55, 0, 0, 'local');
-              this.setBoneRot('handL', easeIn * 0.12, 0, 0, 'local');
-              this.setBoneRot('upperArmR', -0.50 + easeIn * 0.18, -0.18, -0.20, 'local');
-              this.setBoneRot('forearmR', 0.80, 0, 0, 'local');
+              // Combo 0: Solar Glaive Kinetic Thrust (both arms drive glaive straight into chest)
+              this.verticalBob = 0.12 * easeIn;
+              this.pitchTilt = 0.06 * easeIn;
+              this.rotationSway = easeIn * 0.04 * this.facingSign;
+
+              this.setBoneRot('spine', 0.04 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('chest', 0.05 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('head', 0, 0, 0, 'parent');
+              this.setBoneRot('upperArmR', -0.32 - easeIn * 0.75, -0.04, -0.06, 'local');
+              this.setBoneRot('forearmR', 0.58 - easeIn * 0.35, 0, 0, 'local');
+              this.setBoneRot('handR', -0.12 + easeIn * 0.10, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.30 - easeIn * 0.65, 0.06, 0.08, 'local');
+              this.setBoneRot('forearmL', 0.58 - easeIn * 0.30, 0, 0, 'local');
+              this.setBoneRot('handL', easeIn * 0.10, 0, 0, 'local');
             }
-            this.setBoneRot('thighR', -0.18 - easeIn * 0.35, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26 + easeIn * 0.35, 0, 0, 'parent');
-            this.setBoneRot('footR', -0.08 - easeIn * 0.08, 0, -0.04, 'parent');
-            this.setBoneRot('thighL', 0.12 + easeIn * 0.25, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20, 0, 0, 'parent');
-            this.setBoneRot('footL', -0.06 - easeIn * 0.06, 0, 0.04, 'parent');
+
+            // Grounded footwork (symmetrical sagittal drive, zero hip twisting)
+            this.setBoneRot('thighR', -0.10 - easeIn * 0.25, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + easeIn * 0.25, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.06 - easeIn * 0.04, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + easeIn * 0.15, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14 + easeIn * 0.10, 0, 0, 'parent');
+            this.setBoneRot('footL', -0.06, 0, 0, 'parent');
           } else {
             const t = (p - 0.35) / 0.65;
             const rev = 1 - t;
-            const maxLunge = this.comboStep === 1 ? 1.30 : this.comboStep === 2 ? 1.40 : 1.45;
-            this.lungeOffset = rev * maxLunge * this.facingSign;
-            this.verticalBob = (this.comboStep === 2 ? 0.08 : -0.03) * rev;
-            this.pitchTilt = (this.comboStep === 2 ? -0.10 : 0.10) * rev;
-            this.rotationSway = (this.comboStep === 1 ? 0.18 : this.comboStep === 2 ? -0.12 : 0.08) * rev * this.facingSign;
-            this.setBoneRot('spine', 0.05 * rev, -rev * 0.25, 0, 'parent');
-            this.setBoneRot('chest', 0.07 * rev, -rev * 0.22, 0, 'parent');
-            this.setBoneRot('upperArmL', -0.42 - rev * 0.65, 0, 0.12 - rev * 0.08, 'local');
-            this.setBoneRot('forearmL', 0.65 - rev * 0.55, 0, 0, 'local');
-            this.setBoneRot('upperArmR', -0.50 + rev * 0.18, -0.18, -0.20, 'local');
-            this.setBoneRot('forearmR', 0.70, 0, 0, 'local');
-            this.setBoneRot('thighR', -0.18 - rev * 0.35, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26 + rev * 0.35, 0, 0, 'parent');
-            this.setBoneRot('footR', -0.08 - rev * 0.08, 0, -0.04, 'parent');
-            this.setBoneRot('thighL', 0.12 + rev * 0.25, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20, 0, 0, 'parent');
-            this.setBoneRot('footL', -0.06 - rev * 0.06, 0, 0.04, 'parent');
+            this.lungeOffset = rev * targetLunge * this.facingSign;
+
+            if (this.comboStep === 1) {
+              this.verticalBob = 0.15 * rev;
+              this.pitchTilt = 0.04 * rev;
+              this.rotationSway = rev * 0.14 * this.facingSign;
+              this.setBoneRot('spine', 0.03 * rev, rev * 0.10 * this.facingSign, 0, 'parent');
+              this.setBoneRot('chest', 0.04 * rev, rev * 0.12 * this.facingSign, 0, 'parent');
+              this.setBoneRot('upperArmR', -0.32 - rev * 0.35, -0.04, -0.10 + rev * 0.35, 'local');
+              this.setBoneRot('forearmR', 0.58 - rev * 0.25, 0, 0, 'local');
+              this.setBoneRot('handR', -0.12 + rev * 0.15, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.30 - rev * 0.25, 0.06, 0.08 - rev * 0.20, 'local');
+              this.setBoneRot('forearmL', 0.58 - rev * 0.20, 0, 0, 'local');
+            } else if (this.comboStep === 2) {
+              this.verticalBob = 0.38 * rev;
+              this.pitchTilt = -0.12 * rev;
+              this.rotationSway = -rev * 0.08 * this.facingSign;
+              this.setBoneRot('spine', -0.04 * rev, 0, 0, 'parent');
+              this.setBoneRot('chest', -0.06 * rev, 0, 0, 'parent');
+              this.setBoneRot('upperArmL', -0.30 - rev * 1.10, 0.06, 0.12, 'local');
+              this.setBoneRot('forearmL', 0.58 - rev * 0.40, 0, 0, 'local');
+              this.setBoneRot('handL', rev * 0.25, 0, 0, 'local');
+              this.setBoneRot('upperArmR', -0.32, -0.04, -0.06, 'local');
+              this.setBoneRot('forearmR', 0.58, 0, 0, 'local');
+            } else {
+              this.verticalBob = 0.12 * rev;
+              this.pitchTilt = 0.06 * rev;
+              this.rotationSway = rev * 0.04 * this.facingSign;
+              this.setBoneRot('spine', 0.04 * rev, 0, 0, 'parent');
+              this.setBoneRot('chest', 0.05 * rev, 0, 0, 'parent');
+              this.setBoneRot('upperArmR', -0.32 - rev * 0.75, -0.04, -0.06, 'local');
+              this.setBoneRot('forearmR', 0.58 - rev * 0.35, 0, 0, 'local');
+              this.setBoneRot('handR', -0.12 + rev * 0.10, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.30 - rev * 0.65, 0.06, 0.08, 'local');
+              this.setBoneRot('forearmL', 0.58 - rev * 0.30, 0, 0, 'local');
+              this.setBoneRot('handL', rev * 0.10, 0, 0, 'local');
+            }
+
+            this.setBoneRot('thighR', -0.10 - rev * 0.25, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + rev * 0.25, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.06, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + rev * 0.15, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14, 0, 0, 'parent');
+            this.setBoneRot('footL', -0.06, 0, 0, 'parent');
           }
         } else if (this.profile.id === 'shinobi') {
           // Volt Shinobi:
@@ -898,61 +1080,99 @@ export class Character3DFighter {
           }
         } else if (this.profile.id === 'void') {
           // Void Assassin:
-          // Combo 0: Phase-Glide Needle Stiletto Thrust (+1.50m low assassin glide)
-          // Combo 1: Spatial Stiletto Cross-Slice (+1.40m lunge)
-          // Combo 2: Dual Stiletto Phase Pierce (+1.50m lunge)
-          if (p < 0.35) {
-            const t = p / 0.35;
+          // Combo 0: Heart-seeker lunge (lightning-fast twin stiletto shadow thrust targeting the heart)
+          // Combo 1: Low-to-high double throat puncture (rising diagonal assassin twin puncture into throat/chin)
+          // Combo 2: Phantom blink double palm-stiletto strike (instantaneous blink burst double-blade strike)
+          const fallbackLunge = this.comboStep === 1 ? 1.68 : this.comboStep === 2 ? 1.76 : 1.715;
+          const targetLunge = this.getTargetLunge(0.66, 'chest', fallbackLunge);
+
+          if (p < 0.40) {
+            const t = p / 0.40;
             const easeIn = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = easeIn * 1.50 * this.facingSign;
-            this.verticalBob = 0.02 * easeIn;
+            this.lungeOffset = easeIn * targetLunge * this.facingSign;
+            this.verticalBob = 0.21 * easeIn; // Calibrated chest impact height Y ≈ 1.74m
             this.pitchTilt = 0.04 * easeIn;
 
-            this.setBoneRot('spine', 0.03 * easeIn, easeIn * 0.22, 0, 'parent');
-            this.setBoneRot('chest', 0.04 * easeIn, easeIn * 0.18, 0, 'parent');
-
             if (this.comboStep === 1) {
-              // Left Stiletto Cross-Slice
-              this.setBoneRot('upperArmL', -0.45 - easeIn * 0.55, 0.10, 0.20 + easeIn * 0.15, 'local');
+              // Combo 1: Low-to-High Double Throat Puncture
+              // Staggered rising twin stiletto thrust, low crouch scooping upward into throat puncture
+              this.setBoneRot('spine', 0.06 * easeIn, -easeIn * 0.20, 0, 'parent');
+              this.setBoneRot('chest', 0.08 * easeIn, -easeIn * 0.18, 0, 'parent');
+              this.setBoneRot('head', -0.04 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('shoulderL', -0.12 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('upperArmL', -0.45 - easeIn * 0.95, 0.10, 0.28 * easeIn, 'local');
               this.setBoneRot('forearmL', 0.55 - easeIn * 0.45, 0, 0, 'local');
-              this.setBoneRot('upperArmR', -0.45 + easeIn * 0.25, -0.10, -0.25 * easeIn, 'local');
-              this.setBoneRot('forearmR', 0.55, 0, 0, 'local');
+              this.setBoneRot('handL', 0.35 * easeIn, 0, 0, 'local'); // Angled upward into throat
+              this.setBoneRot('shoulderR', 0.10 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('upperArmR', -0.50 - easeIn * 0.88, -0.08, -0.10, 'local');
+              this.setBoneRot('forearmR', 0.60 - easeIn * 0.50, 0, 0, 'local');
+              this.setBoneRot('handR', 0.20 * easeIn, 0, 0, 'local'); // Twin puncture
             } else if (this.comboStep === 2) {
-              // Dual Stiletto Phase Pierce
-              this.setBoneRot('upperArmR', -0.45 - easeIn * 0.60, -0.10, -0.10, 'local');
-              this.setBoneRot('forearmR', 0.55 - easeIn * 0.45, 0, 0, 'local');
-              this.setBoneRot('upperArmL', -0.45 - easeIn * 0.60, 0.10, 0.10, 'local');
-              this.setBoneRot('forearmL', 0.55 - easeIn * 0.45, 0, 0, 'local');
+              // Combo 2: Phantom Blink Double Palm-Stiletto Strike
+              // Instantaneous blink advance, driving both palm hilts forward with twin stilettos
+              this.setBoneRot('spine', 0.06 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('chest', 0.08 * easeIn, 0, 0, 'parent');
+              this.setBoneRot('upperArmR', -0.58 - easeIn * 0.95, -0.12, -0.05, 'local');
+              this.setBoneRot('forearmR', 0.65 - easeIn * 0.55, 0, 0, 'local');
+              this.setBoneRot('handR', 0.15 * easeIn, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.58 - easeIn * 0.95, 0.12, 0.05, 'local');
+              this.setBoneRot('forearmL', 0.65 - easeIn * 0.55, 0, 0, 'local');
+              this.setBoneRot('handL', -0.15 * easeIn, 0, 0, 'local');
             } else {
-              // Right Stiletto Precision Thrust
+              // Combo 0: Heart-Seeker Lunge
+              // Lightning-fast lead stiletto thrust straight into defender's heart/chest
+              this.setBoneRot('spine', 0.05 * easeIn, easeIn * 0.02, 0, 'parent');
+              this.setBoneRot('chest', 0.07 * easeIn, easeIn * 0.02, 0, 'parent');
+              this.setBoneRot('head', 0, -easeIn * 0.04, 0, 'parent');
               this.setBoneRot('shoulderR', 0.08 * easeIn, 0, 0, 'parent');
-              this.setBoneRot('upperArmR', -0.45 - easeIn * 0.50, -0.10, -0.15 + easeIn * 0.08, 'local');
-              this.setBoneRot('forearmR', 0.55 - easeIn * 0.50, 0, 0, 'local');
-              this.setBoneRot('handR', easeIn * 0.20, 0, 0, 'local');
-              this.setBoneRot('upperArmL', -0.45 + easeIn * 0.35, 0.10, 0.35 * easeIn, 'local');
-              this.setBoneRot('forearmL', 0.55 - easeIn * 0.25, 0, 0, 'local');
+              this.setBoneRot('upperArmR', -0.58 - easeIn * 0.95, 0.04, 0.0, 'local');
+              this.setBoneRot('forearmR', 0.65 - easeIn * 0.60, 0, 0, 'local');
+              this.setBoneRot('handR', 0.05 * easeIn, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.45 + easeIn * 0.15, 0.15, 0.25 * easeIn, 'local');
+              this.setBoneRot('forearmL', 0.65 + easeIn * 0.20, 0, 0, 'local');
             }
 
-            this.setBoneRot('thighR', -0.24 - easeIn * 0.35, -0.05, 0.16, 'parent');
-            this.setBoneRot('shinR', 0.34 + easeIn * 0.35, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.20 + easeIn * 0.25, 0.05, -0.16, 'parent');
-            this.setBoneRot('shinL', 0.26, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.25 - easeIn * 0.35, -0.04, 0.14, 'parent');
+            this.setBoneRot('shinR', 0.35 + easeIn * 0.45, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.20 + easeIn * 0.25, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.25, 0, 0, 'parent');
           } else {
-            const t = (p - 0.35) / 0.65;
+            const t = (p - 0.40) / 0.60;
             const rev = 1 - t;
-            this.lungeOffset = rev * 1.50 * this.facingSign;
-            this.verticalBob = 0.02 * rev;
-            this.pitchTilt = 0.04 * rev;
+            this.lungeOffset = rev * targetLunge * this.facingSign;
+            this.verticalBob = -0.02 * rev;
+            this.pitchTilt = 0.06 * rev;
 
-            this.setBoneRot('upperArmR', -0.45 - rev * 0.50, -0.10, -0.15 + rev * 0.08, 'local');
-            this.setBoneRot('forearmR', 0.55 - rev * 0.50, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.45, 0.10, 0.15, 'local');
-            this.setBoneRot('forearmL', 0.55, 0, 0, 'local');
+            // Fluid dual-stiletto recovery based on active combo step (eliminates arm/wrist popping)
+            if (this.comboStep === 1) {
+              // Smooth recovery from rising double throat puncture
+              this.setBoneRot('upperArmR', -0.75 - rev * 0.63, -0.08, -0.10 * rev, 'local');
+              this.setBoneRot('forearmR', 0.85 - rev * 0.75, 0, 0, 'local');
+              this.setBoneRot('handR', 0.20 * rev, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.45 - rev * 0.95, 0.10, 0.28 * rev, 'local');
+              this.setBoneRot('forearmL', 0.85 - rev * 0.75, 0, 0, 'local');
+              this.setBoneRot('handL', 0.35 * rev, 0, 0, 'local');
+            } else if (this.comboStep === 2) {
+              // Smooth recovery from symmetrical phantom blink double palm-stiletto strike
+              this.setBoneRot('upperArmR', -0.75 - rev * 0.78, -0.12, -0.05 * rev, 'local');
+              this.setBoneRot('forearmR', 0.85 - rev * 0.75, 0, 0, 'local');
+              this.setBoneRot('handR', 0.15 * rev, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.45 - rev * 1.08, 0.12, 0.05 * rev, 'local');
+              this.setBoneRot('forearmL', 0.85 - rev * 0.75, 0, 0, 'local');
+              this.setBoneRot('handL', -0.15 * rev, 0, 0, 'local');
+            } else {
+              // Smooth recovery from heart-seeker lunge thrust
+              this.setBoneRot('upperArmR', -0.75 - rev * 0.70, -0.20, 0.10, 'local');
+              this.setBoneRot('forearmR', 0.85 - rev * 0.75, 0, 0, 'local');
+              this.setBoneRot('handR', 0.05 * rev, 0, 0, 'local');
+              this.setBoneRot('upperArmL', -0.45, 0.25, 0.22, 'local');
+              this.setBoneRot('forearmL', 0.95, 0, 0, 'local');
+            }
 
-            this.setBoneRot('thighR', -0.24 - rev * 0.35, -0.05, 0.16, 'parent');
-            this.setBoneRot('shinR', 0.34 + rev * 0.35, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.20, 0.05, -0.16, 'parent');
-            this.setBoneRot('shinL', 0.26, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.25 - rev * 0.35, -0.04, 0.14, 'parent');
+            this.setBoneRot('shinR', 0.35 + rev * 0.45, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.20, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.25, 0, 0, 'parent');
           }
         } else {
           // Shadow Ronin:
@@ -1033,50 +1253,89 @@ export class Character3DFighter {
       case 'kick': {
         // Character-Specific Martial Kick Reflexes:
         if (this.profile.id === 'valkyrie') {
-          // Cyber Valkyrie: Aerial Thruster Axe Kick // Meteor Stomp (+0.45m vertical leap into heavy stomp)
-          if (p < 0.40) {
-            const t = p / 0.40;
+          // Cyber Valkyrie: Aerial Thruster Axe Kick // Meteor Stomp (+0.55m vertical leap into heavy axe stomp)
+          const fallbackLunge = 1.75;
+          const targetLunge = this.getTargetLunge(0.70, 'head', fallbackLunge);
+
+          if (p < 0.32) {
+            // Rocket Thruster Leap & Overhead Axe Chamber
+            const t = p / 0.32;
             const ease = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = ease * 0.85 * this.facingSign;
-            this.verticalBob = ease * 0.45; // High rocket leap!
-            this.pitchTilt = -0.12 * ease;
+            this.lungeOffset = ease * 0.65 * targetLunge * this.facingSign;
+            this.verticalBob = ease * 0.55; // Powerful rocket leap +0.55m!
+            this.pitchTilt = -0.24 * ease;
 
-            // Right leg chambers high overhead
-            this.setBoneRot('thighR', -0.18 - ease * 1.45, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26 + ease * 0.70, 0, 0, 'parent');
-            this.setBoneRot('footR', -0.25 * ease, 0, -0.04, 'parent');
+            // Right leg chambers high overhead (sagittal plane, zero hip twist)
+            this.setBoneRot('thighR', -0.10 - ease * 1.85, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + ease * 0.60, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.15 * ease, 0, 0, 'parent');
 
-            this.setBoneRot('thighL', 0.12 + ease * 0.35, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20 + ease * 0.25, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + ease * 0.30, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14 + ease * 0.25, 0, 0, 'parent');
 
-            // Arms raised with glaive for aerial stability
-            this.setBoneRot('upperArmR', -0.80 * ease, -0.15, -0.25 * ease, 'local');
-            this.setBoneRot('upperArmL', -0.80 * ease, 0.18, 0.25 * ease, 'local');
-          } else if (p < 0.65) {
-            const t = (p - 0.40) / 0.25;
+            // Spine, chest, and head aligned towards opponent
+            this.setBoneRot('spine', 0.04 * ease, -0.10 * ease * this.facingSign, 0, 'parent');
+            this.setBoneRot('chest', 0.06 * ease, -0.12 * ease * this.facingSign, 0, 'parent');
+            this.setBoneRot('head', -0.04 * ease, 0.08 * ease * this.facingSign, 0, 'parent');
+
+            // Arms raised with glaive for aerial balance
+            this.setBoneRot('upperArmR', -0.32 - 0.55 * ease, -0.04, -0.15 * ease, 'local');
+            this.setBoneRot('forearmR', 0.58 - ease * 0.20, 0, 0, 'local');
+            this.setBoneRot('handR', -0.10, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.30 - 0.55 * ease, 0.06, 0.15 * ease, 'local');
+            this.setBoneRot('forearmL', 0.58 - ease * 0.20, 0, 0, 'local');
+            this.setBoneRot('handL', 0.06, 0, 0, 'local');
+          } else if (p < 0.64) {
+            // Chopping Axe Kick / Meteor Stomp Impact
+            const t = (p - 0.32) / 0.32;
             const slam = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = (0.85 + slam * 0.55) * this.facingSign;
-            this.verticalBob = 0.45 * (1 - slam) - 0.10 * slam; // Crash into deck!
-            this.pitchTilt = 0.15 * slam;
+            this.lungeOffset = (0.65 * targetLunge + 0.35 * targetLunge * slam) * this.facingSign;
+            this.verticalBob = 0.55 * (1 - slam) - 0.04 * slam; // Impact descent
+            this.pitchTilt = -0.24 * (1 - slam) + 0.14 * slam;
 
-            // Axe kick chops down vertically
-            this.setBoneRot('thighR', -1.63 + slam * 1.25, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.96 - slam * 0.70, 0, 0, 'parent');
-            this.setBoneRot('footR', -0.25 + slam * 0.17, 0, -0.04, 'parent');
+            // Axe kick chops down vertically into defender chin/visor/chest
+            this.setBoneRot('thighR', -1.95 + slam * 1.45, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.76 - slam * 0.65, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.15 + slam * 0.15, 0, 0, 'parent');
 
-            this.setBoneRot('thighL', 0.47 - slam * 0.25, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.45 - slam * 0.20, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.22 - slam * 0.25, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.39 - slam * 0.22, 0, 0, 'parent');
+
+            this.setBoneRot('spine', 0.08 * slam, -0.10 * this.facingSign, 0, 'parent');
+            this.setBoneRot('chest', 0.10 * slam, -0.12 * this.facingSign, 0, 'parent');
+            this.setBoneRot('head', 0.04 * slam, 0.08 * this.facingSign, 0, 'parent');
+
+            this.setBoneRot('upperArmR', -0.87 + slam * 0.35, -0.04, -0.15 + slam * 0.10, 'local');
+            this.setBoneRot('forearmR', 0.38 + slam * 0.20, 0, 0, 'local');
+            this.setBoneRot('handR', -0.10, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.85 + slam * 0.35, 0.06, 0.15 - slam * 0.10, 'local');
+            this.setBoneRot('forearmL', 0.38 + slam * 0.20, 0, 0, 'local');
+            this.setBoneRot('handL', 0.06, 0, 0, 'local');
           } else {
-            const t = (p - 0.65) / 0.35;
+            // Recovery & Ground Shock Absorption smoothly back to idle
+            const t = (p - 0.64) / 0.36;
             const rev = 1 - t;
-            this.lungeOffset = rev * 1.40 * this.facingSign;
-            this.verticalBob = rev * -0.10;
-            this.pitchTilt = rev * 0.15;
+            this.lungeOffset = rev * targetLunge * this.facingSign;
+            this.verticalBob = rev * -0.04;
+            this.pitchTilt = rev * 0.14;
 
-            this.setBoneRot('thighR', -0.18, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.12, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.10 - rev * 0.40, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + rev * 0.10, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.06, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + rev * 0.05, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14, 0, 0, 'parent');
+            this.setBoneRot('footL', -0.06, 0, 0, 'parent');
+
+            this.setBoneRot('spine', 0.08 * rev, -0.10 * rev * this.facingSign, 0, 'parent');
+            this.setBoneRot('chest', 0.10 * rev, -0.12 * rev * this.facingSign, 0, 'parent');
+            this.setBoneRot('head', 0.04 * rev, 0.08 * rev * this.facingSign, 0, 'parent');
+
+            this.setBoneRot('upperArmR', -0.32 - rev * 0.20, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.58, 0, 0, 'local');
+            this.setBoneRot('handR', -0.10 * rev - 1.85 * (1 - rev), 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.30 - rev * 0.20, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.58, 0, 0, 'local');
+            this.setBoneRot('handL', 0.06, 0, 0, 'local');
           }
         } else if (this.profile.id === 'shinobi') {
           // Volt Shinobi: Tornado Hurricane Spin Kick (360° airborne double-whip)
@@ -1114,40 +1373,75 @@ export class Character3DFighter {
             this.setBoneRot('shinL', 0.34, 0, 0, 'parent');
           }
         } else if (this.profile.id === 'void') {
-          // Void Assassin: Ethereal High Crescent Ribbon Sweep (+1.45m high arc poise)
-          if (p < 0.30) {
-            const t = p / 0.30;
-            this.lungeOffset = t * 0.75 * this.facingSign;
-            this.verticalBob = t * 0.08;
+          // Void Assassin: Acrobatic Shadow Corkscrew Inverted Heel Whip
+          // Springs airborne with acrobatic backflip inversion and corkscrew rotation,
+          // driving the right heel down in an inverted heel axe whip into defender head/visor (Y ≈ 2.15m)
+          const fallbackLunge = 1.74;
+          const targetLunge = this.getTargetLunge(0.74, 'head', fallbackLunge);
 
-            this.setBoneRot('thighR', -0.24 - t * 1.45, -0.05, 0.25 * t, 'parent');
-            this.setBoneRot('shinR', 0.34 + t * 0.80, 0, 0, 'parent');
-            this.setBoneRot('footR', -0.35 * t, 0, 0, 'parent');
+          if (p < 0.28) {
+            // Chamber phase: springs into airborne backflip inversion and corkscrew pre-twist
+            const t = p / 0.28;
+            const easeIn = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = easeIn * 0.60 * targetLunge * this.facingSign;
+            this.verticalBob = easeIn * 0.52; // High acrobatic spring leap +0.52m
+            this.pitchTilt = -0.70 * easeIn; // Arches back into inverted flip (~40 degrees)
+            this.rotationSway = 0.35 * easeIn * this.facingSign; // Corkscrew pre-twist
 
-            this.setBoneRot('thighL', 0.20 + 0.15 * t, 0.05, -0.16, 'parent');
-            this.setBoneRot('shinL', 0.26 + 0.15 * t, 0, 0, 'parent');
-            this.setBoneRot('spine', -0.18 * t, -0.25 * t, 0.15 * t, 'parent');
-          } else if (p < 0.65) {
-            const t = (p - 0.30) / 0.35;
-            const strike = Math.sin(t * Math.PI);
-            this.lungeOffset = (0.75 + strike * 0.70) * this.facingSign;
-            this.verticalBob = 0.08 + strike * 0.04;
+            this.setBoneRot('thighR', -0.25 - easeIn * 1.55, -0.04, 0.25 * easeIn, 'parent');
+            this.setBoneRot('shinR', 0.35 + easeIn * 0.95, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.20 * easeIn, 0, 0, 'parent');
 
-            this.setBoneRot('thighR', -1.69 - strike * 0.15, 0, 0.25, 'parent');
-            this.setBoneRot('shinR', 1.14 - 1.04 * Math.sin(t * Math.PI * 0.5), 0, 0, 'parent');
-            this.setBoneRot('footR', -0.40, 0, 0, 'parent');
-            this.setBoneRot('spine', -0.22, -0.30, 0.18, 'parent');
+            this.setBoneRot('thighL', 0.20 + easeIn * 0.25, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.25 + easeIn * 0.35, 0, 0, 'parent');
+            this.setBoneRot('spine', -0.18 * easeIn, 0, 0, 'parent');
+            this.setBoneRot('chest', -0.15 * easeIn, 0, 0, 'parent');
+
+            this.setBoneRot('upperArmR', -0.70 - easeIn * 0.30, -0.15, -0.20 * easeIn, 'local');
+            this.setBoneRot('forearmR', 0.80, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.50 - easeIn * 0.30, 0.20, 0.20 * easeIn, 'local');
+            this.setBoneRot('forearmL', 0.90, 0, 0, 'local');
+          } else if (p < 0.66) {
+            // Peak Whip Extension: Fully inverted in mid-air (pitchTilt -0.85 rad), corkscrewing through the axis,
+            // snapping the right heel downward directly into opponent's visor/chin (Y ≈ 2.15m)
+            const t = (p - 0.28) / 0.38;
+            const strike = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = (0.60 + 0.40 * strike) * targetLunge * this.facingSign;
+            this.verticalBob = 0.52 * (1 - strike * 0.12); // Aerial apex +0.46m to +0.52m
+            this.pitchTilt = -0.70 - 0.15 * strike; // Inverted acrobatic body tilt (-0.85 rad)
+            this.rotationSway = (0.35 - 0.55 * strike) * this.facingSign; // Dynamic corkscrew whip
+
+            // Thigh raised high (-2.25 rad) + snap whip shin puts FootR at Y ≈ 2.15m (chin/visor)!
+            this.setBoneRot('thighR', -2.25 - strike * 0.05, -0.25, 0.0, 'parent');
+            this.setBoneRot('shinR', 0.05, 0, 0, 'parent');
+            this.setBoneRot('footR', -0.10, 0, 0, 'parent');
+            this.setBoneRot('spine', -0.20, 0.0, 0.0, 'parent');
+            this.setBoneRot('chest', -0.16, 0.0, 0.0, 'parent');
+
+            this.setBoneRot('upperArmR', -0.85, -0.15, 0.10, 'local');
+            this.setBoneRot('forearmR', 0.85, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.65, 0.20, 0.25, 'local');
+            this.setBoneRot('forearmL', 0.90, 0, 0, 'local');
           } else {
-            const t = (p - 0.65) / 0.35;
+            // Recovery phase: smoothly uncurls from corkscrew backflip and lands on deck
+            const t = (p - 0.66) / 0.34;
             const rev = 1 - t;
-            this.lungeOffset = rev * 0.85 * this.facingSign;
-            this.verticalBob = rev * 0.06;
+            this.lungeOffset = targetLunge * rev * this.facingSign;
+            this.verticalBob = 0.46 * rev;
+            this.pitchTilt = -0.85 * rev;
+            this.rotationSway = -0.20 * rev * this.facingSign;
 
-            this.setBoneRot('thighR', -0.24 - rev * 0.70, -0.05, 0.16, 'parent');
-            this.setBoneRot('shinR', 0.34 + rev * 0.40, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.20, 0.05, -0.16, 'parent');
-            this.setBoneRot('shinL', 0.26, 0, 0, 'parent');
-            this.setBoneRot('spine', -0.12 * rev, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.25 - rev * 0.80, -0.04, 0.14, 'parent');
+            this.setBoneRot('shinR', 0.35 + rev * 0.25, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.20, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.25, 0, 0, 'parent');
+            this.setBoneRot('spine', -0.20 * rev, 0.14 * rev, 0, 'parent');
+            this.setBoneRot('chest', -0.16 * rev, 0, 0, 'parent');
+
+            this.setBoneRot('upperArmR', -0.75, -0.20, 0.10, 'local');
+            this.setBoneRot('forearmR', 0.85, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.45, 0.25, 0.22, 'local');
+            this.setBoneRot('forearmL', 0.95, 0, 0, 'local');
           }
         } else {
           // Shadow Ronin: Grounded Low Samurai Crescent Leg-Cut (deep stance, low destabilizing sweep)
@@ -1199,57 +1493,81 @@ export class Character3DFighter {
       case 'heavy': {
         // Character-Specific Martial Heavy Strikes:
         if (this.profile.id === 'valkyrie') {
-          // Cyber Valkyrie: Solar Glaive Vault Slam (+1.85m vault leap and crushing impact)
+          // Cyber Valkyrie: Solar Glaive Overhead Breaker Slam (+1.82m vault leap and crushing impact)
+          const fallbackLunge = 1.82;
+          const targetLunge = this.getTargetLunge(0.75, 'chest', fallbackLunge);
+
           if (p < 0.35) {
+            // Vault leap and overhead glaive raise
             const t = p / 0.35;
-            this.lungeOffset = t * 0.60 * this.facingSign;
-            this.verticalBob = t * 0.48; // High vault!
-            this.pitchTilt = -0.18 * t;
+            const ease = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = ease * 0.65 * targetLunge * this.facingSign;
+            this.verticalBob = ease * 0.52; // High airborne vault +0.52m
+            this.pitchTilt = -0.22 * ease;
 
-            // Glaive raised high in both hands
-            this.setBoneRot('upperArmR', -0.50 - 1.10 * t, -0.15, -0.20, 'local');
-            this.setBoneRot('forearmR', 0.70 - 0.50 * t, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.42 - 1.10 * t, 0.18, 0.20, 'local');
-            this.setBoneRot('forearmL', 0.65 - 0.45 * t, 0, 0, 'local');
+            // Glaive raised high overhead in dominant vanguard stance
+            this.setBoneRot('upperArmR', -0.32 - 1.15 * ease, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.58 - 0.20 * ease, 0, 0, 'local');
+            this.setBoneRot('handR', -0.12 + 0.08 * ease, 0, 0, 'local');
 
-            this.setBoneRot('thighR', -0.18 - 0.35 * t, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26 + 0.45 * t, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.12 + 0.25 * t, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20 + 0.35 * t, 0, 0, 'parent');
-          } else if (p < 0.65) {
-            const t = (p - 0.35) / 0.30;
+            this.setBoneRot('upperArmL', -0.30 - 1.15 * ease, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.58 - 0.20 * ease, 0, 0, 'local');
+            this.setBoneRot('handL', 0.08 + 0.08 * ease, 0, 0, 'local');
+
+            this.setBoneRot('spine', -0.12 * ease, 0, 0, 'parent');
+            this.setBoneRot('chest', -0.10 * ease, 0, 0, 'parent');
+
+            this.setBoneRot('thighR', -0.10 - 0.30 * ease, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + 0.35 * ease, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + 0.25 * ease, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14 + 0.30 * ease, 0, 0, 'parent');
+          } else if (p < 0.68) {
+            // Crushing vertical breaker slam impact
+            const t = (p - 0.35) / 0.33;
             const slam = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = (0.60 + 1.25 * slam) * this.facingSign;
-            this.verticalBob = 0.48 * (1 - slam) - 0.10 * slam; // Impact crater!
-            this.pitchTilt = 0.20 * slam;
+            this.lungeOffset = (0.65 * targetLunge + 0.35 * targetLunge * slam) * this.facingSign;
+            this.verticalBob = 0.52 * (1 - slam) - 0.04 * slam; // Crash into deck!
+            this.pitchTilt = -0.22 * (1 - slam) + 0.18 * slam;
 
-            // Glaive chops down violently into ground
-            this.setBoneRot('upperArmR', -1.60 + 1.20 * slam, -0.15, 0, 'local');
-            this.setBoneRot('forearmR', 0.20 - 0.15 * slam, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -1.52 + 1.20 * slam, 0.18, 0, 'local');
-            this.setBoneRot('forearmL', 0.20 - 0.15 * slam, 0, 0, 'local');
+            // Glaive chops down cleanly into defender chest & deck
+            this.setBoneRot('upperArmR', -1.47 + 1.05 * slam, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.38 - 0.18 * slam, 0, 0, 'local');
+            this.setBoneRot('handR', -0.04 + 0.18 * slam, 0, 0, 'local'); // natural snap, zero distortion
 
-            this.setBoneRot('spine', -0.20 + 0.55 * slam, 0, 0, 'parent');
-            this.setBoneRot('thighR', -0.53 + 0.35 * slam, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.71 - 0.35 * slam, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.37 - slam * 0.20, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.55 - slam * 0.25, 0, 0, 'parent');
+            this.setBoneRot('upperArmL', -1.45 + 1.05 * slam, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.38 - 0.18 * slam, 0, 0, 'local');
+            this.setBoneRot('handL', 0.16 + 0.08 * slam, 0, 0, 'local');
+
+            this.setBoneRot('spine', -0.12 * (1 - slam) + 0.22 * slam, 0, 0, 'parent');
+            this.setBoneRot('chest', -0.10 * (1 - slam) + 0.20 * slam, 0, 0, 'parent');
+
+            this.setBoneRot('thighR', -0.40 + 0.25 * slam, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.51 - 0.25 * slam, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.17 - 0.20 * slam, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.44 - 0.25 * slam, 0, 0, 'parent');
           } else {
-            const t = (p - 0.65) / 0.35;
+            // Deceleration and reset
+            const t = (p - 0.68) / 0.32;
             const rev = 1 - t;
-            this.lungeOffset = 1.85 * rev * this.facingSign;
-            this.verticalBob = rev * -0.06;
-            this.pitchTilt = rev * 0.10;
+            this.lungeOffset = targetLunge * rev * this.facingSign;
+            this.verticalBob = rev * -0.04;
+            this.pitchTilt = rev * 0.18;
 
-            this.setBoneRot('upperArmR', -0.38 * rev - 0.50 * (1 - rev), -0.15, -0.15, 'local');
-            this.setBoneRot('forearmR', 0.20 * rev + 0.70 * (1 - rev), 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.32 * rev - 0.42 * (1 - rev), 0.18, 0.18, 'local');
-            this.setBoneRot('forearmL', 0.20 * rev + 0.65 * (1 - rev), 0, 0, 'local');
+            this.setBoneRot('upperArmR', -0.32 - 0.10 * rev, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.58 - 0.38 * rev, 0, 0, 'local');
+            this.setBoneRot('handR', -0.12 + 0.26 * rev, 0, 0, 'local');
 
-            this.setBoneRot('thighR', -0.18, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.12, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20, 0, 0, 'parent');
+            this.setBoneRot('upperArmL', -0.30 - 0.10 * rev, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.58 - 0.38 * rev, 0, 0, 'local');
+            this.setBoneRot('handL', 0.08 + 0.16 * rev, 0, 0, 'local');
+
+            this.setBoneRot('spine', 0.22 * rev, 0, 0, 'parent');
+            this.setBoneRot('chest', 0.20 * rev, 0, 0, 'parent');
+
+            this.setBoneRot('thighR', -0.10 - 0.05 * rev, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + 0.10 * rev, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + 0.05 * rev, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14 + 0.05 * rev, 0, 0, 'parent');
           }
         } else if (this.profile.id === 'shinobi') {
           // Volt Shinobi: Shadow Somersault X-Cross Kunai Gouge (+1.70m somersault dive)
@@ -1292,39 +1610,69 @@ export class Character3DFighter {
             this.setBoneRot('forearmL', 0.55, 0, 0, 'local');
           }
         } else if (this.profile.id === 'void') {
-          // Void Assassin: Void Spiral Uppercut into Rift Stiletto Plunge (+1.65m dual phase)
-          if (p < 0.35) {
-            const t = p / 0.35;
-            this.lungeOffset = t * 0.85 * this.facingSign;
-            this.verticalBob = t * 0.44; // Rising shadow uppercut
-            this.rotationSway = t * 0.55;
+          // Void Assassin: Abyssal Rift Plunge (Y +0.55m airborne leap into downward dive plunge)
+          const fallbackLunge = 1.78;
+          const targetLunge = this.getTargetLunge(0.54, 'chest', fallbackLunge);
 
-            this.setBoneRot('upperArmR', -0.45 - 1.10 * t, -0.10, -0.15, 'local');
-            this.setBoneRot('forearmR', 0.55 - 0.40 * t, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.45 + 0.30 * t, 0.10, 0.35 * t, 'local');
-            this.setBoneRot('forearmL', 0.55, 0, 0, 'local');
-          } else if (p < 0.65) {
-            const t = (p - 0.35) / 0.30;
+          if (p < 0.34) {
+            const t = p / 0.34;
+            const ease = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = ease * 0.50 * targetLunge * this.facingSign;
+            this.verticalBob = ease * 0.55; // Airborne leap Y +0.55m
+            this.pitchTilt = -0.18 * ease;
+            this.rotationSway = ease * 0.12 * this.facingSign;
+
+            // Overhead reverse-grip dagger chamber
+            this.setBoneRot('upperArmR', -0.75 - 0.90 * ease, -0.15, -0.20 * ease, 'local');
+            this.setBoneRot('forearmR', 0.85 - 0.65 * ease, 0, 0, 'local');
+            this.setBoneRot('handR', 0.20 + 0.25 * ease, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.45 - 1.15 * ease, 0.15, 0.20 * ease, 'local');
+            this.setBoneRot('forearmL', 0.95 - 0.65 * ease, 0, 0, 'local');
+            this.setBoneRot('handL', -0.15 - 0.25 * ease, 0, 0, 'local');
+
+            this.setBoneRot('thighR', -0.25 - 0.30 * ease, -0.04, 0.14, 'parent');
+            this.setBoneRot('shinR', 0.35 + 0.45 * ease, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.20 + 0.20 * ease, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.25 + 0.40 * ease, 0, 0, 'parent');
+          } else if (p < 0.68) {
+            const t = (p - 0.34) / 0.34;
             const dive = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = (0.85 + 0.80 * dive) * this.facingSign;
-            this.verticalBob = 0.44 * (1 - dive) - 0.04 * dive;
-            this.rotationSway = 0.55 * (1 - dive);
+            this.lungeOffset = (0.50 * (1 - dive) + 1.0 * dive) * targetLunge * this.facingSign;
+            this.verticalBob = 0.55 * (1 - dive) + 0.08 * dive; // Landed body base plunge with dual daggers directly into chest
+            this.pitchTilt = -0.18 * (1 - dive) + 0.28 * dive; // Forward dive plunge angle
+            this.rotationSway = 0.06 * (1 - dive) * this.facingSign;
 
-            // Dagger plunge
-            this.setBoneRot('upperArmR', -1.55 + 1.20 * dive, -0.10, -0.15, 'local');
-            this.setBoneRot('forearmR', 0.15, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.15 - 0.50 * dive, 0.10, 0.15, 'local');
-            this.setBoneRot('forearmL', 0.55 - 0.35 * dive, 0, 0, 'local');
+            // Downward dive plunge slamming dual daggers directly into opponent chest
+            this.setBoneRot('upperArmR', -1.65, -0.04, 0.0, 'local');
+            this.setBoneRot('forearmR', 0.08, 0, 0, 'local');
+            this.setBoneRot('handR', 0.15 * dive, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -1.65, 0.04, 0.0, 'local');
+            this.setBoneRot('forearmL', 0.08, 0, 0, 'local');
+            this.setBoneRot('handL', -0.15 * dive, 0, 0, 'local');
+
+            this.setBoneRot('spine', 0.05 + 0.05 * dive, 0, 0, 'parent');
+            this.setBoneRot('chest', 0.07 + 0.05 * dive, 0, 0, 'parent');
+
+            this.setBoneRot('thighR', -0.55 + 0.30 * dive, -0.04, 0.14, 'parent');
+            this.setBoneRot('shinR', 0.80 - 0.45 * dive, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.40 - 0.20 * dive, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.65 - 0.40 * dive, 0, 0, 'parent');
           } else {
-            const t = (p - 0.65) / 0.35;
+            const t = (p - 0.68) / 0.32;
             const rev = 1 - t;
-            this.lungeOffset = 1.65 * rev * this.facingSign;
-            this.verticalBob = rev * -0.04;
+            this.lungeOffset = targetLunge * rev * this.facingSign;
+            this.verticalBob = -0.04 * rev;
+            this.pitchTilt = 0.28 * rev;
 
-            this.setBoneRot('upperArmR', -0.45, -0.10, -0.15, 'local');
-            this.setBoneRot('forearmR', 0.55, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.45, 0.10, 0.15, 'local');
-            this.setBoneRot('forearmL', 0.55, 0, 0, 'local');
+            this.setBoneRot('upperArmR', -0.75, -0.20, 0.10, 'local');
+            this.setBoneRot('forearmR', 0.85, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.45, 0.25, 0.22, 'local');
+            this.setBoneRot('forearmL', 0.95, 0, 0, 'local');
+
+            this.setBoneRot('thighR', -0.25, -0.04, 0.14, 'parent');
+            this.setBoneRot('shinR', 0.35, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.20, 0.04, -0.14, 'parent');
+            this.setBoneRot('shinL', 0.25, 0, 0, 'parent');
           }
         } else {
           // Shadow Ronin: Tenchi Overhead Katana Cleave (+1.75m two-handed vertical slice)
@@ -1376,67 +1724,77 @@ export class Character3DFighter {
       case 'weapon': {
         // Character-Specific Signature Weapon Attacks:
         if (this.profile.id === 'valkyrie') {
-          // Cyber Valkyrie: Solar Glaive Overdrive Cleave (powerful forward lunge & wide horizontal energy arc)
-          if (p < 0.32) {
-            // Windup: Coils back, shoulders cocked, energy charges
-            const t = p / 0.32;
+          // Cyber Valkyrie: Solar Vanguard Supercharged Glaive Impalement & Lift (+1.88m lunge, impalement & aerial solar lift)
+          const fallbackLunge = 1.88;
+          const targetLunge = this.getTargetLunge(0.80, 'chest', fallbackLunge);
+
+          if (p < 0.30) {
+            // Windup: Vanguard spear coil & thruster ignition
+            const t = p / 0.30;
             const ease = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = -0.15 * ease * this.facingSign;
-            this.verticalBob = -0.04 * ease;
+            this.lungeOffset = -0.20 * ease * this.facingSign;
+            this.verticalBob = -0.06 * ease;
             this.pitchTilt = -0.08 * ease;
-            this.rotationSway = -0.20 * ease * this.facingSign;
+            this.rotationSway = -0.12 * ease * this.facingSign;
 
-            this.setBoneRot('spine', -0.06 * ease, -0.22 * ease * this.facingSign, 0, 'parent');
-            this.setBoneRot('chest', -0.08 * ease, -0.26 * ease * this.facingSign, 0, 'parent');
-            this.setBoneRot('upperArmR', -0.50 - 0.55 * ease, -0.30 * ease, -0.35 * ease, 'local');
-            this.setBoneRot('forearmR', 0.70 + 0.25 * ease, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.42 - 0.30 * ease, 0.25 * ease, 0.25 * ease, 'local');
-            this.setBoneRot('forearmL', 0.65 + 0.20 * ease, 0, 0, 'local');
+            this.setBoneRot('spine', -0.04 * ease, -0.10 * ease * this.facingSign, 0, 'parent');
+            this.setBoneRot('chest', -0.06 * ease, -0.10 * ease * this.facingSign, 0, 'parent');
+            this.setBoneRot('upperArmR', -0.32 - 0.45 * ease, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.58 + 0.15 * ease, 0, 0, 'local');
+            this.setBoneRot('handR', -0.12, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.30 - 0.35 * ease, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.58 + 0.15 * ease, 0, 0, 'local');
+            this.setBoneRot('handL', 0.08, 0, 0, 'local');
 
-            this.setBoneRot('thighR', -0.18 - 0.20 * ease, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26 + 0.25 * ease, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.12 + 0.15 * ease, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20 + 0.15 * ease, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.10 - 0.15 * ease, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + 0.20 * ease, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + 0.10 * ease, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14 + 0.10 * ease, 0, 0, 'parent');
           } else if (p < 0.68) {
-            // Impact Stroke: Massive horizontal solar cleave driving forward
-            const t = (p - 0.32) / 0.36;
-            const cleave = Math.sin(t * Math.PI * 0.5);
-            this.lungeOffset = (-0.15 + 2.05 * cleave) * this.facingSign;
-            this.verticalBob = -0.04 * (1 - cleave) - 0.02 * cleave;
-            this.pitchTilt = -0.08 + 0.18 * cleave;
-            this.rotationSway = (-0.20 + 0.45 * cleave) * this.facingSign;
+            // Impact: Deep impalement thrust & solar lift (reaches peak at p=0.60 / 0.42s)
+            const t = Math.min(1.0, Math.max(0.0, (p - 0.30) / 0.30));
+            const impale = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = (-0.20 * (1 - impale) + targetLunge * impale) * this.facingSign;
+            this.verticalBob = -0.06 * (1 - impale) + 0.32 * impale; // Impale and lift!
+            this.pitchTilt = -0.08 * (1 - impale) - 0.10 * impale;
+            this.rotationSway = (-0.12 * (1 - impale) + 0.08 * impale) * this.facingSign;
 
-            this.setBoneRot('spine', 0.06 * cleave, 0.28 * cleave * this.facingSign, 0, 'parent');
-            this.setBoneRot('chest', 0.08 * cleave, 0.32 * cleave * this.facingSign, 0, 'parent');
-            this.setBoneRot('upperArmR', -1.05 + 0.45 * cleave, -0.30 + 0.15 * cleave, -0.35 + 0.60 * cleave, 'local');
-            this.setBoneRot('forearmR', 0.95 - 0.65 * cleave, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.72 + 0.35 * cleave, 0.25 - 0.10 * cleave, 0.25 - 0.45 * cleave, 'local');
-            this.setBoneRot('forearmL', 0.85 - 0.45 * cleave, 0, 0, 'local');
+            // Glaive blade impales defender chest and drives upward into lift
+            this.setBoneRot('spine', 0.05 * impale, 0.08 * impale * this.facingSign, 0, 'parent');
+            this.setBoneRot('chest', 0.06 * impale, 0.08 * impale * this.facingSign, 0, 'parent');
+            this.setBoneRot('upperArmR', -0.77 - 0.45 * impale, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.73 - 0.45 * impale, 0, 0, 'local');
+            this.setBoneRot('handR', -0.12 + 0.15 * impale, 0, 0, 'local'); // Clean aligned grip!
+            this.setBoneRot('upperArmL', -0.65 - 0.45 * impale, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.73 - 0.45 * impale, 0, 0, 'local');
+            this.setBoneRot('handL', 0.08 + 0.12 * impale, 0, 0, 'local');
 
-            this.setBoneRot('thighR', -0.38 - 0.25 * cleave, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.51 + 0.25 * cleave, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.27 + 0.20 * cleave, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.35, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.25 - 0.15 * impale, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.36 + 0.15 * impale, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.02 + 0.15 * impale, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.24, 0, 0, 'parent');
           } else {
-            // Recovery: Grounded deceleration and return to vanguard guard
+            // Recovery: Solar burst finish and return to guard
             const t = (p - 0.68) / 0.32;
             const rev = 1 - t;
-            this.lungeOffset = 1.90 * rev * this.facingSign;
-            this.verticalBob = -0.02 * rev;
-            this.pitchTilt = 0.10 * rev;
-            this.rotationSway = 0.25 * rev * this.facingSign;
+            this.lungeOffset = targetLunge * rev * this.facingSign;
+            this.verticalBob = 0.32 * rev;
+            this.pitchTilt = -0.10 * rev;
+            this.rotationSway = 0.08 * rev * this.facingSign;
 
-            this.setBoneRot('spine', 0.06 * rev, 0.28 * rev * this.facingSign, 0, 'parent');
-            this.setBoneRot('chest', 0.08 * rev, 0.32 * rev * this.facingSign, 0, 'parent');
-            this.setBoneRot('upperArmR', -0.50, -0.15, -0.15, 'local');
-            this.setBoneRot('forearmR', 0.70, 0, 0, 'local');
-            this.setBoneRot('upperArmL', -0.42, 0.18, 0.18, 'local');
-            this.setBoneRot('forearmL', 0.65, 0, 0, 'local');
+            this.setBoneRot('spine', 0.05 * rev, 0.08 * rev * this.facingSign, 0, 'parent');
+            this.setBoneRot('chest', 0.06 * rev, 0.08 * rev * this.facingSign, 0, 'parent');
+            this.setBoneRot('upperArmR', -0.32 - 0.90 * rev, -0.04, -0.06, 'local');
+            this.setBoneRot('forearmR', 0.58 - 0.30 * rev, 0, 0, 'local');
+            this.setBoneRot('handR', -0.12 + 0.15 * rev, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.30 - 0.80 * rev, 0.06, 0.08, 'local');
+            this.setBoneRot('forearmL', 0.58 - 0.30 * rev, 0, 0, 'local');
+            this.setBoneRot('handL', 0.08 + 0.12 * rev, 0, 0, 'local');
 
-            this.setBoneRot('thighR', -0.18 - 0.45 * rev, -0.04, 0.12, 'parent');
-            this.setBoneRot('shinR', 0.26 + 0.50 * rev, 0, 0, 'parent');
-            this.setBoneRot('thighL', 0.12 + 0.35 * rev, 0.04, -0.12, 'parent');
-            this.setBoneRot('shinL', 0.20, 0, 0, 'parent');
+            this.setBoneRot('thighR', -0.10 - 0.30 * rev, 0, 0.04, 'parent');
+            this.setBoneRot('shinR', 0.16 + 0.35 * rev, 0, 0, 'parent');
+            this.setBoneRot('thighL', -0.08 + 0.25 * rev, 0, -0.04, 'parent');
+            this.setBoneRot('shinL', 0.14 + 0.10 * rev, 0, 0, 'parent');
           }
         } else if (this.profile.id === 'shinobi') {
           // Volt Shinobi: Storm Surge Twin Kunai Shockwave (low slide + electrified twin swing)
@@ -1472,19 +1830,73 @@ export class Character3DFighter {
             this.setBoneRot('forearmL', 0.55, 0, 0, 'local');
           }
         } else if (this.profile.id === 'void') {
-          // Void Assassin: Spatial Void Vortex Dance (multi-angle figure-8 rift carve)
-          const t = p;
-          const fig8 = Math.sin(t * Math.PI * 2);
-          const surge = Math.sin(t * Math.PI);
-          this.lungeOffset = (surge * 1.85 + fig8 * 0.20) * this.facingSign;
-          this.verticalBob = Math.sin(t * Math.PI * 4) * 0.05;
-          this.rotationSway = fig8 * 0.20;
+          // Void Assassin: Dimensional Execution: Blink Guillotine (+1.82m lunge, twin scissor X-cross slice)
+          const fallbackLunge = 1.82;
+          const targetLunge = this.getTargetLunge(0.55, 'chest', fallbackLunge);
 
-          // Figure-8 alternating stiletto slashes
-          this.setBoneRot('upperArmR', -0.45 - fig8 * 0.40, -0.10, -0.15 + fig8 * 0.20, 'local');
-          this.setBoneRot('forearmR', 0.55 + Math.cos(t * Math.PI * 2) * 0.30, 0, 0, 'local');
-          this.setBoneRot('upperArmL', -0.45 + fig8 * 0.40, 0.10, 0.15 - fig8 * 0.20, 'local');
-          this.setBoneRot('forearmL', 0.55 - Math.cos(t * Math.PI * 2) * 0.30, 0, 0, 'local');
+          if (p < 0.30) {
+            const t = p / 0.30;
+            const dash = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = dash * (targetLunge * 0.687) * this.facingSign;
+            this.verticalBob = -0.06 * dash;
+            this.pitchTilt = 0.12 * dash;
+            this.rotationSway = -0.15 * dash * this.facingSign;
+
+            // Daggers chambered wide to the flanks
+            this.setBoneRot('upperArmR', -0.50 - 0.35 * dash, -0.25 * dash, -0.40 * dash, 'local');
+            this.setBoneRot('forearmR', 0.60 + 0.25 * dash, 0, 0, 'local');
+            this.setBoneRot('handR', 0.20 * dash, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.35 - 0.45 * dash, 0.25 * dash, 0.40 * dash, 'local');
+            this.setBoneRot('forearmL', 0.80 + 0.15 * dash, 0, 0, 'local');
+            this.setBoneRot('handL', -0.20 * dash, 0, 0, 'local');
+
+            this.setBoneRot('thighR', -0.16 - 0.35 * dash, -0.04, 0.12, 'parent');
+            this.setBoneRot('shinR', 0.22 + 0.40 * dash, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.10 + 0.25 * dash, 0.04, -0.12, 'parent');
+            this.setBoneRot('shinL', 0.18, 0, 0, 'parent');
+          } else if (p < 0.68) {
+            const t = (p - 0.30) / 0.38;
+            const scissor = Math.sin(t * Math.PI * 0.5);
+            this.lungeOffset = (targetLunge * 0.687 + (targetLunge * 0.313) * scissor) * this.facingSign;
+            this.verticalBob = -0.06 * (1 - scissor) + 0.17 * scissor; // Calibrated chest/throat height Y ≈ 1.74m
+            this.pitchTilt = 0.08 * (1 - scissor);
+            this.rotationSway = (-0.15 * (1 - scissor)) * this.facingSign; // Clean impact plane
+
+            // Lethal twin scissor X-cross throat / chest slice reaching defender
+            this.setBoneRot('upperArmR', -1.50 - 0.05 * scissor, -0.12 * scissor, 0.22 * scissor, 'local');
+            this.setBoneRot('forearmR', 0.10, 0, 0, 'local');
+            this.setBoneRot('handR', 0.20 * scissor, 0, 0.10 * scissor, 'local');
+            this.setBoneRot('upperArmL', -1.50 - 0.05 * scissor, 0.12 * scissor, -0.22 * scissor, 'local');
+            this.setBoneRot('forearmL', 0.10, 0, 0, 'local');
+            this.setBoneRot('handL', -0.20 * scissor, 0, -0.10 * scissor, 'local');
+
+            this.setBoneRot('spine', 0.06 * scissor, 0, 0, 'parent');
+            this.setBoneRot('chest', 0.08 * scissor, 0, 0, 'parent');
+
+            this.setBoneRot('thighR', -0.16 - 0.50 * scissor, -0.04, 0.12, 'parent');
+            this.setBoneRot('shinR', 0.22 + 0.55 * scissor, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.10 + 0.40 * scissor, 0.04, -0.12, 'parent');
+            this.setBoneRot('shinL', 0.18, 0, 0, 'parent');
+          } else {
+            const t = (p - 0.68) / 0.32;
+            const rev = 1 - t;
+            this.lungeOffset = targetLunge * rev * this.facingSign;
+            this.verticalBob = -0.02 * rev;
+            this.pitchTilt = 0.14 * rev;
+            this.rotationSway = 0.10 * rev * this.facingSign;
+
+            this.setBoneRot('upperArmR', -0.50 - 0.90 * rev, -0.10, -0.15 + 0.35 * rev, 'local');
+            this.setBoneRot('forearmR', 0.60 - 0.45 * rev, 0, 0, 'local');
+            this.setBoneRot('handR', 0.15 * rev, 0, 0, 'local');
+            this.setBoneRot('upperArmL', -0.35 - 1.05 * rev, 0.10, 0.18 - 0.35 * rev, 'local');
+            this.setBoneRot('forearmL', 0.80 - 0.65 * rev, 0, 0, 'local');
+            this.setBoneRot('handL', -0.15 * rev, 0, 0, 'local');
+
+            this.setBoneRot('thighR', -0.16 - 0.20 * rev, -0.04, 0.12, 'parent');
+            this.setBoneRot('shinR', 0.22 + 0.20 * rev, 0, 0, 'parent');
+            this.setBoneRot('thighL', 0.10, 0.04, -0.12, 'parent');
+            this.setBoneRot('shinL', 0.18, 0, 0, 'parent');
+          }
         } else {
           // Shadow Ronin: Iaido Battojutsu // Full Sheath Draw & Cross Slash (+2.10m blur dash & cross slice)
           if (p < 0.28) {
@@ -1536,10 +1948,10 @@ export class Character3DFighter {
         this.lungeOffset = -recoilMag * t * this.facingSign;
         this.pitchTilt = -0.10 * t;
 
-        this.setBoneRot('head', -0.28 * t, 0, 0, 'parent');
-        this.setBoneRot('neck', -0.16 * t, 0, 0, 'parent');
-        this.setBoneRot('chest', -0.14 * t, 0, 0, 'parent');
-        this.setBoneRot('spine', -0.12 * t, 0, 0, 'parent');
+        this.setBoneRot('head', -0.10 * t, 0, 0, 'parent');
+        this.setBoneRot('neck', -0.06 * t, 0, 0, 'parent');
+        this.setBoneRot('chest', -0.08 * t, 0, 0, 'parent');
+        this.setBoneRot('spine', -0.06 * t, 0, 0, 'parent');
 
         if (this.profile.id === 'valkyrie') {
           // Heavy armor braces & thrusters reverse-vent
@@ -1559,10 +1971,17 @@ export class Character3DFighter {
           this.setBoneRot('upperArmL', -0.45 + 0.25 * t, 0.10, 0.15, 'local');
         }
 
-        this.setBoneRot('thighR', -0.26 + 0.18 * t, -0.05, 0.16, 'parent');
-        this.setBoneRot('shinR', 0.36, 0, 0, 'parent');
-        this.setBoneRot('thighL', 0.22, 0.05, -0.16, 'parent');
-        this.setBoneRot('shinL', 0.28, 0, 0, 'parent');
+        if (this.profile.id === 'valkyrie') {
+          this.setBoneRot('thighR', -0.10 + 0.12 * t, 0, 0.04, 'parent');
+          this.setBoneRot('shinR', 0.16 + 0.08 * t, 0, 0, 'parent');
+          this.setBoneRot('thighL', -0.08, 0, -0.04, 'parent');
+          this.setBoneRot('shinL', 0.14, 0, 0, 'parent');
+        } else {
+          this.setBoneRot('thighR', -0.26 + 0.18 * t, -0.05, 0.16, 'parent');
+          this.setBoneRot('shinR', 0.36, 0, 0, 'parent');
+          this.setBoneRot('thighL', 0.22, 0.05, -0.16, 'parent');
+          this.setBoneRot('shinL', 0.28, 0, 0, 'parent');
+        }
 
         if (p >= 1) this.state = 'idle';
         break;
@@ -1573,86 +1992,126 @@ export class Character3DFighter {
         const t = Math.sin(p * Math.PI * 0.85);
         const staggerMag = this.profile.id === 'valkyrie' ? 0.70 : this.profile.id === 'shinobi' ? 1.10 : this.profile.id === 'void' ? 0.90 : 0.85;
         this.lungeOffset = -staggerMag * t * this.facingSign;
-        this.pitchTilt = -0.18 * t;
-        this.verticalBob = -0.06 * t;
+        this.pitchTilt = -0.12 * t;
+        this.verticalBob = -0.04 * t;
 
-        this.setBoneRot('head', -0.50 * t, 0.18 * t * this.facingSign, 0, 'parent');
-        this.setBoneRot('neck', -0.30 * t, 0.10 * t * this.facingSign, 0, 'parent');
-        this.setBoneRot('chest', -0.28 * t, 0, 0, 'parent');
-        this.setBoneRot('spine', -0.24 * t, 0, 0, 'parent');
+        this.setBoneRot('head', -0.16 * t, 0.10 * t * this.facingSign, 0, 'parent');
+        this.setBoneRot('neck', -0.08 * t, 0.06 * t * this.facingSign, 0, 'parent');
+        this.setBoneRot('chest', -0.12 * t, 0, 0, 'parent');
+        this.setBoneRot('spine', -0.10 * t, 0, 0, 'parent');
 
         this.setBoneRot('upperArmR', -0.50 + 0.50 * t, 0, -0.30 * t, 'local');
         this.setBoneRot('upperArmL', -0.45 + 0.50 * t, 0, 0.30 * t, 'local');
 
-        this.setBoneRot('thighR', -0.26 + 0.30 * t, -0.05, 0.16, 'parent');
-        this.setBoneRot('shinR', 0.36 + 0.20 * t, 0, 0, 'parent');
-        this.setBoneRot('thighL', 0.22 - 0.12 * t, 0.05, -0.16, 'parent');
-        this.setBoneRot('shinL', 0.28, 0, 0, 'parent');
+        if (this.profile.id === 'valkyrie') {
+          this.setBoneRot('thighR', -0.10 + 0.20 * t, 0, 0.04, 'parent');
+          this.setBoneRot('shinR', 0.16 + 0.14 * t, 0, 0, 'parent');
+          this.setBoneRot('thighL', -0.08 - 0.08 * t, 0, -0.04, 'parent');
+          this.setBoneRot('shinL', 0.14, 0, 0, 'parent');
+        } else {
+          this.setBoneRot('thighR', -0.26 + 0.30 * t, -0.05, 0.16, 'parent');
+          this.setBoneRot('shinR', 0.36 + 0.20 * t, 0, 0, 'parent');
+          this.setBoneRot('thighL', 0.22 - 0.12 * t, 0.05, -0.16, 'parent');
+          this.setBoneRot('shinL', 0.28, 0, 0, 'parent');
+        }
 
         if (p >= 1) this.state = 'idle';
         break;
       }
 
       case 'ko': {
-        // Character-Specific Knockout Collapse:
-        const t = Math.min(p * 1.5, 1);
-        this.lungeOffset = -1.1 * t * this.facingSign;
-        this.verticalBob = -0.95 * t;
-        this.pitchTilt = -Math.PI / 2.1 * t;
+        // Universal Cinematic Defeat Sequence (All Characters):
+        // Phase 1 (p < 0.14): Airborne Knock-Up Arc — explosive vertical launch upward (+0.85m lift) & reeling backward
+        // Phase 2 (0.14 <= p < 0.42): Slow Gravity Tumble & Fall — gravitational tumble, falling back down towards arena deck
+        // Phase 3 (p >= 0.42): Slam Flat & Motionless Corpse Collapse — slams deck, lies completely flat & dead
 
-        if (this.profile.id === 'valkyrie') {
-          // Cyber Valkyrie: Armor overload shutdown onto deck
-          this.setBoneRot('thighR', -0.80 * t, -0.06, 0.18, 'parent');
-          this.setBoneRot('shinR', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footR', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('thighL', -0.80 * t, 0.06, -0.18, 'parent');
-          this.setBoneRot('shinL', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footL', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('spine', 0.45 * t, 0, 0, 'parent');
-          this.setBoneRot('chest', 0.35 * t, 0, 0, 'parent');
-          this.setBoneRot('head', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('upperArmR', 0.40 * t, 0, -0.60 * t, 'local');
-          this.setBoneRot('upperArmL', 0.40 * t, 0, 0.60 * t, 'local');
-        } else if (this.profile.id === 'shinobi') {
-          // Volt Shinobi: Smoke dispersal collapse into tight evasive tuck
-          this.setBoneRot('thighR', -0.80 * t, 0, 0, 'parent');
-          this.setBoneRot('shinR', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footR', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('thighL', -0.80 * t, 0, 0, 'parent');
-          this.setBoneRot('shinL', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footL', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('spine', 0.40 * t, 0, 0, 'parent');
-          this.setBoneRot('chest', 0.30 * t, 0, 0, 'parent');
-          this.setBoneRot('head', 0.55 * t, 0, 0, 'parent');
-          this.setBoneRot('upperArmR', 0.35 * t, 0, -0.50 * t, 'local');
-          this.setBoneRot('upperArmL', 0.35 * t, 0, 0.50 * t, 'local');
-        } else if (this.profile.id === 'void') {
-          // Void Assassin: Shadow rift dissolution
-          this.setBoneRot('thighR', -0.80 * t, 0, 0.16, 'parent');
-          this.setBoneRot('shinR', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footR', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('thighL', -0.80 * t, 0, -0.16, 'parent');
-          this.setBoneRot('shinL', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footL', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('spine', 0.35 * t, 0, 0, 'parent');
-          this.setBoneRot('chest', 0.25 * t, 0, 0, 'parent');
-          this.setBoneRot('head', 0.45 * t, 0, 0, 'parent');
-          this.setBoneRot('upperArmR', 0.30 * t, 0, -0.65 * t, 'local');
-          this.setBoneRot('upperArmL', 0.30 * t, 0, 0.65 * t, 'local');
+        if (p < 0.14) {
+          // Phase 1: Airborne Knock-Up Arc
+          const t1 = p / 0.14;
+          const launchEase = Math.sin(t1 * Math.PI * 0.5);
+          this.verticalBob = launchEase * 0.85; // Ascends up to +0.85m into the air
+          this.lungeOffset = -0.40 * launchEase * this.facingSign; // Reeling backward into air
+          this.pitchTilt = -0.52 * t1; // Torso arches backward ~30 deg in shock
+          this.rotationSway = 0.05 * Math.sin(t1 * Math.PI) * this.facingSign;
+
+          // Upper body flung backward & outward in mid-air blast
+          this.setBoneRot('spine', -0.22 * t1, 0, 0, 'parent');
+          this.setBoneRot('chest', -0.18 * t1, 0, 0, 'parent');
+          this.setBoneRot('neck', -0.20 * t1, 0, 0, 'parent');
+          this.setBoneRot('head', -0.30 * t1, 0, 0, 'parent');
+
+          // Arms thrown back / flailing in mid-air shock
+          this.setBoneRot('upperArmR', -0.65 * t1, 0, -0.45 * t1, 'local');
+          this.setBoneRot('forearmR', 0.40 * t1, 0, 0, 'local');
+          this.setBoneRot('upperArmL', -0.65 * t1, 0, 0.45 * t1, 'local');
+          this.setBoneRot('forearmL', 0.40 * t1, 0, 0, 'local');
+
+          // Legs trail beneath the airborne body
+          this.setBoneRot('thighR', -0.25 * t1, -0.04, 0.12, 'parent');
+          this.setBoneRot('shinR', 0.45 * t1, 0, 0, 'parent');
+          this.setBoneRot('footR', -0.20 * t1, 0, 0, 'parent');
+          this.setBoneRot('thighL', -0.25 * t1, 0.04, -0.12, 'parent');
+          this.setBoneRot('shinL', 0.45 * t1, 0, 0, 'parent');
+          this.setBoneRot('footL', -0.20 * t1, 0, 0, 'parent');
+        } else if (p < 0.42) {
+          // Phase 2: Slow Gravity Tumble & Fall Back Down
+          const t2 = (p - 0.14) / 0.28;
+          // Gravitational acceleration curve (slow at apex, accelerates to ground impact)
+          const fallGravity = t2 * t2;
+          this.verticalBob = 0.85 * (1 - fallGravity) + (-0.95) * fallGravity;
+          this.lungeOffset = (-0.40 - 0.15 * t2) * this.facingSign;
+          // Full tumble into horizontal back landing (-Math.PI / 2.1 rad)
+          this.pitchTilt = -0.52 * (1 - t2) + (-Math.PI / 2.1) * t2;
+          this.rotationSway = 0.05 * (1 - t2) * this.facingSign;
+
+          // Body surrenders to gravity, losing all tension
+          this.setBoneRot('spine', -0.22 * (1 - t2) + 0.05 * t2, 0, 0, 'parent');
+          this.setBoneRot('chest', -0.18 * (1 - t2) + 0.02 * t2, 0, 0, 'parent');
+          this.setBoneRot('neck', -0.20 * (1 - t2) + 0.08 * t2, 0, 0, 'parent');
+          this.setBoneRot('head', -0.30 * (1 - t2) + 0.18 * t2, 0, 0, 'parent');
+
+          // Arms falling limp towards deck surface
+          this.setBoneRot('upperArmR', -0.65 * (1 - t2) + 0.25 * t2, 0, -0.45 * (1 - t2) - 0.55 * t2, 'local');
+          this.setBoneRot('forearmR', 0.40 * (1 - t2) + 0.15 * t2, 0, 0, 'local');
+          this.setBoneRot('upperArmL', -0.65 * (1 - t2) + 0.25 * t2, 0, 0.45 * (1 - t2) + 0.55 * t2, 'local');
+          this.setBoneRot('forearmL', 0.40 * (1 - t2) + 0.15 * t2, 0, 0, 'local');
+
+          // Legs falling limp & extending towards floor
+          this.setBoneRot('thighR', -0.25 * (1 - t2) + 0.05 * t2, -0.04 * (1 - t2) - 0.06 * t2, 0.12 * (1 - t2) + 0.08 * t2, 'parent');
+          this.setBoneRot('shinR', 0.45 * (1 - t2) + 0.02 * t2, 0, 0, 'parent');
+          this.setBoneRot('footR', -0.20 * (1 - t2) + 0.20 * t2, 0, 0, 'parent');
+          this.setBoneRot('thighL', -0.25 * (1 - t2) + 0.05 * t2, 0.04 * (1 - t2) + 0.06 * t2, -0.12 * (1 - t2) - 0.08 * t2, 'parent');
+          this.setBoneRot('shinL', 0.45 * (1 - t2) + 0.02 * t2, 0, 0, 'parent');
+          this.setBoneRot('footL', -0.20 * (1 - t2) + 0.20 * t2, 0, 0, 'parent');
         } else {
-          // Shadow Ronin: Honorable samurai collapse
-          this.setBoneRot('thighR', -0.80 * t, -0.05, 0.16, 'parent');
-          this.setBoneRot('shinR', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footR', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('thighL', -0.80 * t, 0.05, -0.16, 'parent');
-          this.setBoneRot('shinL', 1.35 * t, 0, 0, 'parent');
-          this.setBoneRot('footL', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('spine', 0.45 * t, 0, 0, 'parent');
-          this.setBoneRot('chest', 0.35 * t, 0, 0, 'parent');
-          this.setBoneRot('head', 0.50 * t, 0, 0, 'parent');
-          this.setBoneRot('upperArmR', -0.20 * t, 0, -0.35 * t, 'local');
-          this.setBoneRot('forearmR', 0.80 * t, 0, 0, 'local');
-          this.setBoneRot('upperArmL', 0.30 * t, 0.10, 0.40 * t, 'local');
+          // Phase 3: Slam Flat Onto Deck & Lie Motionless Dead
+          const bounce = p < 0.46 ? Math.sin((p - 0.42) / 0.04 * Math.PI) * 0.02 : 0;
+          this.verticalBob = -0.95 + bounce; // Collapsed flat on arena floor
+          this.lungeOffset = -0.55 * this.facingSign; // Resting flat on arena deck in frame
+          this.pitchTilt = -Math.PI / 2.1; // Flat on back (-85.7 degrees, resting flat on deck)
+          this.rotationSway = 0;
+
+          // Motionless corpse posture: chest, head, spine, arms, and legs lying completely flat
+          this.setBoneRot('spine', 0.05, 0, 0, 'parent');
+          this.setBoneRot('chest', 0.02, 0, 0, 'parent');
+          this.setBoneRot('neck', 0.08, 0, 0, 'parent');
+          this.setBoneRot('head', 0.18, 0.12 * this.facingSign, 0, 'parent'); // Head slumped limp on deck
+
+          // Arms sprawled flat to the sides on the floor
+          this.setBoneRot('upperArmR', 0.25, 0, -0.55, 'local');
+          this.setBoneRot('forearmR', 0.15, 0, 0, 'local');
+          this.setBoneRot('handR', 0.10, 0, 0, 'local');
+          this.setBoneRot('upperArmL', 0.25, 0, 0.55, 'local');
+          this.setBoneRot('forearmL', 0.15, 0, 0, 'local');
+          this.setBoneRot('handL', 0.10, 0, 0, 'local');
+
+          // Legs extended flat along the ground, relaxed
+          this.setBoneRot('thighR', 0.05, -0.06, 0.12, 'parent');
+          this.setBoneRot('shinR', 0.02, 0, 0, 'parent');
+          this.setBoneRot('footR', 0.20, 0, -0.15, 'parent');
+          this.setBoneRot('thighL', 0.05, 0.06, -0.12, 'parent');
+          this.setBoneRot('shinL', 0.02, 0, 0, 'parent');
+          this.setBoneRot('footL', 0.20, 0, 0.15, 'parent');
         }
         break;
       }
@@ -1671,8 +2130,10 @@ export class Character3DFighter {
           this.setBoneRot('forearmL', 1.10, 0, 0, 'local');
           this.setBoneRot('chest', -0.14, 0, 0, 'parent');
           this.setBoneRot('head', -0.10, 0, 0, 'parent');
-          this.setBoneRot('thighR', -0.28, -0.06, 0.18, 'parent');
-          this.setBoneRot('thighL', 0.24, 0.06, -0.18, 'parent');
+          this.setBoneRot('thighR', -0.10, 0, 0.04, 'parent');
+          this.setBoneRot('shinR', 0.16, 0, 0, 'parent');
+          this.setBoneRot('thighL', -0.08, 0, -0.04, 'parent');
+          this.setBoneRot('shinL', 0.14, 0, 0, 'parent');
         } else if (this.profile.id === 'shinobi') {
           // Volt Shinobi: Twin kunai twirl into ninja chakra hand-seal pose
           this.verticalBob = 0.03 + Math.sin(elapsedTotal * 3.0) * 0.02;

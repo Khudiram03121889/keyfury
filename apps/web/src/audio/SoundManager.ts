@@ -339,6 +339,41 @@ export class SoundManager {
       osc.stop(noteTime + dur);
     });
   }
+
+  // --- 8. Incoming Challenge Alert ---
+  public playChallengeAlert(): void {
+    if (this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    this.ensureUnlocked();
+
+    const now = ctx.currentTime;
+    // High-energy cyberpunk arpeggio notification (E5, G#5, B5, E6)
+    const tones = [
+      { freq: 659.25, time: 0, dur: 0.1 },
+      { freq: 830.61, time: 0.1, dur: 0.1 },
+      { freq: 987.77, time: 0.2, dur: 0.1 },
+      { freq: 1318.51, time: 0.3, dur: 0.35 }
+    ];
+
+    tones.forEach(({ freq, time, dur }) => {
+      const noteTime = now + time;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.35, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteTime + dur);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain || ctx.destination);
+
+      osc.start(noteTime);
+      osc.stop(noteTime + dur);
+    });
+  }
 }
 
 export const soundManager = new SoundManager();

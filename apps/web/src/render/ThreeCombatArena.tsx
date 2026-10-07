@@ -395,7 +395,7 @@ export function getFighterEntranceProgress(t: number, side: 'left' | 'right'): n
 }
 
 export interface ThreeCombatArenaRef {
-  triggerAttack: (side: 'left' | 'right', tier: 'jab' | 'kick' | 'heavy' | 'weapon') => void;
+  triggerAttack: (side: 'left' | 'right', tier: 'jab' | 'kick' | 'heavy' | 'weapon', damage?: number, combo?: number) => void;
   triggerHit: (side: 'left' | 'right', severity: 'light' | 'heavy') => void;
   triggerKeystroke: (side: 'left' | 'right') => void;
   triggerKnockout: (loserSide: 'left' | 'right') => void;
@@ -589,6 +589,184 @@ export class TilePromptDisplay {
   }
 }
 
+/**
+ * 3D Floating Combat Text Manager:
+ * Renders stylized billboard numerals (-14, CRIT! -28, COMBO x4) at strike contact points in 3D WebGL.
+ * Built using high-performance canvas textures with pooled THREE.Sprite objects.
+ */
+interface FloatingTextItem {
+  active: boolean;
+  sprite: THREE.Sprite;
+  material: THREE.SpriteMaterial;
+  texture: THREE.CanvasTexture;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  age: number;
+  maxAge: number;
+  vy: number;
+}
+
+export class FloatingCombatTextManager {
+  private pool: FloatingTextItem[] = [];
+  private scene: THREE.Scene;
+
+  constructor(scene: THREE.Scene, poolSize: number = 8) {
+    this.scene = scene;
+    if (typeof document === 'undefined') return;
+
+    for (let i = 0; i < poolSize; i++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) continue;
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.renderOrder = 999;
+      sprite.visible = false;
+      sprite.scale.set(1.4, 0.7, 1);
+      scene.add(sprite);
+
+      this.pool.push({
+        active: false,
+        sprite,
+        material,
+        texture,
+        canvas,
+        ctx,
+        age: 0,
+        maxAge: 0.80,
+        vy: 1.1,
+      });
+    }
+  }
+
+  public spawn(
+    x: number,
+    y: number,
+    z: number,
+    text: string,
+    color: string = '#fbbf24',
+    isCrit: boolean = false,
+    subText?: string
+  ) {
+    const item = this.pool.find((p) => !p.active);
+    if (!item) return;
+
+    item.active = true;
+    item.age = 0;
+    item.maxAge = isCrit ? 0.95 : 0.75;
+    item.vy = isCrit ? 1.4 : 1.0;
+    item.sprite.position.set(x, y, z);
+    item.sprite.visible = true;
+    item.material.opacity = 1.0;
+
+    const ctx = item.ctx;
+    ctx.clearRect(0, 0, 256, 128);
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fontSize = isCrit ? 54 : 46;
+    ctx.font = `900 ${fontSize}px "Impact", "Arial Black", sans-serif`;
+
+    ctx.shadowColor = color;
+    ctx.shadowBlur = isCrit ? 22 : 12;
+
+    // Heavy dark outline for maximum legibility in 3D arena
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(text, 128, 52);
+
+    ctx.fillStyle = color;
+    ctx.fillText(text, 128, 52);
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeText(text, 128, 52);
+
+    if (subText) {
+      ctx.shadowBlur = 8;
+      ctx.font = '800 22px "Impact", sans-serif';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#000000';
+      ctx.strokeText(subText, 128, 92);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(subText, 128, 92);
+    }
+
+    ctx.restore();
+    item.texture.needsUpdate = true;
+
+    const baseScaleX = isCrit ? 1.7 : 1.35;
+    const baseScaleY = isCrit ? 0.85 : 0.68;
+    item.sprite.scale.set(baseScaleX * 0.4, baseScaleY * 0.4, 1);
+  }
+
+  public update(delta: number) {
+    for (const item of this.pool) {
+      if (!item.active) continue;
+      item.age += delta;
+      if (item.age >= item.maxAge) {
+        item.active = false;
+        item.sprite.visible = false;
+        continue;
+      }
+
+      // Upward drift
+      item.sprite.position.y += item.vy * delta;
+      item.vy = Math.max(0.3, item.vy - delta * 0.8);
+
+      // Pop-in bounce
+      const prog = item.age / item.maxAge;
+      const popP = Math.min(item.age / 0.12, 1);
+      const scaleEase = Math.sin(popP * Math.PI * 0.5) * 1.15;
+      const targetS = popP >= 1 ? 1.0 : scaleEase;
+
+      const isCrit = item.maxAge > 0.85;
+      const baseScaleX = isCrit ? 1.7 : 1.35;
+      const baseScaleY = isCrit ? 0.85 : 0.68;
+      item.sprite.scale.set(baseScaleX * targetS, baseScaleY * targetS, 1);
+
+      // Fade out
+      if (prog > 0.55) {
+        const fadeP = (prog - 0.55) / 0.45;
+        item.material.opacity = Math.max(0, 1.0 - fadeP);
+      } else {
+        item.material.opacity = 1.0;
+      }
+    }
+  }
+
+  public dispose() {
+    for (const item of this.pool) {
+      this.scene.remove(item.sprite);
+      item.material.dispose();
+      item.texture.dispose();
+    }
+    this.pool = [];
+  }
+}
+
+interface PendingImpact {
+  attackerSide: 'left' | 'right';
+  defenderSide: 'left' | 'right';
+  tier: 'jab' | 'kick' | 'heavy' | 'weapon';
+  severity: 'light' | 'heavy';
+  timer: number;
+  damage?: number;
+  combo?: number;
+}
+
 interface HitParticleData {
   active: boolean;
   x: number;
@@ -735,18 +913,43 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
   const hitParticlesGeoRef = useRef<THREE.BufferGeometry | null>(null);
   const hitShockwavesRef = useRef<HitShockwaveData[]>([]);
 
-  const spawnHitFeedback = useCallback((side: 'left' | 'right', severity: 'light' | 'heavy') => {
+  // Physical impact sequencer & 3D floating combat text
+  const floatingTextRef = useRef<FloatingCombatTextManager | null>(null);
+  const pendingImpactsRef = useRef<PendingImpact[]>([]);
+  const hitstopTimerRef = useRef<number>(0);
+
+  const spawnHitFeedback = useCallback((
+    side: 'left' | 'right',
+    severity: 'light' | 'heavy',
+    tier?: 'jab' | 'kick' | 'heavy' | 'weapon'
+  ) => {
     const defender = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
     const attacker = side === 'left' ? p2FighterRef.current : p1FighterRef.current;
     if (!defender) return;
 
-    // Contact point at defender's front surface facing incoming strike
-    const defX = defender.group.position.x;
-    const defY = (defender.baseY ?? 0) + 1.15;
-    const defZ = defender.group.position.z;
-    const contactX = defX + defender.facingSign * 0.28;
-    const contactY = defY;
-    const contactZ = defZ;
+    // Contact point at striker's striking limb or defender surface
+    const tmpVec = new THREE.Vector3();
+    let contactX: number;
+    let contactY: number;
+    let contactZ: number;
+
+    const strikingBone = tier === 'kick'
+      ? attacker?.bones.footR
+      : (attacker?.bones.handR || attacker?.bones.handL);
+
+    if (strikingBone) {
+      strikingBone.getWorldPosition(tmpVec);
+      contactX = tmpVec.x;
+      contactY = tmpVec.y;
+      contactZ = tmpVec.z;
+    } else {
+      const defX = defender.group.position.x;
+      const defY = (defender.baseY ?? 0) + (tier === 'kick' ? 1.70 : 1.55);
+      const defZ = defender.group.position.z;
+      contactX = defX + defender.facingSign * 0.28;
+      contactY = defY;
+      contactZ = defZ;
+    }
 
     const themeHex = attacker?.profile?.primaryColor ?? (severity === 'heavy' ? 0xff3b30 : 0xffcc00);
     const themeColor = new THREE.Color(themeHex);
@@ -806,6 +1009,72 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       break;
     }
   }, []);
+
+  const executeHitImpact = useCallback((
+    defenderSide: 'left' | 'right',
+    severity: 'light' | 'heavy',
+    damage?: number,
+    combo?: number,
+    tier: 'jab' | 'kick' | 'heavy' | 'weapon' = 'jab'
+  ) => {
+    const defender = defenderSide === 'left' ? p1FighterRef.current : p2FighterRef.current;
+    const attacker = defenderSide === 'left' ? p2FighterRef.current : p1FighterRef.current;
+    if (!defender) return;
+    if (defenderSide === 'left' && (window as any).__muteOpponent) return;
+    if (defender.getState() === 'ko') return;
+
+    // 1. Trigger defender flinch or heavy stagger
+    if (severity === 'light') defender.playHitLight();
+    else defender.playHitHeavy();
+
+    // 2. Trigger fighting-game hitstop (40ms - 55ms freeze frame on contact)
+    hitstopTimerRef.current = severity === 'heavy' ? 0.055 : 0.040;
+
+    // 3. Shake camera according to tier
+    const shakeAmount = tier === 'weapon' ? 0.35 : tier === 'heavy' ? 0.28 : severity === 'heavy' ? 0.20 : 0.10;
+    shakeIntensityRef.current = Math.max(shakeIntensityRef.current, shakeAmount);
+
+    // 4. Directional particle feedback and contact shockwave
+    spawnHitFeedback(defenderSide, severity, tier);
+
+    // 5. 3D Floating Combat Text Popups
+    if (floatingTextRef.current) {
+      const tmpVec = new THREE.Vector3();
+      let contactX: number;
+      let contactY: number;
+      let contactZ: number;
+
+      if (tier === 'kick' || (attacker?.profile?.id === 'valkyrie' && attacker?.getComboStep() === 2)) {
+        defender.getHeadWorldPosition(tmpVec);
+      } else {
+        defender.getChestWorldPosition(tmpVec);
+      }
+      contactX = tmpVec.x;
+      contactY = tmpVec.y;
+      contactZ = tmpVec.z;
+
+      const effectiveDamage = typeof damage === 'number' && damage > 0
+        ? damage
+        : (tier === 'weapon' ? 32 : tier === 'heavy' ? 22 : tier === 'kick' ? 14 : 8);
+
+      const isCrit = effectiveDamage >= 20 || tier === 'heavy' || tier === 'weapon';
+      const dmgText = `-${effectiveDamage}`;
+      const subText = isCrit ? 'CRIT!' : (combo && combo >= 2 ? `COMBO x${combo}` : undefined);
+
+      const themeHex = attacker?.profile?.glowColor || '#fbbf24';
+      const color = isCrit ? '#ff0055' : (combo && combo >= 2 ? '#00f0ff' : themeHex);
+
+      floatingTextRef.current.spawn(
+        contactX,
+        contactY + 0.3,
+        contactZ,
+        dmgText,
+        color,
+        isCrit,
+        subText
+      );
+    }
+  }, [spawnHitFeedback]);
 
   const arenaDef = ARENA_DEFINITIONS[resolvedArenaId];
 
@@ -987,7 +1256,8 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
 
   // Imperative handle for combat triggers
   useImperativeHandle(ref, () => ({
-    triggerAttack: (side, tier) => {
+    triggerAttack: (side, tier, damage, combo) => {
+      if ((window as any).__muteOpponent && side === 'right') return;
       const fighter = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
       if (!fighter) return;
 
@@ -996,27 +1266,41 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       else if (tier === 'heavy') fighter.playHeavy();
       else fighter.playWeapon();
 
-      if (tier === 'heavy' || tier === 'weapon') {
-        shakeIntensityRef.current = tier === 'weapon' ? 0.35 : 0.28;
-      }
+      // Schedule physical contact impact at the exact moment the strike lands
+      const impactDelay = fighter.getImpactDelay(tier);
+      const severity = tier === 'jab' ? 'light' : 'heavy';
+      const defenderSide = side === 'left' ? 'right' : 'left';
+
+      pendingImpactsRef.current.push({
+        attackerSide: side,
+        defenderSide,
+        tier,
+        severity,
+        timer: impactDelay,
+        damage,
+        combo,
+      });
     },
     triggerHit: (side, severity) => {
-      const fighter = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
-      if (!fighter) return;
-
-      if (severity === 'light') fighter.playHitLight();
-      else {
-        fighter.playHitHeavy();
-        shakeIntensityRef.current = 0.20;
+      if ((window as any).__muteOpponent && side === 'left') return;
+      // If there is an active pending impact queued for this defender (from an attack started just now),
+      // update its severity so it fires at the strike connection moment rather than prematurely
+      const existing = pendingImpactsRef.current.find((p) => p.defenderSide === side);
+      if (existing) {
+        existing.severity = severity;
+        return;
       }
 
-      spawnHitFeedback(side, severity);
+      // Standalone hit (e.g. typing error / stun) — fire immediately
+      executeHitImpact(side, severity);
     },
     triggerKeystroke: (side) => {
       const fighter = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
       if (fighter) fighter.playKeystroke();
     },
     triggerKnockout: (loserSide) => {
+      if ((window as any).__ignoreServerKO) return;
+      pendingImpactsRef.current = [];
       const loser = loserSide === 'left' ? p1FighterRef.current : p2FighterRef.current;
       const winner = loserSide === 'left' ? p2FighterRef.current : p1FighterRef.current;
       if (loser) loser.playKnockout();
@@ -1024,6 +1308,7 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       shakeIntensityRef.current = 0.35;
     },
     triggerVictory: (winnerSide) => {
+      if ((window as any).__ignoreServerKO) return;
       const winner = winnerSide === 'left' ? p1FighterRef.current : p2FighterRef.current;
       if (winner) winner.playVictory();
     },
@@ -1069,6 +1354,10 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         p2FighterRef.current = p2;
         (window as any).__p2 = p2;
       }
+      if (p1FighterRef.current && p2FighterRef.current) {
+        p1FighterRef.current.setOpponent(p2FighterRef.current);
+        p2FighterRef.current.setOpponent(p1FighterRef.current);
+      }
     },
     setPromptWord: (word: string, typedIndex: number = 0, isError: boolean = false) => {
       currentWordRef.current = word;
@@ -1077,7 +1366,7 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     },
     getP1TilePrompt: () => p1TilePromptRef.current,
     getP2TilePrompt: () => p2TilePromptRef.current,
-  }), [setCameraPresetById, arenaDef, resolvedArenaId]);
+  }), [setCameraPresetById, arenaDef, resolvedArenaId, executeHitImpact]);
 
   // Initialize Three.js Scene
   useEffect(() => {
@@ -1113,12 +1402,20 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     scene.background = new THREE.Color(arenaDef.skyColor);
     sceneRef.current = scene;
 
+    floatingTextRef.current = new FloatingCombatTextManager(scene);
+    pendingImpactsRef.current = [];
+    hitstopTimerRef.current = 0;
+
     const camera = new THREE.PerspectiveCamera(arenaDef.camFov, container.clientWidth / container.clientHeight, 0.1, 1000);
     // Initial Wide Showcase Camera position
     camera.position.set(arenaDef.camPos[0], arenaDef.camPos[1] + 2.8, arenaDef.camPos[2] + 4.0);
     currentCamLookAt.current.set(arenaDef.camLookAt[0], arenaDef.camLookAt[1] + 0.5, arenaDef.camLookAt[2]);
     camera.lookAt(currentCamLookAt.current);
     cameraRef.current = camera;
+    (window as any).__arenaCamera = camera;
+    (window as any).__targetCamPos = targetCamPos;
+    (window as any).__targetCamLookAt = targetCamLookAt;
+    (window as any).__targetCamFov = targetCamFov;
 
     // 2. Renderer with ACES Filmic Tone Mapping matching Blender Material Preview (LookDev)
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -1341,6 +1638,9 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     scene.add(p2.group);
     p2FighterRef.current = p2;
 
+    p1.setOpponent(p2);
+    p2.setOpponent(p1);
+
     // ponytail: On-tile word prompts below character legs removed per user request
     p1TilePromptRef.current = null;
     p2TilePromptRef.current = null;
@@ -1351,6 +1651,7 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
     (window as any).__threeCamera = camera;
     (window as any).__threeRenderer = renderer;
     (window as any).__setCameraPreset = (preset: CameraPreset) => setCameraPresetByIdRef.current(preset);
+    (window as any).__completeIntro = () => completeIntroRef.current();
     (window as any).__triggerHit = (side: 'left' | 'right', severity: 'light' | 'heavy' = 'light') => {
       const fighter = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
       if (!fighter) return;
@@ -1360,6 +1661,52 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         shakeIntensityRef.current = 0.20;
       }
       spawnHitFeedback(side, severity);
+    };
+    (window as any).__triggerAttack = (side: 'left' | 'right', tier: 'jab' | 'kick' | 'heavy' | 'weapon', damage?: number, combo?: number) => {
+      const fighter = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
+      if (!fighter) return;
+
+      if (tier === 'jab') fighter.playJab();
+      else if (tier === 'kick') fighter.playKick();
+      else if (tier === 'heavy') fighter.playHeavy();
+      else fighter.playWeapon();
+
+      const impactDelay = fighter.getImpactDelay(tier);
+      const severity = tier === 'jab' ? 'light' : 'heavy';
+      const defenderSide = side === 'left' ? 'right' : 'left';
+
+      pendingImpactsRef.current.push({
+        attackerSide: side,
+        defenderSide,
+        tier,
+        severity,
+        timer: impactDelay,
+        damage,
+        combo,
+      });
+    };
+    (window as any).__triggerAttackAtPeak = (side: 'left' | 'right', tier: 'jab' | 'kick' | 'heavy' | 'weapon', damage?: number, combo?: number) => {
+      const attacker = side === 'left' ? p1FighterRef.current : p2FighterRef.current;
+      const defender = side === 'left' ? p2FighterRef.current : p1FighterRef.current;
+      const defenderSide = side === 'left' ? 'right' : 'left';
+      if (!attacker || !defender) return;
+
+      (window as any).__muteOpponent = true;
+      attacker.resetRecoil();
+      defender.resetRecoil();
+
+      if (tier === 'jab') attacker.playJab();
+      else if (tier === 'kick') attacker.playKick();
+      else if (tier === 'heavy') attacker.playHeavy();
+      else attacker.playWeapon();
+
+      const delay = attacker.getImpactDelay(tier);
+      attacker.update(delay, 1.0);
+
+      const severity = tier === 'jab' ? 'light' : 'heavy';
+      executeHitImpact(defenderSide, severity, damage, combo, tier);
+
+      (window as any).__freezeFighters = true;
     };
     (window as any).__setCharacterSkins = (newP1Id?: string, newP2Id?: string) => {
       const ldr = new GLTFLoader();
@@ -1384,6 +1731,10 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         scene.add(newP2.group);
         p2FighterRef.current = newP2;
         (window as any).__p2 = newP2;
+      }
+      if (p1FighterRef.current && p2FighterRef.current) {
+        p1FighterRef.current.setOpponent(p2FighterRef.current);
+        p2FighterRef.current.setOpponent(p1FighterRef.current);
       }
     };
 
@@ -1445,9 +1796,49 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         shakeIntensityRef.current = Math.max(0, shakeIntensityRef.current - delta * 1.5);
       }
 
-      // Update fighters
-      if (p1FighterRef.current) p1FighterRef.current.update(delta, elapsedTotal);
-      if (p2FighterRef.current) p2FighterRef.current.update(delta, elapsedTotal);
+      // Update pending physical impact sequencer
+      const pending = pendingImpactsRef.current;
+      for (let i = pending.length - 1; i >= 0; i--) {
+        const imp = pending[i];
+        imp.timer -= delta;
+        if (imp.timer <= 0) {
+          pending.splice(i, 1);
+          executeHitImpact(imp.defenderSide, imp.severity, imp.damage, imp.combo, imp.tier);
+        }
+      }
+
+      // Update hitstop timer (freezes fighters on strike contact for 40ms - 55ms)
+      let fighterDelta = delta;
+      if (hitstopTimerRef.current > 0) {
+        hitstopTimerRef.current = Math.max(0, hitstopTimerRef.current - delta);
+        fighterDelta = 0;
+      }
+      if ((window as any).__freezeFighters) {
+        fighterDelta = 0;
+      }
+
+      // Update fighters (frozen during hitstop)
+      if (p1FighterRef.current) {
+        p1FighterRef.current.update(fighterDelta, elapsedTotal);
+        if (p1FighterRef.current.getState() === 'ko') {
+          const yDrop = Math.max(0, -(p1FighterRef.current.meshObject?.position.y ?? 0));
+          p1FighterRef.current.group.position.y = arenaDef.fighterFloorY + yDrop;
+        } else {
+          p1FighterRef.current.group.position.y = arenaDef.fighterFloorY;
+        }
+      }
+      if (p2FighterRef.current) {
+        p2FighterRef.current.update(fighterDelta, elapsedTotal);
+        if (p2FighterRef.current.getState() === 'ko') {
+          const yDrop = Math.max(0, -(p2FighterRef.current.meshObject?.position.y ?? 0));
+          p2FighterRef.current.group.position.y = arenaDef.fighterFloorY + yDrop;
+        } else {
+          p2FighterRef.current.group.position.y = arenaDef.fighterFloorY;
+        }
+      }
+
+      // Update 3D floating combat text popups
+      floatingTextRef.current?.update(delta);
 
       // Update hit feedback particles & shockwave animations
       const hitParticles = hitParticlesRef.current;
@@ -1767,7 +2158,7 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
         let effectiveTargetLookAt = targetCamLookAt.current;
 
         const currentPreset = CAMERA_PRESETS[activePresetIndexRef.current % CAMERA_PRESETS.length];
-        if ((currentPreset.id === 'front' || currentPreset.id === 'dynamic') && p1FighterRef.current && p2FighterRef.current) {
+        if ((currentPreset.id === 'front' || currentPreset.id === 'dynamic') && p1FighterRef.current && p2FighterRef.current && !(window as any).__disableDynamicTrack) {
           const p1X = p1FighterRef.current.group.position.x + (p1FighterRef.current.meshObject?.position.x ?? 0);
           const p2X = p2FighterRef.current.group.position.x + (p2FighterRef.current.meshObject?.position.x ?? 0);
           const midX = (p1X + p2X) * 0.5;
@@ -1855,7 +2246,16 @@ export const ThreeCombatArena = forwardRef<ThreeCombatArenaRef, Props>(({
       });
       hitParticlesRef.current = [];
       hitShockwavesRef.current = [];
+      floatingTextRef.current?.dispose();
+      floatingTextRef.current = null;
+      pendingImpactsRef.current = [];
+      hitstopTimerRef.current = 0;
       delete (window as any).__triggerHit;
+      delete (window as any).__triggerAttack;
+      delete (window as any).__triggerAttackAtPeak;
+      delete (window as any).__freezeFighters;
+      delete (window as any).__muteOpponent;
+      delete (window as any).__completeIntro;
 
       if (rendererRef.current) {
         rendererRef.current.dispose();

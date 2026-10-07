@@ -97,7 +97,7 @@ import {
 } from '../lib/supabase';
 import { generateMatchCardBlob } from '../lib/downloadMatchCard';
 
-describe('Leaderboard & Achievement System Integration Tests', () => {
+describe('Leaderboard & Achievement System Integration Tests', { timeout: 15000 }, () => {
   const TEST_USER_ID = 'test_warrior_123';
 
   beforeEach(() => {

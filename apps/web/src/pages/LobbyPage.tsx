@@ -11,6 +11,17 @@ import { getCharacterDefinition, CharacterId, DEFAULT_CHARACTER_ID, getArenaDefi
 import { RankBadge, getRankTier } from '../components/ranked/RankBadge';
 import { CHARACTER_PORTRAITS } from '../assets/characters';
 import { ARENA_BACKGROUNDS } from '../assets/arenas';
+import { FriendsColumn } from '../components/friends/FriendsColumn';
+import { IncomingChallengeModal } from '../components/friends/IncomingChallengeModal';
+import {
+  FriendItem,
+  ChallengeInvite,
+  subscribeToLobbyPresence,
+  subscribeToIncomingChallenges,
+  sendChallengeInvite,
+  respondToChallengeInvite,
+  sendBrowserNotification
+} from '../lib/friends';
 
 interface LobbyPageProps {
   guest: GuestProfile;
@@ -58,6 +69,12 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
   });
   const [challengeDuration, setChallengeDuration] = useState<number>(60);
   const [isChallengeHost, setIsChallengeHost] = useState<boolean>(true);
+
+  // Friends & Real-time Challenge State
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const [incomingChallenge, setIncomingChallenge] = useState<ChallengeInvite | null>(null);
+  const [isChallengingFriend, setIsChallengingFriend] = useState<boolean>(false);
+  const [challengedFriendName, setChallengedFriendName] = useState<string | null>(null);
 
   // Synchronize character if activeUser profile updates
   useEffect(() => {
@@ -132,6 +149,42 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
       handleJoinChallenge(initialRoomCode);
     }
   }, [initialRoomCode]);
+
+  // Subscribe to Lobby Presence for Real-Time Online Friends tracking
+  useEffect(() => {
+    if (!activeUser?.id) return;
+    const unsub = subscribeToLobbyPresence(activeUser.id, activeUser.displayName, (ids) => {
+      setOnlineUserIds(ids);
+    });
+    return () => unsub();
+  }, [activeUser.id, activeUser.displayName]);
+
+  // Subscribe to Incoming Real-Time Challenges
+  useEffect(() => {
+    if (!activeUser?.id) return;
+    const unsub = subscribeToIncomingChallenges(activeUser.id, (invite) => {
+      if (mode !== 'select') return;
+
+      soundManager.playChallengeAlert();
+
+      if (typeof document !== 'undefined' && document.hidden) {
+        sendBrowserNotification(
+          `⚔️ Duel Challenge from ${invite.senderName}!`,
+          {
+            body: `${invite.senderName} has challenged you to a 1v1 duel in KeyFury! Click to join.`,
+            tag: `challenge-${invite.id}`
+          },
+          () => {
+            handleAcceptIncomingChallenge(invite);
+          }
+        );
+      }
+
+      setIncomingChallenge(invite);
+    });
+
+    return () => unsub();
+  }, [activeUser.id, mode]);
 
   // Dynamic tolerance calculations per R3 requirements
   const mmrTolerance = Math.min(1000, 100 + Math.floor(queueElapsed / 3) * 50);
@@ -342,6 +395,60 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     }
   };
 
+  const handleAcceptIncomingChallenge = async (invite: ChallengeInvite) => {
+    soundManager.playClick();
+    setIncomingChallenge(null);
+    await respondToChallengeInvite(invite.id, 'accepted');
+    handleJoinChallenge(invite.roomCode);
+  };
+
+  const handleDeclineIncomingChallenge = async (invite: ChallengeInvite) => {
+    soundManager.playClick();
+    setIncomingChallenge(null);
+    await respondToChallengeInvite(invite.id, 'declined');
+  };
+
+  const handleDirectChallengeFriend = async (friend: FriendItem) => {
+    soundManager.playClick();
+    setIsChallengingFriend(true);
+    setChallengedFriendName(friend.displayName);
+    setErrorMsg(null);
+    setServerWarming(true);
+    setMode('challenge');
+    setIsChallengeHost(true);
+
+    try {
+      const rm = await createChallengeRoom(
+        activeUser.id,
+        activeUser.displayName,
+        activeUser.mmr,
+        selectedCharacter,
+        selectedArena,
+        challengeDuration
+      );
+      setServerWarming(false);
+      setRoomCode(rm.id);
+      attachRoomListeners(rm);
+
+      // Send live challenge invite to friend in Supabase
+      await sendChallengeInvite({
+        senderId: activeUser.id,
+        senderName: activeUser.displayName,
+        receiverId: friend.id,
+        roomCode: rm.id,
+        arenaId: selectedArena,
+        characterId: selectedCharacter,
+        matchDuration: challengeDuration
+      });
+    } catch (_err) {
+      setServerWarming(false);
+      setErrorMsg('Failed to challenge friend. Private room could not be created.');
+      setMode('select');
+    } finally {
+      setIsChallengingFriend(false);
+    }
+  };
+
   const attachRoomListeners = (rm: Room) => {
     setRoom(rm);
 
@@ -404,6 +511,7 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
     }
     setMode('select');
     setOpponentName(null);
+    setChallengedFriendName(null);
     setIsReady(false);
   };
 
@@ -807,9 +915,10 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
 
       <div className="glass-panel" style={{ padding: '24px 18px', textAlign: 'center' }}>
         {mode === 'select' && (
-          <div>
-            <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Choose Duel Mode</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '18px', fontSize: '0.9rem' }}>Select live human 1v1 duel, practice vs AI Bot, or challenge a friend.</p>
+          <div className="lobby-duel-select-grid">
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 800, marginBottom: '6px', color: 'var(--text-heading)' }}>Choose Duel Mode</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '18px', fontSize: '0.9rem' }}>Select live human 1v1 duel, practice vs AI Bot, or challenge a friend.</p>
 
             {/* Mode Badge Banner */}
             <div style={{
@@ -1060,6 +1169,18 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   <LogIn size={16} /> Join Duel
                 </button>
               </div>
+            </div>
+            </div>
+
+            {/* Separate Friends Column */}
+            <div style={{ textAlign: 'left' }}>
+              <FriendsColumn
+                currentUserId={activeUser.id}
+                currentDisplayName={activeUser.displayName}
+                onlineUserIds={onlineUserIds}
+                onChallengeFriend={handleDirectChallengeFriend}
+                isChallenging={isChallengingFriend}
+              />
             </div>
           </div>
         )}
@@ -1380,9 +1501,18 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
                   </button>
                 </div>
               ) : (
-                <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', margin: '20px 0', fontSize: '0.88rem' }}>
-                  Waiting for your opponent to open the link or enter the Room ID...
-                </p>
+                <div style={{ margin: '20px 0' }}>
+                  <p style={{ color: challengedFriendName ? '#38bdf8' : 'var(--text-muted)', fontStyle: 'italic', marginBottom: '8px', fontSize: '0.88rem' }}>
+                    {challengedFriendName
+                      ? `⚡ Direct challenge sent to ${challengedFriendName}! Waiting for them to accept...`
+                      : 'Waiting for your opponent to open the link or enter the Room ID...'}
+                  </p>
+                  {challengedFriendName && (
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      (The shareable room link below is also active if they prefer joining via link)
+                    </div>
+                  )}
+                </div>
               )}
 
               <button className="btn-secondary" onClick={cancelLobby} style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
@@ -1522,6 +1652,13 @@ export const LobbyPage: React.FC<LobbyPageProps> = ({
         }
         isMapLocked={mode === 'challenge' && !isChallengeHost}
         mapCounts={mapCounts}
+      />
+
+      {/* Realtime Incoming Challenge Invite Modal */}
+      <IncomingChallengeModal
+        invite={incomingChallenge}
+        onAccept={handleAcceptIncomingChallenge}
+        onDecline={handleDeclineIncomingChallenge}
       />
     </div>
   );

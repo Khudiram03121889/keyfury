@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Valkyrie Rest Pose Test</title>
+  <style>body { margin: 0; background: #111; }</style>
+</head>
+<body>
+  <div id="container"></div>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/node_modules/three/build/three.module.js",
+        "three/addons/": "/node_modules/three/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a24);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.1, 3.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    document.body.appendChild(renderer.domElement);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 1.5);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight.position.set(2, 4, 3);
+    scene.add(dirLight);
+
+    const loader = new GLTFLoader();
+    loader.load('/assets/3d/Cyber_Valkyrie.glb?t=' + Date.now(), (gltf) => {
+      const model = gltf.scene;
+      model.rotation.y = 0; // Front 3/4 view
+      model.rotation.y = Math.PI / 4; // 45 degree angle so we see both front and side!
+      scene.add(model);
+
+      window.__model = model;
+      window.__glaive = model.getObjectByName('Valk_Glaive');
+      
+      const bones = {};
+      const restQuats = new Map();
+      model.traverse((child) => {
+        if (child.isBone) {
+          const key = child.name.replace(/[._]/g, '').toLowerCase();
+          bones[key] = child;
+          restQuats.set(key, child.quaternion.clone());
+        }
+      });
+      window.__bones = bones;
+      console.log('Discovered bones:', Object.keys(bones));
+
+      function setBoneRot(key, x, y, z, space = 'local') {
+        const bone = bones[key];
+        const rest = restQuats.get(key);
+        if (!bone || !rest) return;
+        const qDelta = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'YXZ'));
+        if (space === 'parent') {
+          bone.quaternion.copy(qDelta).multiply(rest);
+        } else {
+          bone.quaternion.copy(rest).multiply(qDelta);
+        }
+      }
+
+      // Test posing: NO BONE ROTATION
+      console.log('Testing zero bone rotation...');
+
+      window.__modelLoaded = true;
+      renderer.render(scene, camera);
+    });
+
+
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
