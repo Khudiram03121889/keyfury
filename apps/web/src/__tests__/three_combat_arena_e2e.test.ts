@@ -44,7 +44,7 @@ describe('ThreeCombatArena & 3D Character Kinematics E2E Test Suite', () => {
       expect(CHARACTER_PROFILES.ronin.weapon).toBe('Azure Plasma Katana');
       expect(CHARACTER_PROFILES.shinobi.weapon).toBe('Dual Lightning Kunai');
       expect(CHARACTER_PROFILES.void.weapon).toBe('Dual Void Daggers');
-      expect(CHARACTER_PROFILES.valkyrie.weapon).toBe('Hard-Light Glaive');
+      expect(CHARACTER_PROFILES.valkyrie.weapon).toBe('Dual Kinetic Power Fists');
     });
   });
 

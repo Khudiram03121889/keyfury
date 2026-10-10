@@ -61,8 +61,8 @@ export const CHARACTER_PROFILES: Record<CharacterId, CharacterProfile> = {
   valkyrie: {
     id: 'valkyrie',
     name: 'Cyber Valkyrie',
-    title: 'Solar Vanguard // Hard-Light Glaive',
-    weapon: 'Hard-Light Glaive',
+    title: 'Vanguard Exo-Brawler // Kinetic Power Fists',
+    weapon: 'Dual Kinetic Power Fists',
     primaryColor: 0xff0055,
     glowColor: '#ff0055',
     modelFile: '/assets/3d/Cyber_Valkyrie.glb',
@@ -98,7 +98,7 @@ export interface FighterBones {
  * Procedural 3D Skinned Martial Fighter Controller for KeyFury
  * Articulates all 20 humanoid skeleton bones procedurally:
  * - Natural walking strides & map-specific dynamic entrances
- * - Character-specific martial ready combat guards (Katana, Dual Kunai, Dual Daggers, Glaive)
+ * - Character-specific martial ready combat guards (Katana, Dual Kunai, Dual Daggers, Kinetic Power Fists)
  * - Reactive micro-advance twitch & aura pulse on typing keystrokes
  * - Explosive forward-lunging jabs with weapon thrust extension
  * - Athletic roundhouse snap kicks with knee chamber & horizontal shin whip
@@ -319,10 +319,10 @@ export class Character3DFighter {
                   stdMat.emissiveIntensity = 4.5;
                   stdMat.roughness = 0.30;
                   stdMat.metalness = 0.30;
-                } else if (matName.includes('Glaive_Blade') || (meshName.includes('Glaive') && matName.includes('Blade'))) {
-                  // Vibrant glowing solar crimson hard-light crescent blade
+                } else if (matName.includes('Glaive_Blade') || matName.includes('Gauntlet_Core') || (meshName.includes('Gauntlet') && matName.includes('Core'))) {
+                  // Vibrant glowing solar crimson hard-light crescent blade / kinetic power fist core
                   stdMat.emissive = new THREE.Color(0xff0055);
-                  stdMat.emissiveIntensity = 4.8;
+                  stdMat.emissiveIntensity = 5.0;
                   stdMat.roughness = 0.15;
                   stdMat.metalness = 0.10;
                 } else {
@@ -805,10 +805,10 @@ export class Character3DFighter {
           this.setBoneRot('chest', breath * 0.015 + twitch * 0.03, -0.18 * this.facingSign, 0, 'parent');
           this.setBoneRot('head', -twitch * 0.02, 0.10 * this.facingSign, 0, 'parent');
 
-          // Right arm grips Solar Glaive poised forward at chest height in ready vanguard guard
+          // Right lead kinetic power fist poised forward in ready vanguard brawler guard
           this.setBoneRot('upperArmR', -0.55 - breath * 0.02 - twitch * 0.06, -0.10, -0.12, 'local');
           this.setBoneRot('forearmR', 0.85 - twitch * 0.04, 0, 0, 'local');
-          this.setBoneRot('handR', -1.85, 0, 0, 'local');
+          this.setBoneRot('handR', 0.06 + twitch * 0.04, 0, 0, 'local');
 
           // Left rocket gauntlet raised across chest in protective shield guard
           this.setBoneRot('upperArmL', -0.45 - twitch * 0.12 + breath * 0.02, 0.12, 0.15, 'local');
@@ -1332,7 +1332,7 @@ export class Character3DFighter {
 
             this.setBoneRot('upperArmR', -0.32 - rev * 0.20, -0.04, -0.06, 'local');
             this.setBoneRot('forearmR', 0.58, 0, 0, 'local');
-            this.setBoneRot('handR', -0.10 * rev - 1.85 * (1 - rev), 0, 0, 'local');
+            this.setBoneRot('handR', 0.06, 0, 0, 'local');
             this.setBoneRot('upperArmL', -0.30 - rev * 0.20, 0.06, 0.08, 'local');
             this.setBoneRot('forearmL', 0.58, 0, 0, 'local');
             this.setBoneRot('handL', 0.06, 0, 0, 'local');
@@ -2122,14 +2122,16 @@ export class Character3DFighter {
         this.pitchTilt = 0;
 
         if (this.profile.id === 'valkyrie') {
-          // Cyber Valkyrie: Solar Glaive deck plant & imposing vanguard salute
+          // Cyber Valkyrie: Exo-Brawler power fist clash & triumphant kinetic roar
           this.verticalBob = 0.02 + Math.sin(elapsedTotal * 2.0) * 0.015;
-          this.setBoneRot('upperArmR', -1.60, 0, -0.15, 'local');
-          this.setBoneRot('forearmR', 0.30, 0, 0, 'local');
-          this.setBoneRot('upperArmL', -0.50, 0.40, 0.35, 'local');
-          this.setBoneRot('forearmL', 1.10, 0, 0, 'local');
-          this.setBoneRot('chest', -0.14, 0, 0, 'parent');
-          this.setBoneRot('head', -0.10, 0, 0, 'parent');
+          this.setBoneRot('upperArmR', -0.55, -0.20, -0.25, 'local');
+          this.setBoneRot('forearmR', 1.25, 0, 0, 'local');
+          this.setBoneRot('handR', 0.10, 0, 0, 'local');
+          this.setBoneRot('upperArmL', -0.55, 0.20, 0.25, 'local');
+          this.setBoneRot('forearmL', 1.25, 0, 0, 'local');
+          this.setBoneRot('handL', 0.10, 0, 0, 'local');
+          this.setBoneRot('chest', -0.10, 0, 0, 'parent');
+          this.setBoneRot('head', -0.06, 0, 0, 'parent');
           this.setBoneRot('thighR', -0.10, 0, 0.04, 'parent');
           this.setBoneRot('shinR', 0.16, 0, 0, 'parent');
           this.setBoneRot('thighL', -0.08, 0, -0.04, 'parent');

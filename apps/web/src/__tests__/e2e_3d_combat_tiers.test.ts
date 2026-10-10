@@ -542,9 +542,9 @@ describe('KeyFury 3D WebGL Combat Engine — 4-Tier Opaque-Box E2E Test Suite', 
         expect(prof.glowColor).toBe('#b5179e');
       });
 
-      it('F6.4: configures Cyber Valkyrie with Hard-Light Glaive and solar crimson glow', () => {
+      it('F6.4: configures Cyber Valkyrie with Dual Kinetic Power Fists and solar crimson glow', () => {
         const prof = CHARACTER_PROFILES.valkyrie;
-        expect(prof.weapon).toBe('Hard-Light Glaive');
+        expect(prof.weapon).toBe('Dual Kinetic Power Fists');
         expect(prof.primaryColor).toBe(0xff0055);
         expect(prof.glowColor).toBe('#ff0055');
       });

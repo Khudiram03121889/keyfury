@@ -32,10 +32,10 @@ function createMockLoader() {
 }
 
 describe('Cyber Valkyrie Physical Contact & Vanguard Combat Impact Verification', () => {
-  it('CV-1: initializes Cyber Valkyrie with Hard-Light Glaive and solar crimson glow', () => {
+  it('CV-1: initializes Cyber Valkyrie with Dual Kinetic Power Fists and solar crimson glow', () => {
     const prof = CHARACTER_PROFILES.valkyrie;
     expect(prof.name).toBe('Cyber Valkyrie');
-    expect(prof.weapon).toBe('Hard-Light Glaive');
+    expect(prof.weapon).toBe('Dual Kinetic Power Fists');
     expect(prof.glowColor).toBe('#ff0055');
     expect(prof.height).toBe(1.98);
 
